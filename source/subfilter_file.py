@@ -130,15 +130,15 @@ def main():
                                    sigma=sigma, width=width, \
                                    delta_x=0.1)
         
-        print twod_filter
+        print(twod_filter)
         filter_list.append(twod_filter)
         
-    print filter_list
+    print(filter_list)
     for twod_filter in filter_list:
         
         derived_dataset_name, derived_data = sf.setup_derived_data_file(\
                                             dir+file, dir, twod_filter)
-        print derived_data.variables
+        print(derived_data.variables)
 
         field_list =sf.filter_variable_list(dataset, derived_data,\
                                             twod_filter, var_list=None)    
@@ -146,15 +146,15 @@ def main():
         quad_field_list =sf.filter_variable_pair_list(dataset, derived_data, \
                                             twod_filter, var_list=None)        
         times = derived_data['time_series_50_100.0']
-        print times
-        print times[:]
+        print(times)
+        print(times[:])
         
         z = derived_data["z"]
-        print "z",np.shape(z[:])   
-        print z[:]
+        print("z",np.shape(z[:]))   
+        print(z[:])
         zn = derived_data["zn"]
-        print "zn",np.shape(zn[:])   
-        print zn[:]
+        print("zn",np.shape(zn[:]))   
+        print(zn[:])
 #        uv = sf.quadratic_subfilter(dataset, derived_data, twod_filter,\
 #                        "u", "v")
 #        uvm = np.mean(uv,axis=(0,1,2))
@@ -163,7 +163,7 @@ def main():
 #        plt.show()
         
         u_r = derived_data["u_r"]
-        print u_r
+        print(u_r)
 #        os.remove(derived_dataset_name)
 #        print twod_filter
         fig1 = plt.figure(1)
@@ -175,7 +175,7 @@ def main():
         plt.show()
         
         for field in field_list:
-            print "Plotting %s"%field
+            print("Plotting {}".format(field))
             plot_field(field, derived_data, twod_filter, ilev, iy)            
 #        test_filter(dataset, twod_filter)
         derived_data.close()

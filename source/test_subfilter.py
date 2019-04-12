@@ -105,15 +105,15 @@ def test_filter(dataset, twod_filter, contents=0):
 #    print "x",np.shape(x)
 #    y = dataset["y"]
     z = dataset["z"]
-    print "z",np.shape(z)
+    print("z",np.shape(z))
 #    print z[:]
     zn = dataset["zn"]
-    print "zn",np.shape(zn)
+    print("zn",np.shape(zn))
 #    print zn[:]
-    print w
+    print(w)
     
-    wt =  sf.field_on_z_to_zn(w, z, zn)
-    ut = field_on_u_to_p(u, xaxis=1)
+    wt = sf.field_on_z_to_zn(w, z, zn)
+    ut = sf.field_on_u_to_p(u, xaxis=1)
     
     uw = ut*wt
     plt.figure(1,figsize=(10,8))
@@ -138,7 +138,8 @@ def test_filter(dataset, twod_filter, contents=0):
    
     for j in range(n_times):
 
-        print "Filtering time %d uw[%d] shape:"%(j,j), np.shape(uw[j])
+        print("Filtering time {1} uw[{2}] shape:{3}".\
+              format(j,j,np.shape(uw[j])))
 
         uw_f = sf.filtered_field_calc(uw[j], twod_filter)
 
@@ -185,30 +186,30 @@ def main():
                                    sigma=sigma, width=width, \
                                    delta_x=0.1)
         
-        print twod_filter
+        print(twod_filter)
         filter_list.append(twod_filter)
         
-    print filter_list
+    print(filter_list)
     for twod_filter in filter_list:
         
         derived_dataset_name, derived_data = sf.setup_derived_data_file(\
                                             dir+file, dir, twod_filter)
-        print derived_data.variables
+        print(derived_data.variables)
 
         sf.filter_variable_list(dataset, derived_data, twod_filter, var_list=None)         
         times = derived_data['time_series_50_100.0']
-        print times
-        print times[:]
+        print(times)
+        print(times[:])
         
         z = derived_data["z"]
-        print "z",np.shape(z[:])   
-        print z[:]
+        print("z",np.shape(z[:]))   
+        print(z[:])
         zn = derived_data["zn"]
-        print "zn",np.shape(zn[:])   
-        print zn[:]
+        print("zn",np.shape(zn[:]))   
+        print(zn[:])
         
         u_r = derived_data["u_r"]
-        print u_r
+        print(u_r)
         derived_data.close()
 #        os.remove(derived_dataset_name)
 #        print twod_filter

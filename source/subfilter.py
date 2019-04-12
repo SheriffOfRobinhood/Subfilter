@@ -61,7 +61,7 @@ def field_on_z_to_zn(field, z, zn) :
 #    print "znd",znd
     ss = np.shape(field)[:-1]
     newfield=np.zeros((ss+(len(znd),)))
-    print "Newfield", np.shape(newfield)
+    print("Newfield", np.shape(newfield))
     for i in range(0,len(znd)):
 #    for i in range(0,5):
         if (zd[0] > znd[i]) :
@@ -71,7 +71,7 @@ def field_on_z_to_zn(field, z, zn) :
             if len(k[0]) > 0 :
                 k = k[0][-1]
             else :
-                print "Interpolation error"
+                print("Interpolation error")
             if (k == (len(zd)-1)) :
                 k = k-1
         w = (znd[i] - zd[k])/(zd[k+1] - zd[k])
@@ -128,17 +128,17 @@ def setup_derived_data_file(source_file, destdir, twod_filter) :
 def get_data_on_A_grid(source_dataset, var_name):
     z = source_dataset["z"]
     zn = source_dataset["zn"]
-    print var_name
+    print(var_name)
     var = source_dataset[var_name]
     vp = var_properties[var_name]
     if vp[0] :
-        print "Mapping %s from u grid to p grid."%var
+        print("Mapping {} from u grid to p grid.".format(var))
         var = field_on_u_to_p(var, xaxis=1)
     if vp[1] :
-        print "Mapping %s from v grid to p grid."%var
+        print("Mapping {} from v grid to p grid.".format(var))
         var = field_on_v_to_p(var, yaxis=2)
     if vp[2] :
-        print "Mapping %s from w grid to p grid."%var
+        print("Mapping {} from w grid to p grid.".format(var))
         var = field_on_z_to_zn(var,  z, zn)    
     vard = var[...]
     return vard
@@ -147,7 +147,7 @@ def filter_variable_list(source_dataset, derived_dataset, twod_filter,\
                          var_list=None) :
     if (var_list==None):
         var_list = ["u","v","w","th","q_vapour","q_cloud_liquid_mass"]
-        print "Default list:\n",var_list
+        print("Default list:\n",var_list)
     z = source_dataset["z"]
     zn = source_dataset["zn"]
     for v in var_list:
@@ -160,11 +160,11 @@ def filter_variable_list(source_dataset, derived_dataset, twod_filter,\
         ncvar_r = derived_dataset.createVariable(v+"_r","f8",\
                                      (vdims[0],vdims[1],vdims[2],"zn",))
         ncvar_r[...] = var_r
-        print ncvar_r
+        print(ncvar_r)
         ncvar_s = derived_dataset.createVariable(v+"_s","f8",\
                                      (vdims[0],vdims[1],vdims[2],"zn",))
         ncvar_s[...] = var_s
-        print ncvar_s
+        print(ncvar_s)
 #        plt.plot(np.mean(ncvar_r,axis=(0,1,2)),last_dim(zn))
 #        plt.title(v[0]+"_r")
 #        plt.show()
@@ -216,22 +216,22 @@ def filter_variable_pair_list(source_dataset, derived_dataset, twod_filter,\
                     ["w","q_cloud_liquid_mass"], \
                   ]
 #                    ,"v","w","th","q_vapour","q_cloud_liquid_mass"]
-        print "Default list:\n",var_list
+        print("Default list:\n",var_list)
     z = source_dataset["z"]
     zn = source_dataset["zn"]
     for v in var_list:
-        print "Calculating s(%s,%s)"%(v[0],v[1])
+        print("Calculating s({1},{2})".format(v[0],v[1]))
         var = source_dataset[v[0]]
         vdims = var.dimensions
         svar =quadratic_subfilter(source_dataset, derived_dataset, \
                         twod_filter, v[0], v[1])
         
-        svar_name = "%s_%s"%(v[0],v[1])
+        svar_name = "{}_{}".format(v[0],v[1])
         
         ncsvar = derived_dataset.createVariable(svar_name,"f8",\
                                      (vdims[0],vdims[1],vdims[2],"zn",))
         ncsvar[...] = svar
-        print ncsvar
+        print(ncsvar)
 #        plt.plot(np.mean(ncvar_r,axis=(0,1,2)),last_dim(zn))
 #        plt.title(v[0]+"_r")
 #        plt.show()
