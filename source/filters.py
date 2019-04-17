@@ -358,7 +358,7 @@ def gaussian_filter_2d(sigma, delta_x=1.0, cutoff=0.0001, width=-1):
         width = 1
         result = np.ones(1).reshape(1,1)
         cutoff = cutoff * (np.sqrt(2.0 * pi) * sigma)**2
-        while result[:(width+1)/2,:(width+1)/2].min() > cutoff:
+        while result[:(width+1)//2,:(width+1)//2].min() > cutoff:
             width += 2
             if width/2 == width/2.0:
                 x = np.concatenate((-np.arange(width/2)[::-1],
@@ -367,8 +367,8 @@ def gaussian_filter_2d(sigma, delta_x=1.0, cutoff=0.0001, width=-1):
                 x = np.arange(width)-(width/2)
             x = x * delta_x
             result = np.zeros(width**2).reshape(width,width)
-            for i in range((width+1)/2):
-                for j in range((width+1)/2):
+            for i in range((width+1)//2):
+                for j in range((width+1)//2):
                     temp1 = np.tile((delta_x*np.arange(n)/(n-1)+x[i]
                                      -(delta_x/2.0))**2, (n,1))
                     temp2 = np.tile((delta_x*np.arange(n)/(n-1)+x[j]
@@ -382,17 +382,17 @@ def gaussian_filter_2d(sigma, delta_x=1.0, cutoff=0.0001, width=-1):
             x = np.arange(width)-(width/2)
         x = x * delta_x
         result = np.zeros(width**2).reshape(width,width)
-        for i in range((width+1)/2):
-            for j in range((width+1)/2):
+        for i in range((width+1)//2):
+            for j in range((width+1)//2):
                 temp1 = np.tile((delta_x*np.arange(n)/(n-1)+x[i]
                                  -(delta_x/2.0))**2, (n,1))
                 temp2 = np.tile((delta_x*np.arange(n)/(n-1)+x[j]
                                  -(delta_x/2.0))**2, (n,1)).transpose()
                 y = temp1 + temp2
                 result[i,j] = np.mean(np.exp(-y / (2.0 * sigma**2)),dtype=np.float64)
-    temp = result[0:(width+1)/2,0:(width+1)/2]
-    temp = np.concatenate((temp[:,:width/2], temp[:,::-1]),axis=1)
-    result = np.concatenate((temp[:width/2,:], temp[::-1,:]),axis=0)
+    temp = result[0:(width+1)//2,0:(width+1)//2]
+    temp = np.concatenate((temp[:,:width//2], temp[:,::-1]),axis=1)
+    result = np.concatenate((temp[:width//2,:], temp[::-1,:]),axis=0)
     result = result / np.sum(result)
     return result
 

@@ -14,14 +14,14 @@ import matplotlib.pyplot as plt
 import subfilter as sf
 import filters as filt
 
-dir = 'C:/Users/paclk/OneDrive - University of Reading/python/subfilter/test_data/BOMEX/'
+dir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
 file = 'diagnostics_ts_18000.0.nc'
 
 #w = dataset.variables['w']
 #var_tvar = w.dimensions[0]
 #var_time = dataset.variables[var_tvar]
 
-plot_dir = 'C:/Users/paclk/OneDrive - University of Reading/python/subfilter/test_data/BOMEX/plots/' 
+plot_dir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/plots/' 
 
 plot_type = '.png'
 data_dir = '' # Directory containing data
@@ -171,7 +171,7 @@ def main():
         plt.contourf(twod_filter.data,20) 
         
         fig2 = plt.figure(2)
-        plt.plot(twod_filter.data[np.shape(twod_filter.data)[0]/2,:])
+        plt.plot(twod_filter.data[np.shape(twod_filter.data)[0]//2,:])
         plt.show()
         
         for field in field_list:

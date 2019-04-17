@@ -10,11 +10,9 @@ from netCDF4 import Dataset
 
 import numpy as np
 from scipy.signal import fftconvolve
-#from sys import float_info
-#import filters 
+
 import time
-#import matplotlib
-#import matplotlib.pyplot as plt
+
 var_properties = {"u":[True,False,False],\
                   "v":[False,True,False],\
                   "w":[False,False,True],\
@@ -220,7 +218,7 @@ def filter_variable_pair_list(source_dataset, derived_dataset, twod_filter,\
     z = source_dataset["z"]
     zn = source_dataset["zn"]
     for v in var_list:
-        print("Calculating s({1},{2})".format(v[0],v[1]))
+        print("Calculating s({},{})".format(v[0],v[1]))
         var = source_dataset[v[0]]
         vdims = var.dimensions
         svar =quadratic_subfilter(source_dataset, derived_dataset, \
