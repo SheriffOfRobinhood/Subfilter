@@ -277,7 +277,7 @@ def wave_cutoff_filter_2d(wavenumber, delta_x=1.0, width=-1, cutoff=0.0001,
         result = result/np.sum(result)
         return result
     else:
-        print ' high pass filter not yet coded!'
+        print(' high pass filter not yet coded!')
         return 1.0
 
 
