@@ -32,7 +32,10 @@ class filter_2d :
                          the filter.
         '''    
             
-        if (filter_name == 'gaussian'):
+        if (filter_name == 'domain'):
+            data = np.ones([1,1])
+         
+        elif (filter_name == 'gaussian'):
             if (sigma == -1):
                 data = filter_2d_error(filter_name, 'sigma')
             else:
@@ -51,10 +54,10 @@ class filter_2d :
         else:
             print('This filter type is not available.')
             print('Available filters are:')
-            print('gaussian, running_mean & wave_cutoff')
+            print('domain, gaussian, running_mean & wave_cutoff')
             data = -9999
             
-        if (np.size(data) > 1) : 
+        if (np.size(np.shape(data)) > 1 ) : 
             self.data = data
             
 #            x = filter_dataset.createDimension('x'+filter_id[6:],np.shape(data)[0])
@@ -107,7 +110,7 @@ class filter_2d :
         print('for the ' + problem + ' was not chosen')
         filter_2d = -9999
         return filter_2d
-
+    
 def running_mean_filter_2d(width):
     '''
     Calculates a square 2D running mean filter with the given width
