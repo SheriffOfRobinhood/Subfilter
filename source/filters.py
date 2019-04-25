@@ -3,7 +3,7 @@ from sys import float_info
 
 # Global constants
 #===============================================================================
-pi = np.arcsin(1.0)*2.0 # mathematical constant
+pi = np.pi # mathematical constant
 n = 101 # resolution for calculation of mean of non-linear filters.
 eps = float_info.min # smallest possible float
 
@@ -32,7 +32,10 @@ class filter_2d :
                          the filter.
         '''    
             
-        if (filter_name == 'gaussian'):
+        if (filter_name == 'domain'):
+            data = np.ones([1,1])
+         
+        elif (filter_name == 'gaussian'):
             if (sigma == -1):
                 data = filter_2d_error(filter_name, 'sigma')
             else:
@@ -49,12 +52,12 @@ class filter_2d :
                 data = wave_cutoff_filter_2d(wavenumber, delta_x, width,
                                              cutoff, high_pass)     
         else:
-            print 'This filter type is not available.'
-            print 'Available filters are:'
-            print 'gaussian, running_mean & wave_cutoff'
+            print('This filter type is not available.')
+            print('Available filters are:')
+            print('domain, gaussian, running_mean & wave_cutoff')
             data = -9999
             
-        if (np.size(data) > 1) : 
+        if (np.size(np.shape(data)) > 1 ) : 
             self.data = data
             
 #            x = filter_dataset.createDimension('x'+filter_id[6:],np.shape(data)[0])
@@ -103,11 +106,11 @@ class filter_2d :
         Returns:
           filter_2d (-9999): Error code for filter.
         '''
-        print 'A ' + filter_name + ' filter was selcted, but a suitable value'
-        print 'for the ' + problem + ' was not chosen'
+        print('A ' + filter_name + ' filter was selcted, but a suitable value')
+        print('for the ' + problem + ' was not chosen')
         filter_2d = -9999
         return filter_2d
-
+    
 def running_mean_filter_2d(width):
     '''
     Calculates a square 2D running mean filter with the given width
@@ -196,7 +199,7 @@ def wave_cutoff_filter(wavenumber, delta_x=1.0, width=-1, cutoff=0.0001,
         result = result/np.sum(result)
         return result
     else:
-        print ' high pass filter not yet coded!'
+        print(' high pass filter not yet coded!')
         return 1.0
 
 
@@ -230,7 +233,7 @@ def wave_cutoff_filter_2d(wavenumber, delta_x=1.0, width=-1, cutoff=0.0001,
         if width == -1:
             width = 1
             result = np.ones(1).reshape(1,1)
-	    cutoff = cutoff * pi * pi # multiply cutoff by normalising factor rather than dividing filter each time
+            cutoff = cutoff * pi * pi # multiply cutoff by normalising factor rather than dividing filter each time
             while abs(result[:(width+1)/2,:(width+1)/2]).min() > cutoff:
                 width  += 2
                 if width/2 == width/2.0:
@@ -277,7 +280,7 @@ def wave_cutoff_filter_2d(wavenumber, delta_x=1.0, width=-1, cutoff=0.0001,
         result = result/np.sum(result)
         return result
     else:
-        print ' high pass filter not yet coded!'
+        print(' high pass filter not yet coded!')
         return 1.0
 
 
@@ -358,7 +361,7 @@ def gaussian_filter_2d(sigma, delta_x=1.0, cutoff=0.0001, width=-1):
         width = 1
         result = np.ones(1).reshape(1,1)
         cutoff = cutoff * (np.sqrt(2.0 * pi) * sigma)**2
-        while result[:(width+1)/2,:(width+1)/2].min() > cutoff:
+        while result[:(width+1)//2,:(width+1)//2].min() > cutoff:
             width += 2
             if width/2 == width/2.0:
                 x = np.concatenate((-np.arange(width/2)[::-1],
@@ -367,8 +370,8 @@ def gaussian_filter_2d(sigma, delta_x=1.0, cutoff=0.0001, width=-1):
                 x = np.arange(width)-(width/2)
             x = x * delta_x
             result = np.zeros(width**2).reshape(width,width)
-            for i in range((width+1)/2):
-                for j in range((width+1)/2):
+            for i in range((width+1)//2):
+                for j in range((width+1)//2):
                     temp1 = np.tile((delta_x*np.arange(n)/(n-1)+x[i]
                                      -(delta_x/2.0))**2, (n,1))
                     temp2 = np.tile((delta_x*np.arange(n)/(n-1)+x[j]
@@ -382,17 +385,17 @@ def gaussian_filter_2d(sigma, delta_x=1.0, cutoff=0.0001, width=-1):
             x = np.arange(width)-(width/2)
         x = x * delta_x
         result = np.zeros(width**2).reshape(width,width)
-        for i in range((width+1)/2):
-            for j in range((width+1)/2):
+        for i in range((width+1)//2):
+            for j in range((width+1)//2):
                 temp1 = np.tile((delta_x*np.arange(n)/(n-1)+x[i]
                                  -(delta_x/2.0))**2, (n,1))
                 temp2 = np.tile((delta_x*np.arange(n)/(n-1)+x[j]
                                  -(delta_x/2.0))**2, (n,1)).transpose()
                 y = temp1 + temp2
                 result[i,j] = np.mean(np.exp(-y / (2.0 * sigma**2)),dtype=np.float64)
-    temp = result[0:(width+1)/2,0:(width+1)/2]
-    temp = np.concatenate((temp[:,:width/2], temp[:,::-1]),axis=1)
-    result = np.concatenate((temp[:width/2,:], temp[::-1,:]),axis=0)
+    temp = result[0:(width+1)//2,0:(width+1)//2]
+    temp = np.concatenate((temp[:,:width//2], temp[:,::-1]),axis=1)
+    result = np.concatenate((temp[:width//2,:], temp[::-1,:]),axis=0)
     result = result / np.sum(result)
     return result
 
