@@ -25,9 +25,111 @@ mol_wt_air        =           28.9640
 epsilon           = mol_wt_water/mol_wt_air
 c_virtual = 1.0/epsilon-1.0
 
+               
+def filter_variable_list(source_dataset, ref_dataset, \
+                         derived_dataset, twod_filter,\
+                         var_list=None, grid='p') :
+    """
+    Create filtered versions of input variables on required grid, stored in derived_dataset.
+    
+    Args:
+        source_dataset  : NetCDF dataset for input
+        ref_dataset     : NetCDF dataset for input containing reference profiles
+        derived_dataset : NetCDF dataset for derived data
+        twod_filter: 2D filter
+        var_list=None   : List of variable names.
+        default provided by get_default_variable_list()
+        grid='p'        : Grid - 'u','v','w' or 'p'
+		
+    Returns:
+        data array.
+		
+    @author: Peter Clark
+	
+    """ 
+    if (var_list==None):
+        var_list = get_default_variable_list()
+        print("Default list:\n",var_list)
+    for v in var_list:
+        vard, vdims, varp  = get_data_on_grid(source_dataset, ref_dataset, v, grid)
+        ncvar_r, ncvar_s = filter_field(vard, v, vdims, derived_dataset, \
+                                        twod_filter, grid=grid, \
+                                        three_d=True, sync=False)
+#        plt.plot(np.mean(ncvar_r,axis=(0,1,2)),last_dim(zn))
+#        plt.title(v[0]+"_r")
+#        plt.show()
+#        plt.plot(np.mean(ncvar_s,axis=(0,1,2)),last_dim(zn))
+#        plt.title(v[0]+"_s")
+#        plt.show()
+    derived_dataset.sync()
+    return var_list
+   
+def filter_variable_pair_list(source_dataset, ref_dataset, \
+                              derived_dataset, twod_filter,\
+                              var_list=None, grid='p') :
+    """
+    Create filtered versions of pairs input variables on A grid, stored in derived_dataset.
+    
+    Args:
+        source_dataset  : NetCDF dataset for input
+        derived_dataset : NetCDF dataset for derived data
+        twod_filter: 2D filter
+        var_list=None   : List of variable names.
+        default provided by get_default_variable_pair_list()
+			
+    Returns:
+        var_list.
+		
+    @author: Peter Clark
+	
+    """     
+    if (var_list==None):
+        var_list = get_default_variable_pair_list()
+#                    ,"v","w","th","q_vapour","q_cloud_liquid_mass"]
+        print("Default list:\n",var_list)
+    if grid=='w' : zvar = "z" 
+    else : zvar = "zn"
+    for v in var_list:
+        print("Calculating s({},{})".format(v[0],v[1]))
+        var = source_dataset[v[0]]
+        vdims = var.dimensions
+        svar =quadratic_subfilter(source_dataset, ref_dataset, \
+                                  derived_dataset, \
+                                  twod_filter, v[0], v[1], grid=grid)
+        
+        svar_name = "{}_{}_on{}".format(v[0],v[1],grid)
+        
+        if twod_filter.attributes['filter_type'] == 'domain' : 
+            ncsvar = derived_dataset.createVariable(svar_name,"f8",\
+                                     (vdims[0],zvar,))
+        else :
+            ncsvar = derived_dataset.createVariable(svar_name,"f8",\
+                                     (vdims[0],vdims[1],vdims[2],zvar,))
+        ncsvar[...] = svar
+        print(ncsvar)
+#        plt.plot(np.mean(ncvar_r,axis=(0,1,2)),last_dim(zn))
+#        plt.title(v[0]+"_r")
+#        plt.show()
+#        plt.plot(np.mean(ncvar_s,axis=(0,1,2)),last_dim(zn))
+#        plt.title(v[0]+"_s")
+#        plt.show()
+    derived_dataset.sync()
+    return var_list   
+
+
 # Flags are: 'u-grid, v-grid, w-grid'
 
 def get_default_variable_list() :
+    """
+    Provide default variable list.
+       Returns:
+           var_list.
+		
+    @author: Peter Clark
+	
+    
+    """
+
     var_list = ["u", "v", "w", "th", "th_v", "th_L", \
                "q_vapour", "q_cloud_liquid_mass", "q_total"]
 # For testing
@@ -35,6 +137,15 @@ def get_default_variable_list() :
     return var_list
 
 def get_default_variable_pair_list() :
+    """
+    Provide default variable pair list.
+       Returns:
+           var_list.
+		
+    @author: Peter Clark
+	
+    
+    """
     var_list = [
                 ["u","u"], \
                 ["u","v"], \
@@ -76,11 +187,11 @@ def convolve(field, twod_filter):
     Convolve field filter using fftconvolve using padding.
 	
     Args:
-        field : 2D field
-        twod_filter: 2D filter
+        field : 2D field array
+        twod_filter: 2D filter array
     
-    Outputs:
-        field * twod_filter
+    Returns:
+        field convolved with twod_filter
 		
     @author: Peter Clark
 	
@@ -100,7 +211,7 @@ def filtered_field_calc(field, twod_filter, three_d=True ):
         twod_filter: 2D filter
         three_d=True : if input has 3 dimensions, interpret as a single time. False: if input has 3 dimensions, interpret first as time.
     
-    Outputs:
+    Returns:
         [field_r, field_s]
 		
     @author: Peter Clark
@@ -159,7 +270,7 @@ def nc_dimcopy(source_dataset, derived_dataset, dimname) :
         derived_dataset
         dimname
     
-    Outputs:
+    Returns:
         dimension
 		
     @author: Peter Clark
@@ -181,7 +292,7 @@ def setup_derived_data_file(source_file, destdir, twod_filter) :
         destdir         : Directory for derived data.
         twod_filter     : Filter
     
-    Outputs:
+    Returns:
         derived_dataset_name, derived_dataset
 		
     @author: Peter Clark
@@ -215,6 +326,21 @@ def setup_derived_data_file(source_file, destdir, twod_filter) :
     return derived_dataset_name, derived_dataset
 
 def get_data(source_dataset, ref_dataset, var_name) :
+    """
+    Extract data from source NetCDF dataset or derived data.
+	
+	Currently supported derived data are:
+	'th_L'    : Liquid water potential temperature.
+	'th_v'    : Virtual potential temperature.
+	'q_total' : Total water 
+
+    Returns:
+    variable, variable_dimensions, variable_grid_properties
+		
+    @author: Peter Clark
+	   
+    """
+
     var_properties = {"u":[True,False,False],\
                       "v":[False,True,False],\
                       "w":[False,False,True],\
@@ -273,10 +399,12 @@ def get_data_on_grid(source_dataset, ref_dataset, var_name, grid='p') :
     
     Args:
         source_dataset  : NetCDF dataset 
+        ref_dataset     : NetCDF dataset containing reference profiles.
         var_name        : Name of variable
+		rrid='p'        : Destination grid. 'u', 'v', 'w' or 'p'.
     
-    Outputs:
-        data array.
+    Returns:
+        variable_dimensions, variable_grid_properties.
 		
     @author: Peter Clark
     """    
@@ -351,7 +479,7 @@ def deformation(source_dataset, dx, dy, z, zn, xaxis=0, grid='w') :
         source_dataset  : NetCDF dataset 
         var_name        : Name of variable
     
-    Outputs:
+    Returns:
         data array.
 		
     @author: Peter Clark
@@ -397,7 +525,7 @@ def filter_field(vard, vname, vdims, derived_dataset, twod_filter, grid='p', \
         default provided by get_default_variable_list()
         grid='p'        : Grid - 'u','v','w' or 'p'
 		
-    Outputs:
+    Returns:
         ncvar_r, ncvar_s: Resolved and subfilter fields as netcf variables in
                           derived_dataset.
 						  
@@ -430,7 +558,7 @@ def filter_field(vard, vname, vdims, derived_dataset, twod_filter, grid='p', \
 def filtered_deformation(source_dataset, derived_dataset, twod_filter, \
                          dx, dy, z, zn, xaxis=0, grid='p') :
     """
-    Create filtered versions of deformation field $\frac{\partial u_i}{partial{x_j}$.
+    Create filtered versions of deformation field.
 
     Args:
         source_dataset  : NetCDF input dataset 
@@ -438,13 +566,14 @@ def filtered_deformation(source_dataset, derived_dataset, twod_filter, \
         twod_filter     : 2D filter.
         grid='p'        : Grid - 'u','v','w' or 'p'
 		
-    Outputs:
+    Returns:
         ncvar_r, ncvar_s: Resolved and subfilter fields as netcf variables in derived_dataset.
 						  
     @author: Peter Clark
 
     """ 
     
+#:math:`\frac{\partial u_i}{\partial{x_j}`
     u = source_dataset["u"]
     vdims = u.dimensions
     vname = 'deformation'
@@ -496,44 +625,6 @@ def vorticity(d) :
     V = [V_0, V_1, V_2]
     
     return V 
-               
-def filter_variable_list(source_dataset, ref_dataset, \
-                         derived_dataset, twod_filter,\
-                         var_list=None, grid='p') :
-    """
-    Create filtered versions of input variables on required grid, stored in derived_dataset.
-    
-    Args:
-        source_dataset  : NetCDF dataset for input
-        ref_dataset     : NetCDF dataset for input containing reference profiles
-        derived_dataset : NetCDF dataset for derived data
-        twod_filter: 2D filter
-        var_list=None   : List of variable names.
-        default provided by get_default_variable_list()
-        grid='p'        : Grid - 'u','v','w' or 'p'
-		
-    Outputs:
-        data array.
-		
-    @author: Peter Clark
-	
-    """ 
-    if (var_list==None):
-        var_list = get_default_variable_list()
-        print("Default list:\n",var_list)
-    for v in var_list:
-        vard, vdims, varp  = get_data_on_grid(source_dataset, ref_dataset, v, grid)
-        ncvar_r, ncvar_s = filter_field(vard, v, vdims, derived_dataset, \
-                                        twod_filter, grid=grid, \
-                                        three_d=True, sync=False)
-#        plt.plot(np.mean(ncvar_r,axis=(0,1,2)),last_dim(zn))
-#        plt.title(v[0]+"_r")
-#        plt.show()
-#        plt.plot(np.mean(ncvar_s,axis=(0,1,2)),last_dim(zn))
-#        plt.title(v[0]+"_s")
-#        plt.show()
-    derived_dataset.sync()
-    return var_list
 
 def quadratic_subfilter(source_dataset,  ref_dataset, \
                         derived_dataset, twod_filter,
@@ -547,7 +638,7 @@ def quadratic_subfilter(source_dataset,  ref_dataset, \
         twod_filter: 2D filter
         v1_name, v2_name: Variable names.
     
-    Outputs:
+    Returns:
         s(var1,var2) data array.
 		
     @author: Peter Clark
@@ -573,56 +664,4 @@ def quadratic_subfilter(source_dataset,  ref_dataset, \
     var1var2 = var1var2_r - var1_r[...] * var2_r[...]
     
     return var1var2
-   
-def filter_variable_pair_list(source_dataset, ref_dataset, \
-                              derived_dataset, twod_filter,\
-                              var_list=None, grid='p') :
-    """
-    Create filtered versions of pairs input variables on A grid, stored in derived_dataset.
-    
-    Args:
-        source_dataset  : NetCDF dataset for input
-        derived_dataset : NetCDF dataset for derived data
-        twod_filter: 2D filter
-        var_list=None   : List of variable names.
-        default provided by get_default_variable_pair_list()
-			
-    Outputs:
-        var_list.
-		
-    @author: Peter Clark
-	
-    """     
-    if (var_list==None):
-        var_list = get_default_variable_pair_list()
-#                    ,"v","w","th","q_vapour","q_cloud_liquid_mass"]
-        print("Default list:\n",var_list)
-    if grid=='w' : zvar = "z" 
-    else : zvar = "zn"
-    for v in var_list:
-        print("Calculating s({},{})".format(v[0],v[1]))
-        var = source_dataset[v[0]]
-        vdims = var.dimensions
-        svar =quadratic_subfilter(source_dataset, ref_dataset, \
-                                  derived_dataset, \
-                                  twod_filter, v[0], v[1], grid=grid)
-        
-        svar_name = "{}_{}_on{}".format(v[0],v[1],grid)
-        
-        if twod_filter.attributes['filter_type'] == 'domain' : 
-            ncsvar = derived_dataset.createVariable(svar_name,"f8",\
-                                     (vdims[0],zvar,))
-        else :
-            ncsvar = derived_dataset.createVariable(svar_name,"f8",\
-                                     (vdims[0],vdims[1],vdims[2],zvar,))
-        ncsvar[...] = svar
-        print(ncsvar)
-#        plt.plot(np.mean(ncvar_r,axis=(0,1,2)),last_dim(zn))
-#        plt.title(v[0]+"_r")
-#        plt.show()
-#        plt.plot(np.mean(ncvar_s,axis=(0,1,2)),last_dim(zn))
-#        plt.title(v[0]+"_s")
-#        plt.show()
-    derived_dataset.sync()
-    return var_list   
     
