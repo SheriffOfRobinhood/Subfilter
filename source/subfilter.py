@@ -14,16 +14,7 @@ from scipy.signal import fftconvolve
 from difference_ops import *
 
 import time
-L_vap = 2.501E6
-Rair = 287.058
-Cpair = 1005.0
-L_over_cp = L_vap / Cpair
-grav = 9.81
-kappa = Rair/Cpair
-mol_wt_water      =           18.0150
-mol_wt_air        =           28.9640
-epsilon           = mol_wt_water/mol_wt_air
-c_virtual = 1.0/epsilon-1.0
+from thermodynamics_constants import *
 
                
 def filter_variable_list(source_dataset, ref_dataset, \
@@ -91,9 +82,9 @@ def filter_variable_pair_list(source_dataset, ref_dataset, \
     else : zvar = "zn"
     for v in var_list:
         print("Calculating s({},{})".format(v[0],v[1]))
-        var = source_dataset[v[0]]
-        vdims = var.dimensions
-        svar =quadratic_subfilter(source_dataset, ref_dataset, \
+#        var = source_dataset[v[0]]
+#        vdims = var.dimensions
+        svar, vdims = quadratic_subfilter(source_dataset, ref_dataset, \
                                   derived_dataset, \
                                   twod_filter, v[0], v[1], grid=grid)
         
@@ -171,6 +162,11 @@ def get_default_variable_pair_list() :
                 ["u","q_total"], \
                 ["v","q_total"], \
                 ["w","q_total"], \
+                ["th_L","th_L"], \
+                ["th_L","q_total"], \
+                ["q_total","q_total"], \
+                ["th_L","q_vapour"], \
+                ["th_L","q_cloud_liquid_mass"], \
               ]
 # For testing
 #    var_list = [
@@ -281,7 +277,8 @@ def nc_dimcopy(source_dataset, derived_dataset, dimname) :
     dv[:] = last_dim(v[:])
     return dv
     
-def setup_derived_data_file(source_file, destdir, twod_filter) :
+def setup_derived_data_file(source_file, destdir, fname, twod_filter, \
+                            override=False) :
     """
     Create NetCDF dataset for derived data in destdir.
 	
@@ -291,6 +288,7 @@ def setup_derived_data_file(source_file, destdir, twod_filter) :
         source_file     : NetCDF file name.
         destdir         : Directory for derived data.
         twod_filter     : Filter
+        override=False  : if True force creation of file
     
     Returns:
         derived_dataset_name, derived_dataset
@@ -299,31 +297,36 @@ def setup_derived_data_file(source_file, destdir, twod_filter) :
     """    
     derived_dataset_name = os.path.basename(source_file) 
     derived_dataset_name = ('.').join(derived_dataset_name.split('.')[:-1])
-    derived_dataset_name = derived_dataset_name + "_" + \
+    derived_dataset_name = derived_dataset_name + "_" + fname + "_" + \
         twod_filter.id + ".nc"
-    derived_dataset = Dataset(destdir+derived_dataset_name, "w")
+    exists = os.path.isfile(destdir+derived_dataset_name)
+    if exists and not override :
+        derived_dataset = Dataset(destdir+derived_dataset_name, "r")
+    else :     
+        derived_dataset = Dataset(destdir+derived_dataset_name, "w")
+        
+        derived_dataset.twod_filter_id = twod_filter.id
+        derived_dataset.setncatts(twod_filter.attributes)
+        
+        source_dataset = Dataset(source_file,"r")
+        w = source_dataset["w"]
+    #    u = source_dataset["u"]
     
-    derived_dataset.twod_filter_id = twod_filter.id
-    derived_dataset.setncatts(twod_filter.attributes)
+        tvar = w.dimensions[0]    
     
-    source_dataset = Dataset(source_file,"r")
-    w = source_dataset["w"]
-#    u = source_dataset["u"]
-
-    tvar = w.dimensions[0]    
-
-    times = nc_dimcopy(source_dataset, derived_dataset, tvar)
-    z = nc_dimcopy(source_dataset, derived_dataset, "z")
-    zn = nc_dimcopy(source_dataset, derived_dataset, "zn")
-    
-    derived_dataset.createDimension("x",np.shape(w[:])[1])
-    x = derived_dataset.createVariable("x","f8",("x",))
-    derived_dataset.createDimension("y",np.shape(w[:])[2])
-    y = derived_dataset.createVariable("y","f8",("y",))
-  
-    derived_dataset.sync()
+        times = nc_dimcopy(source_dataset, derived_dataset, tvar)
+        z = nc_dimcopy(source_dataset, derived_dataset, "z")
+        zn = nc_dimcopy(source_dataset, derived_dataset, "zn")
+        
+        derived_dataset.createDimension("x",np.shape(w[:])[1])
+        x = derived_dataset.createVariable("x","f8",("x",))
+        derived_dataset.createDimension("y",np.shape(w[:])[2])
+        y = derived_dataset.createVariable("y","f8",("y",))
+      
+        derived_dataset.sync()
+        source_dataset.close()
        
-    return derived_dataset_name, derived_dataset
+    return derived_dataset_name, derived_dataset, exists
 
 def get_data(source_dataset, ref_dataset, var_name) :
     """
@@ -421,7 +424,7 @@ def get_data_on_grid(source_dataset, ref_dataset, var_name, grid='p') :
             print("Mapping {} from w grid to p grid.".format(var_name))
             z = source_dataset["z"]
             zn = source_dataset["zn"]
-            var = field_on_z_to_zn(var,  z, zn)
+            var = field_on_w_to_p(var,  z, zn)
     elif grid=='u' :
         if not ( vp[0] or vp[1] or vp[2]):
             print("Mapping {} from p grid to u grid.".format(var_name))
@@ -434,7 +437,7 @@ def get_data_on_grid(source_dataset, ref_dataset, var_name, grid='p') :
             print("Mapping {} from w grid to u grid.".format(var_name))
             z = source_dataset["z"]
             zn = source_dataset["zn"]
-            var = field_on_z_to_zn(var,  z, zn)
+            var = field_on_w_to_p(var,  z, zn)
             var = field_on_p_to_u(var, xaxis=1)
     elif grid=='v' :
         if not ( vp[0] or vp[1] or vp[2]):
@@ -448,7 +451,7 @@ def get_data_on_grid(source_dataset, ref_dataset, var_name, grid='p') :
             print("Mapping {} from w grid to v grid.".format(var_name))
             z = source_dataset["z"]
             zn = source_dataset["zn"]
-            var = field_on_z_to_zn(var,  z, zn)
+            var = field_on_w_to_p(var,  z, zn)
             var = field_on_p_to_v(var, xaxis=1)
     elif grid=='w' :
         z = source_dataset["z"]
@@ -640,6 +643,8 @@ def quadratic_subfilter(source_dataset,  ref_dataset, \
     
     Returns:
         s(var1,var2) data array.
+        vdims dimensions of var1 
+        
 		
     @author: Peter Clark
 	
@@ -648,6 +653,8 @@ def quadratic_subfilter(source_dataset,  ref_dataset, \
                                        v1_name, grid=grid)
     print("Reading ", v1_name+"_r"+"_on"+grid)
     var1_r = derived_dataset[v1_name+"_r"+"_on"+grid]
+    
+    vdims = var1_r.dimensions
     
     print(np.shape(var1_r))
         
@@ -663,5 +670,5 @@ def quadratic_subfilter(source_dataset,  ref_dataset, \
     
     var1var2 = var1var2_r - var1_r[...] * var2_r[...]
     
-    return var1var2
+    return var1var2, vdims
     
