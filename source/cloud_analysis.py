@@ -97,8 +97,10 @@ def main():
         
         derived_dataset_name, derived_data, exists = \
                                             sf.setup_derived_data_file(\
-                                            dir+file, dir, fname, twod_filter)
+                                            dir+file, dir, fname, twod_filter, \
+                                            override = False)
         print(derived_dataset_name)
+
         if exists :
             print('File exists - opened for reading.')
         else : 
@@ -146,14 +148,15 @@ def main():
 #        print(p_on_w)
 #        print(p)
         T_L_r = th_L_r * piref
-        alpha_L = th.dqsatbydT(T_L_r[...], p[...])
+        alpha_L = th.dqsatbydT(T_L_r, p)
         
         print(np.max(alpha_L),np.min(alpha_L))
         a_L = 1.0 / (1.0 + L_over_cp * alpha_L)
         print(np.shape(a_L))
         print(np.max(a_L),np.min(a_L))
         
-        Q_cr = a_L*(q_t_r - th.qsat(T_L_r[...], p[...]))
+        Q_cr = a_L*(q_t_r - th.qsat(T_L_r, p))
+        
         print(np.max(Q_cr),np.min(Q_cr))
         plt.figure(1)
         plt.plot(Q_cr.flatten(), q_cl_r.flatten(),'.',markersize=1)
@@ -170,8 +173,6 @@ def main():
         s = a_L * (q_t_s - th_L_q_s)
         
         print(np.shape(s), np.shape(q_cl_s))
-        
-        
         
         plt.figure(2)
         plt.plot(s.flatten(), q_cl_s.flatten(),'.',markersize=1)

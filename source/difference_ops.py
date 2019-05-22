@@ -4,7 +4,7 @@ Created on Wed Apr 17 21:03:43 2019
 
 Difference operators for C-grid data.
 
-@author: paclk
+@author: Peter Clark
 """
 import numpy as np
 
@@ -15,10 +15,11 @@ def last_dim(z) :
     Args:
         z : n-dimensional array.
     
-    Outputs:
+    Returns:
         z[0,0, etc. ,:]
-    @author: paclk
+    @author: Peter Clark
     """ 
+
     zd = z[...]
     while len(np.shape(zd))>1 :
         zd = zd[0,...]
@@ -33,10 +34,11 @@ def interpolate(field, z, zn) :
         z     : 1D array
         zn    : 1D array
     
-    Outputs:
+    Returns:
         field on zn levels
-    @author: paclk
+    @author: Peter Clark
     """ 
+
     zd = last_dim(z)
     znd = last_dim(zn)   
 #    print "zd",zd
@@ -69,10 +71,11 @@ def field_on_u_to_p(field, xaxis=0) :
         field : nD field
         xaxis=0: Specify axis to interpolate
     
-    Outputs:
+    Returns:
         field on p points
-    @author: paclk
+    @author: Peter Clark
     """
+
     d = field[...]
     newfield=0.5 * (d + np.roll(d,-1,axis=xaxis))
     return newfield
@@ -85,10 +88,11 @@ def field_on_p_to_u(field, xaxis=0) :
         field : nD field
         xaxis=0: Specify axis to interpolate
     
-    Outputs:
+    Returns:
         field on p points
-    @author: paclk
+    @author: Peter Clark
     """
+
     d = field[...]
     newfield=0.5 * (d + np.roll(d,1,axis=xaxis))
     return newfield
@@ -101,10 +105,11 @@ def field_on_v_to_p(field, xaxis=0) :
         field : nD field
         xaxis=0: Specify xaxis 
     
-    Outputs:
+    Returns:
         field on p points
-    @author: paclk
+    @author: Peter Clark
     """
+
     d = field[...]
     newfield=0.5 * (d + np.roll(d,-1,axis=xaxis+1))
     return newfield
@@ -117,10 +122,11 @@ def field_on_p_to_v(field, xaxis=0) :
         field : nD field
         yaxis=1: Specify axis to interpolate
     
-    Outputs:
+    Returns:
         field on p points
-    @author: paclk
+    @author: Peter Clark
     """
+
     d = field[...]
     newfield=0.5 * (d + np.roll(d,1,axis=xaxis+1))
     return newfield
@@ -135,10 +141,11 @@ def d_by_dx_field_on_u(field, dx, z, zn, xaxis=0, grid = 'p' ) :
         xaxis=0: Specify axis corresponding to x
         grid = 'p': destination grid
     
-    Outputs:
+    Returns:
         field on required grid
-    @author: paclk
+    @author: Peter Clark
     """
+
     print("d_by_dx_field_on_u ",grid)
     d = field[...]
     newfield = (d - np.roll(d,1,axis=xaxis)) / dx
@@ -162,10 +169,11 @@ def d_by_dy_field_on_u(field, dy, z, zn, xaxis=0, grid = 'p' ) :
         xaxis=0: Specify axis corresponding to x
         grid = 'p': destination grid
     
-    Outputs:
+    Returns:
         field on required grid
-    @author: paclk
+    @author: Peter Clark
     """
+
     print("d_by_dy_field_on_u ",grid)
     d = field[...]
     newfield = (np.roll(d,-1,axis=xaxis+1) - d) / dy
@@ -194,10 +202,11 @@ def d_by_dz_field_on_u(field, z, zn, xaxis=0, grid = 'p' ) :
         xaxis=0: Specify axis corresponding to x
         grid = 'p': destination grid
     
-    Outputs:
+    Returns:
         field on required grid
-    @author: paclk
+    @author: Peter Clark
     """
+
     print("d_by_dz_field_on_u ",grid)
 #    print(zn)
     d = field[...]
@@ -229,10 +238,11 @@ def d_by_dx_field_on_v(field, dy, z, zn, xaxis=0, grid = 'p' ) :
         xaxis=0: Specify axis corresponding to x
         grid = 'p': destination grid
     
-    Outputs:
+    Returns:
         field on required grid
-    @author: paclk
+    @author: Peter Clark
     """
+
     print("d_by_dx_field_on_v ",grid)
     d = field[...]
     newfield = (np.roll(d,-1,axis=xaxis) - d) / dy
@@ -261,10 +271,11 @@ def d_by_dy_field_on_v(field, dy, z, zn, xaxis=0, grid = 'p' ) :
         xaxis=0: Specify axis corresponding to x
         grid = 'p': destination grid
     
-    Outputs:
+    Returns:
         field on required grid
-    @author: paclk
+    @author: Peter Clark
     """
+
     print("d_by_dy_field_on_v ",grid)
     d = field[...]
     newfield = (d - np.roll(d,1,axis=xaxis+1)) / dy
@@ -288,10 +299,11 @@ def d_by_dz_field_on_v(field, z, zn, xaxis=0, grid = 'p' ) :
         xaxis=0: Specify axis corresponding to x
         grid = 'p': destination grid
     
-    Outputs:
+    Returns:
         field on required grid
-    @author: paclk
+    @author: Peter Clark
     """
+
     print("d_by_dz_field_on_v ",grid)
 #    print(zn)
     d = field[...]
@@ -323,10 +335,11 @@ def d_by_dx_field_on_p(field, dx, z, zn, xaxis=0, grid = 'p' ) :
         xaxis=0: Specify axis corresponding to x
         grid = 'p': destination grid
     
-    Outputs:
+    Returns:
         field on required grid
-    @author: paclk
+    @author: Peter Clark
     """
+
     print("d_by_dx_field_on_p ",grid)
     d = field[...]
     newfield = (np.roll(d,-1,axis=xaxis)- d ) / dx
@@ -352,10 +365,11 @@ def d_by_dy_field_on_p(field, dy, z, zn, xaxis=0, grid = 'p' ) :
         xaxis=0: Specify axis corresponding to x
         grid = 'p': destination grid
     
-    Outputs:
+    Returns:
         field on required grid
-    @author: paclk
+    @author: Peter Clark
     """
+
     print("d_by_dy_field_on_p ",grid)
     d = field[...]
     newfield = (np.roll(d,-1,axis=xaxis+1) - d) / dy
@@ -381,10 +395,11 @@ def d_by_dz_field_on_p(field, z, zn, xaxis=0, grid = 'p' ) :
         xaxis=0: Specify axis corresponding to x
         grid = 'p': destination grid
     
-    Outputs:
+    Returns:
         field on required grid
-    @author: paclk
+    @author: Peter Clark
     """
+
     print("d_by_dz_field_on_p ",grid)
     d = field[...]
     new = (d[..., 1:] - d[...,:-1])/ (zn[1:] - zn[:-1])
@@ -413,10 +428,11 @@ def d_by_dx_field_on_w(field, dx, z, zn, xaxis=0, grid = 'p' ) :
         xaxis=0: Specify axis corresponding to x
         grid = 'p': destination grid
     
-    Outputs:
+    Returns:
         field on required grid
-    @author: paclk
+    @author: Peter Clark
     """
+
     print("d_by_dx_field_on_w ",grid)
     d = field[...]
     newfield = (np.roll(d,-1,axis=xaxis)- d ) / dx
@@ -443,10 +459,11 @@ def d_by_dy_field_on_w(field, dy, z, zn, xaxis=0, grid = 'p' ) :
         xaxis=0: Specify axis corresponding to x
         grid = 'p': destination grid
     
-    Outputs:
+    Returns:
         field on required grid
-    @author: paclk
+    @author: Peter Clark
     """
+
     print("d_by_dy_field_on_w ",grid)
     d = field[...]
     newfield = (np.roll(d,-1,axis=xaxis+1) - d) / dy
@@ -473,10 +490,11 @@ def d_by_dz_field_on_w(field, z, zn, xaxis=0, grid = 'p' ) :
         xaxis=0: Specify axis corresponding to x
         grid = 'p': destination grid
     
-    Outputs:
+    Returns:
         field on required grid
-    @author: paclk
+    @author: Peter Clark
     """
+
     print("d_by_dz_field_on_w ",grid)
 #    print(z)
     d = field[...]
@@ -502,10 +520,11 @@ def padleft(f, zt, axis=0) :
         zt: 1D zcoordinates
         axis=0: Specify axis to extend
     
-    Outputs:
+    Returns:
         extended field, extended coord
-    @author: paclk
+    @author: Peter Clark
     """
+
     s = list(np.shape(f))
     s[axis] += 1
 #    print(zt)
@@ -526,10 +545,11 @@ def padright(f, zt, axis=0) :
         zt: 1D zcoordinates
         axis=0: Specify axis to extend
     
-    Outputs:
+    Returns:
         extended field, extended coord
-    @author: paclk
+    @author: Peter Clark
     """
+
     s = list(np.shape(f))
     s[axis] += 1
 #    print(zt)

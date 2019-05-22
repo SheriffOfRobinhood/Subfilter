@@ -302,7 +302,8 @@ def setup_derived_data_file(source_file, destdir, fname, twod_filter, \
     exists = os.path.isfile(destdir+derived_dataset_name)
     if exists and not override :
         derived_dataset = Dataset(destdir+derived_dataset_name, "r")
-    else :     
+    else :  
+        exists = False
         derived_dataset = Dataset(destdir+derived_dataset_name, "w")
         
         derived_dataset.twod_filter_id = twod_filter.id
