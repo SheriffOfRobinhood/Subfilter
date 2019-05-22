@@ -334,10 +334,11 @@ def main():
     dataset = Dataset(dir+file, 'r') # Dataset is the class behavior to open the file
                                  # and create an instance of the ncCDF4 class
     ref_dataset = Dataset(dir+ref_file, 'r')
-    ilev = 6
+    ilev = 15
     iy = 40 
     
     opgrid = 'w'
+    fname = 'test_plot'
 #
 # Just looking at anyhb at present
     
@@ -368,20 +369,22 @@ def main():
         
         print(twod_filter)
         
-        derived_dataset_name, derived_data = sf.setup_derived_data_file(\
-                                            dir+file, dir, twod_filter)
+        derived_dataset_name, derived_data, exists = sf.setup_derived_data_file(\
+                                            dir+file, dir, fname, twod_filter,\
+                                            override=True)
         print(derived_data.variables)
+        exists = False
+        if exists :
+            print('Derived data file exists' )
+        else :
 
-        field_list =sf.filter_variable_list(dataset, ref_dataset, \
-                                            derived_data, twod_filter, \
-                                            var_list=None, grid = opgrid)    
-#        quad_field_list=list([])
-        quad_field_list =sf.filter_variable_pair_list(dataset, ref_dataset, \
-                                            derived_data, twod_filter, 
-                                            var_list=None, grid = opgrid)        
-        times = derived_data['time_series_50_100.0']
-        print(times)
-        print(times[:])
+            field_list =sf.filter_variable_list(dataset, ref_dataset, \
+                                                derived_data, twod_filter, \
+                                                var_list=None, grid = opgrid)    
+    #        quad_field_list=list([])
+            quad_field_list =sf.filter_variable_pair_list(dataset, ref_dataset, \
+                                                derived_data, twod_filter, 
+                                                var_list=None, grid = opgrid)        
         
         
 #        print(np.shape(z))
@@ -390,18 +393,21 @@ def main():
 #        print(zn)
 #        t = sf.deformation(dataset, dx, dy, z, zn, xaxis=1, grid='w')
         
-        d_r, d_s = sf.filtered_deformation(dataset, derived_data, twod_filter,\
-                         dx, dy, z, zn, xaxis=1, grid='w')
-        
-        for i in range(3) :
-            for j in range(3) :
-                print(d_r[i][j],d_s[i][j])
-        
-        Sn_ij_r, mod_Sn_r = sf.shear(d_r)
-        Sn_ij_s, mod_Sn_s = sf.shear(d_s)
-        S_ij_r, mod_S_r = sf.shear(d_r, no_trace = False)
-        S_ij_s, mod_S_s = sf.shear(d_s, no_trace = False)
-        print(S_ij_r.keys())
+            d_r, d_s = sf.filtered_deformation(dataset, derived_data, twod_filter,\
+                             dx, dy, z, zn, xaxis=1, grid='w')
+            
+            times = derived_data['time_series_50_100.0']
+            print(times)
+            print(times[:])
+            for i in range(3) :
+                for j in range(3) :
+                    print(d_r[i][j],d_s[i][j])
+            
+            Sn_ij_r, mod_Sn_r = sf.shear(d_r)
+            Sn_ij_s, mod_Sn_s = sf.shear(d_s)
+            S_ij_r, mod_S_r = sf.shear(d_r, no_trace = False)
+            S_ij_s, mod_S_s = sf.shear(d_s, no_trace = False)
+            print(S_ij_r.keys())
 #        input("Press enter")
         
         z = derived_data["z"]
