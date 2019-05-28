@@ -1,3 +1,9 @@
+"""
+
+  filters.py
+
+"""
+
 import numpy as np
 from sys import float_info
 

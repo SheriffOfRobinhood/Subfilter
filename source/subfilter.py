@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 """
+
+  subfilter.py
+    - Defines many useful routines.
+
 Created on Tue Oct 23 11:07:05 2018
 
 @author: Peter Clark

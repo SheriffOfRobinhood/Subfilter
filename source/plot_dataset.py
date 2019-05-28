@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 """
+
+  plot_dataset.py
+
 Created on Tue Oct 23 09:52:58 2018
 
 @author: Peter Clark
@@ -32,6 +35,8 @@ def print_ncattr(nc_fid,key):
         print "\t\tWARNING: %s does not contain variable attributes" % key
 
 def ncattrprint(nc_fid) :
+    # Attribute information
+    nc_attrs = nc_fid.ncattrs()
     print "NetCDF Global Attributes:"
     for nc_attr in nc_attrs:
         print '\t%s:' % nc_attr, repr(nc_fid.getncattr(nc_attr))
@@ -95,22 +100,29 @@ def ncdump(nc_fid, verb=True):
 
 #dir = 'C:/Users/paclk/OneDrive - University of Reading/python/SG/'
 #file = 'diagnostics_ts_14400.0.nc'
-dir = 'C:/Users/paclk/OneDrive - University of Reading/python/subfilter/test_data/BOMEX/'
+#dir = 'C:/Users/paclk/OneDrive - University of Reading/python/subfilter/test_data/BOMEX/'
 #file = 'diagnostics_ts_18000.0.nc'
-file = 'diagnostics_ts_18000.0_filter_00.nc'
+#file = 'diagnostics_ts_18000.0_filter_00.nc'
+
+dir = '/gws/nopw/j04/paracon_rdg/users/toddj/MONC_RCE_1.5/MONC_RCE_1.5_m1600_g0084/diagnostic_files/'
+file = 'diagnostics_ts_4784400.0.nc'
 
 dataset = Dataset(dir+file, 'r') # Dataset is the class behavior to open the file
                                  # and create an instance of the ncCDF4 class
+
 nc_attrs, nc_dims, nc_vars = ncdump(dataset,verb=True)
 
 #ncdimprint(dataset)
 #ncvarprint(dataset)
 
-w = dataset.variables['w_r']
+#w = dataset.variables['w_r']
+w = dataset.variables['w']
+
 w_tvar = w.dimensions[0]
 w_time = dataset.variables[w_tvar]
 print w.shape
-#print w_time.dtype
+print w_tvar
+print w_time.dtype
 
 #iz = 20
 #for i in range(0,w.shape[0]):
@@ -124,4 +136,6 @@ print w.shape
 
 #for variable in dataset.variables :
 #    print(variable, variable.dimension())
-    
+    #vars(variable)
+ #   print variable
+#    print dataset.variables[variable].dimensions

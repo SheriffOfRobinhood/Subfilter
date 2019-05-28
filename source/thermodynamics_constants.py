@@ -3,7 +3,7 @@ from numpy import pi
 MONC = True
 
 if MONC : g       =           9.81
-ELSE :    g       =           9.80665
+else :    g       =           9.80665
 grav = g
 sigma             =       5.67000e-08
 k_boltzmann       =       1.38100e-23
