@@ -2,7 +2,9 @@
 """
 
   subfilter.py
-    - Defines many useful routines.
+    - This is the "subfilter module"
+    - Defines many useful routines for the subfilter calculations.
+    - examples of their use are present in subfilter_file.py
 
 Created on Tue Oct 23 11:07:05 2018
 
@@ -281,7 +283,7 @@ def nc_dimcopy(source_dataset, derived_dataset, dimname) :
     dv[:] = last_dim(v[:])
     return dv
     
-def setup_derived_data_file(source_file, destdir, fname, twod_filter, \
+def setup_derived_data_file(source_file, destdir, twod_filter, \
                             override=False) :
     """
     Create NetCDF dataset for derived data in destdir.
@@ -301,8 +303,7 @@ def setup_derived_data_file(source_file, destdir, fname, twod_filter, \
     """    
     derived_dataset_name = os.path.basename(source_file) 
     derived_dataset_name = ('.').join(derived_dataset_name.split('.')[:-1])
-    derived_dataset_name = derived_dataset_name + "_" + fname + "_" + \
-        twod_filter.id + ".nc"
+    derived_dataset_name = derived_dataset_name + "_" + twod_filter.id + ".nc"
     exists = os.path.isfile(destdir+derived_dataset_name)
     if exists and not override :
         derived_dataset = Dataset(destdir+derived_dataset_name, "r")
@@ -348,7 +349,9 @@ def get_data(source_dataset, ref_dataset, var_name) :
     @author: Peter Clark
 	   
     """
-
+#   Mapping of data locations on grid via logical triplet:
+#   logical[u-point,v-point,w-point]
+#          [False,  False,  False  ] --> (p,th,q)-point
     var_properties = {"u":[True,False,False],\
                       "v":[False,True,False],\
                       "w":[False,False,True],\

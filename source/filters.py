@@ -2,6 +2,8 @@
 
   filters.py
 
+    - This module contains the code to generate a selection of 2-dimensional filters. 
+
 """
 
 import numpy as np
