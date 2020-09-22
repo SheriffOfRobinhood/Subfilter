@@ -455,7 +455,7 @@ def main():
 
 
     #trjh
-    sigma_list = [0.800]
+    #sigma_list = [0.800]
 
 
 
