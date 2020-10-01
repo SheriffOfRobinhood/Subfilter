@@ -20,7 +20,8 @@ test_level = 0
 
 
 def filter_variable_list(source_dataset, ref_dataset, derived_dataset,
-                         options, twod_filter, var_list=None, grid='p') :
+                         filtered_dataset, options, twod_filter,
+                         var_list=None, grid='p') :
     """
     Create filtered versions of input variables on required grid,
     stored in derived_dataset.
@@ -30,6 +31,7 @@ def filter_variable_list(source_dataset, ref_dataset, derived_dataset,
         ref_dataset     : NetCDF dataset for input containing reference
                           profiles
         derived_dataset : NetCDF dataset for derived data
+        filtered_dataset: NetCDF dataset for derived data
         options         : General options e.g. FFT method used.
         twod_filter     : 2D filter
         var_list=None   : List of variable names.
@@ -47,17 +49,26 @@ def filter_variable_list(source_dataset, ref_dataset, derived_dataset,
         var_list = get_default_variable_list()
         print("Default list:\n",var_list)
     for v in var_list:
-        vard, vdims, varp  = get_data_on_grid(source_dataset, ref_dataset, v,
+
+        v, vard, vdims, varp  = get_data_on_grid(source_dataset, ref_dataset,
+                                              derived_dataset, v, options,
                                               grid)
-        ncvar_r, ncvar_s = filter_field(vard, v, vdims, derived_dataset,
-                                        options, twod_filter, grid=grid,
-                                        three_d=True, sync=False)
+
+        if v+"_r" not in filtered_dataset.variables \
+            or v+"_s" not in filtered_dataset.variables:
+
+            ncvar_r, ncvar_s = filter_field(vard, v, vdims,
+                                            filtered_dataset,
+                                            options, twod_filter,
+                                            grid=grid, three_d=True,
+                                            sync=False)
 
     derived_dataset.sync()
+    filtered_dataset.sync()
     return var_list
 
-def filter_variable_pair_list(source_dataset, ref_dataset,
-                              derived_dataset, options, twod_filter,
+def filter_variable_pair_list(source_dataset, ref_dataset, derived_dataset,
+                              filtered_dataset, options, twod_filter,
                               var_list=None, grid='p') :
     """
     Create filtered versions of pairs input variables on A grid, stored in derived_dataset.
@@ -65,6 +76,7 @@ def filter_variable_pair_list(source_dataset, ref_dataset,
     Args:
         source_dataset  : NetCDF dataset for input
         derived_dataset : NetCDF dataset for derived data
+        filtered_dataset: NetCDF dataset for derived data
         options         : General options e.g. FFT method used.
         twod_filter     : 2D filter
         var_list=None   : List of variable names.
@@ -88,21 +100,26 @@ def filter_variable_pair_list(source_dataset, ref_dataset,
 #        var = source_dataset[v[0]]
 #        vdims = var.dimensions
         svar, vdims = quadratic_subfilter(source_dataset, ref_dataset,
-                                  derived_dataset, options,
+                                  derived_dataset, filtered_dataset, options,
                                   twod_filter, v[0], v[1], grid=grid)
 
-        svar_name = "{}_{}_on{}".format(v[0],v[1],grid)
+        svar_name = "{}_{}_on_{}".format(v[0],v[1],grid)
 
-        if twod_filter.attributes['filter_type'] == 'domain' :
-            ncsvar = derived_dataset.createVariable(svar_name,"f8",
-                                     (vdims[0],zvar,))
-        else :
-            ncsvar = derived_dataset.createVariable(svar_name,"f8",
-                                     (vdims[0],vdims[1],vdims[2],zvar,))
-        ncsvar[...] = svar
-        print(ncsvar)
+        if svar_name not in filtered_dataset.variables:
+
+            if twod_filter.attributes['filter_type'] == 'domain' :
+                ncsvar = filtered_dataset.createVariable(svar_name,"f8",
+                                         (vdims[0],zvar,))
+            else :
+                ncsvar = filtered_dataset.createVariable(svar_name,"f8",
+                                         (vdims[0],vdims[1],vdims[2],zvar,))
+
+
+            ncsvar[...] = svar
+            print(ncsvar)
 
     derived_dataset.sync()
+    filtered_dataset.sync()
     return var_list
 
 
@@ -122,10 +139,11 @@ def get_default_variable_list() :
     if test_level == 1:
 # For testing
         var_list = [
+            "u",
             "w",
             "th_L",
             ]
-    if test_level == 2:
+    elif test_level == 2:
 # For testing
         var_list = ["u","w","th", "th_v", "th_L", "q_total"]
         var_list = [
@@ -272,10 +290,11 @@ def filtered_field_calc(field, options, twod_filter, three_d=True ):
     of the filter in twod_filter for subsequent re-use.
 
     Args:
-        field : 2D field
+        field : ND numpy array
         options         : General options e.g. FFT method used.
         twod_filter: 2D filter
-        three_d=True : if input has 3 dimensions, interpret as a single time. False: if input has 3 dimensions, interpret first as time.
+        three_d=True : if input has 3 dimensions, interpret as a single time.
+                False: if input has 3 dimensions, interpret first as time.
 
     Returns:
         [field_r, field_s]
@@ -400,45 +419,36 @@ def nc_dimcopy(source_dataset, derived_dataset, dimname) :
     dv[:] = last_dim(v[:])
     return dv
 
-def setup_derived_data_file(source_file, destdir, ref_file, fname,
-                            options, twod_filter, override=False) :
+
+def setup_data_file(source_file, ref_file, derived_dataset_name,
+                    override=False) :
     """
     Create NetCDF dataset for derived data in destdir.
 
     File name is original file name concatenated with twod_filter.id.
 
     Args:
-        source_file     : NetCDF file name.
-        destdir         : Directory for derived data.
-        options         : General options e.g. FFT method used.
-        twod_filter     : Filter
-        options         : General options e.g. FFT method used.
+        source_file     : Input NetCDF file name.
+        derived_dataset_name : Created NetCDF file name.
         override=False  : if True force creation of file
 
     Returns:
-        derived_dataset_name, derived_dataset
+        derived_dataset
+        exists
 
     @author: Peter Clark
     """
-    derived_dataset_name = os.path.basename(source_file)
-    derived_dataset_name = ('.').join(derived_dataset_name.split('.')[:-1])
-    derived_dataset_name = derived_dataset_name + "_" + fname + "_" + \
-        twod_filter.id + ".nc"
-    exists = os.path.isfile(destdir+derived_dataset_name)
+    exists = os.path.isfile(derived_dataset_name)
     if exists and not override :
-        derived_dataset = Dataset(destdir+derived_dataset_name, "r")
+        derived_dataset = Dataset(derived_dataset_name, "a")
     else :
         exists = False
-        derived_dataset = Dataset(destdir+derived_dataset_name, "w")
-
-        derived_dataset.twod_filter_id = twod_filter.id
-        derived_dataset.setncatts(twod_filter.attributes)
-        derived_dataset.setncatts(options)
+        derived_dataset = Dataset(derived_dataset_name, "w", clobber=True)
 
         source_dataset = Dataset(source_file,"r")
         ref_dataset=Dataset(ref_file)
         w = source_dataset["w"]
-        print(w.dimensions)
+    #    print(w.dimensions)
     #    u = source_dataset["u"]
 
         tvar = w.dimensions[0]
@@ -455,8 +465,70 @@ def setup_derived_data_file(source_file, destdir, ref_file, fname,
 
         derived_dataset.sync()
         source_dataset.close()
+        ref_dataset.close()
+
+    return derived_dataset, exists
+
+def setup_derived_data_file(source_file, destdir, ref_file, fname,
+                            options, override=False) :
+    """
+    Create NetCDF dataset for derived data in destdir.
+
+    File name is original file name concatenated with twod_filter.id.
+
+    Args:
+        source_file     : NetCDF file name.
+        destdir         : Directory for derived data.
+        override=False  : if True force creation of file
+
+    Returns:
+        derived_dataset_name, derived_dataset
+
+    @author: Peter Clark
+    """
+    derived_dataset_name = os.path.basename(source_file)
+    derived_dataset_name = ('.').join(derived_dataset_name.split('.')[:-1])
+    derived_dataset_name = derived_dataset_name + "_" + fname + ".nc"
+
+    derived_dataset, exists = setup_data_file(source_file, ref_file,
+                    destdir+derived_dataset_name, override=override)
 
     return derived_dataset_name, derived_dataset, exists
+
+def setup_filtered_data_file(source_file, destdir, ref_file, fname,
+                            options, twod_filter, override=False) :
+    """
+    Create NetCDF dataset for filtered data in destdir.
+
+    File name is original file name concatenated with twod_filter.id.
+
+    Args:
+        source_file     : NetCDF file name.
+        destdir         : Directory for derived data.
+        options         : General options e.g. FFT method used.
+        twod_filter     : Filter
+        options         : General options e.g. FFT method used.
+        override=False  : if True force creation of file
+
+    Returns:
+        filtered_dataset_name, filtered_dataset
+
+    @author: Peter Clark
+    """
+    filtered_dataset_name = os.path.basename(source_file)
+    filtered_dataset_name = ('.').join(filtered_dataset_name.split('.')[:-1])
+    filtered_dataset_name = filtered_dataset_name + "_" + fname + "_" + \
+        twod_filter.id + ".nc"
+    filtered_dataset, exists = setup_data_file(source_file, ref_file,
+                    destdir+filtered_dataset_name, override=override)
+
+    filtered_dataset.twod_filter_id = twod_filter.id
+    filtered_dataset.setncatts(twod_filter.attributes)
+    filtered_dataset.setncatts(options)
+
+    filtered_dataset.sync()
+
+    return filtered_dataset_name, filtered_dataset, exists
 
 def get_data(source_dataset, ref_dataset, var_name) :
     """
@@ -494,7 +566,7 @@ def get_data(source_dataset, ref_dataset, var_name) :
             for it in range(np.shape(vard[...])[0]) :
                 vard[it,...] += thref[it,...]
     except :
-        print("Data not in dataset")
+        print("Data {} not in dataset".format(var_name))
         if var_name == 'th_L' :
 #            rhoref = ref_dataset.variables['rhon'][-1,...]
             theta, vardim, varp = get_data(source_dataset, ref_dataset, 'th')
@@ -532,25 +604,10 @@ def get_data(source_dataset, ref_dataset, var_name) :
 
     return vard, vardim, varp
 
-def get_data_on_grid(source_dataset, ref_dataset, var_name, grid='p') :
-    """
-    Read in 3D data from NetCDF file and, where necessary, interpolate to p grid.
+def get_and_transform(source_dataset, ref_dataset, var_name, grid='p'):
 
-    Assumes first dimension is time.
-
-    Args:
-        source_dataset  : NetCDF dataset
-        ref_dataset     : NetCDF dataset containing reference profiles.
-        var_name        : Name of variable
-		rrid='p'        : Destination grid. 'u', 'v', 'w' or 'p'.
-
-    Returns:
-        variable_dimensions, variable_grid_properties.
-
-    @author: Peter Clark
-    """
     var, vdim, vp = get_data(source_dataset, ref_dataset, var_name)
-    print(np.shape(var), vdim, vp)
+    #    print(np.shape(var), vdim, vp)
     if grid=='p' :
         if vp[0] :
             print("Mapping {} from u grid to p grid.".format(var_name))
@@ -607,8 +664,80 @@ def get_data_on_grid(source_dataset, ref_dataset, var_name, grid='p') :
             var = field_on_p_to_w(var,  z, zn)
     else:
         print("Illegal grid ",grid)
+
+    return var, vdim, vp
+
+def get_data_on_grid(source_dataset, ref_dataset, derived_dataset, var_name,
+                     options, grid='p') :
+    """
+    Read in 3D data from NetCDF file and, where necessary, interpolate to p grid.
+
+    Assumes first dimension is time.
+
+    Args:
+        source_dataset  : NetCDF dataset
+        ref_dataset     : NetCDF dataset containing reference profiles.
+        derived_dataset : NetCDF dataset for derived data
+        var_name        : Name of variable
+        options         : General options e.g. FFT method used.
+		grid='p'        : Destination grid. 'u', 'v', 'w' or 'p'.
+
+    Returns:
+        variable_dimensions, variable_grid_properties.
+
+    @author: Peter Clark
+    """
+    grid_properties = {"u":[True,False,False],
+                       "v":[False,True,False],
+                       "w":[False,False,True],
+                       "p":[False,False,False],
+                      }
+
+    ongrid = '_on_'+grid
+    vp = grid_properties[grid]
+
+    var = None
+    # Logic here:
+    # If var_name already qualified with '_on_x', where x is a grid
+    # then if x matches required output grid, see in derived_dataset
+    # already, and use if it is.
+    # otherwise strip '_on_x' and go back to source data as per default.
+
+    # First, find op_name
+    # Default
+    op_var_name = var_name + ongrid
+
+    if len(var_name) > 5:
+        if var_name[-5:] == ongrid:
+            op_var_name = var_name
+        elif var_name[-5:-1] == '_on_':
+            var_name = var_name[:-5]
+            op_var_name = var_name[:-5] + ongrid
+
+    if options['save_all'].lower() == 'yes':
+        if op_var_name in derived_dataset.variables:
+            var = derived_dataset[op_var_name]
+            print('Retrieved {} from derived dataset.'.format(op_var_name))
+            vdims = var.dimensions
+
+    if var is None:
+        var, vdims, vp = get_and_transform(source_dataset, ref_dataset,
+                                          var_name, grid=grid)
+
+        if options['save_all'].lower() == 'yes':
+
+            if grid=='w' : zvar = "z"
+            else : zvar = "zn"
+
+            ncvar = derived_dataset.createVariable(op_var_name,"f8",
+                                     (vdims[0],vdims[1],vdims[2],zvar,))
+
+            ncvar[...] = var[...]
+            print("Saved {} to derived data file.".format(op_var_name))
+            print(ncvar)
+
     vard = var[...]
-    return vard, vdim, vp
+    return op_var_name, vard, vdims, vp
 
 def deformation(source_dataset, dx, dy, z, zn, xaxis=0, grid='w') :
     """
@@ -652,13 +781,13 @@ def deformation(source_dataset, dx, dy, z, zn, xaxis=0, grid='w') :
     t = [u_i, v_i, w_i]
     return t
 
-def filter_field(vard, vname, vdims, derived_dataset, options, twod_filter,
+def filter_field(vard, vname, vdims, filtered_dataset, options, twod_filter,
                  grid='p', three_d=True, sync=False) :
     """
-    Create filtered versions of input variable on required grid, stored in derived_dataset.
+    Create filtered versions of input variable on required grid, stored in filtered_dataset.
 
     Args:
-        derived_dataset : NetCDF dataset for derived data.
+        filtered_dataset : NetCDF dataset for derived data.
         options         : General options e.g. FFT method used.
         twod_filter     : 2D filter.
         vard            : data array.
@@ -669,7 +798,7 @@ def filter_field(vard, vname, vdims, derived_dataset, options, twod_filter,
 
     Returns:
         ncvar_r, ncvar_s: Resolved and subfilter fields as netcf variables in
-                          derived_dataset.
+                          filtered_dataset.
 
     @author: Peter Clark
 
@@ -677,28 +806,37 @@ def filter_field(vard, vname, vdims, derived_dataset, options, twod_filter,
     if grid=='w' : zvar = "z"
     else : zvar = "zn"
     print(vname)
+
     var_r, var_s = filtered_field_calc(vard, options, twod_filter,
                                        three_d=True )
 
-    if twod_filter.attributes['filter_type'] == 'domain' :
-        ncvar_r = derived_dataset.createVariable(vname+"_r"+"_on"+grid,"f8",
-                                 (vdims[0],zvar,))
-    else :
-        ncvar_r = derived_dataset.createVariable(vname+"_r"+"_on"+grid,"f8",
-                                 (vdims[0],vdims[1],vdims[2],zvar,))
+    if vname+"_r" in filtered_dataset.variables:
+        ncvar_r = filtered_dataset[vname+"_r"]
+    else:
+        if twod_filter.attributes['filter_type'] == 'domain' :
+            ncvar_r = filtered_dataset.createVariable(vname+"_r","f8",
+                                     (vdims[0],zvar,))
+        else :
+            ncvar_r = filtered_dataset.createVariable(vname+"_r","f8",
+                                     (vdims[0],vdims[1],vdims[2],zvar,))
 
-    ncvar_r[...] = var_r
+        ncvar_r[...] = var_r
     print(ncvar_r)
-    ncvar_s = derived_dataset.createVariable(vname+"_s"+"_on"+grid,"f8",
-                                 (vdims[0],vdims[1],vdims[2],zvar,))
-    ncvar_s[...] = var_s
+
+    if vname+"_s" in filtered_dataset.variables:
+        ncvar_s = filtered_dataset[vname+"_s"]
+    else:
+        ncvar_s = filtered_dataset.createVariable(vname+"_s","f8",
+                                     (vdims[0],vdims[1],vdims[2],zvar,))
+        ncvar_s[...] = var_s
     print(ncvar_s)
 
-    if sync : derived_dataset.sync()
+    if sync : filtered_dataset.sync()
 
     return ncvar_r, ncvar_s
 
-def filtered_deformation(source_dataset, derived_dataset, options, twod_filter,
+def filtered_deformation(source_dataset, derived_dataset, filtered_dataset,
+                         options, twod_filter,
                          dx, dy, z, zn, xaxis=0, grid='p') :
     """
     Create filtered versions of deformation field.
@@ -706,12 +844,13 @@ def filtered_deformation(source_dataset, derived_dataset, options, twod_filter,
     Args:
         source_dataset  : NetCDF input dataset
         derived_dataset : NetCDF dataset for derived data.
+        filtered_dataset: NetCDF dataset for derived data
         options         : General options e.g. FFT method used.
         twod_filter     : 2D filter.
         grid='p'        : Grid - 'u','v','w' or 'p'
 
     Returns:
-        ncvar_r, ncvar_s: Resolved and subfilter fields as netcf variables in derived_dataset.
+        ncvar_r, ncvar_s: Resolved and subfilter fields as netcf variables in filtered_dataset.
 
     @author: Peter Clark
 
@@ -730,15 +869,15 @@ def filtered_deformation(source_dataset, derived_dataset, options, twod_filter,
         d_j_r = list()
         d_j_s = list()
         for j in range(3) :
-            vn = "{}_{:1d}_{:1d}".format(vname,i,j)
-            def_r, def_s = filter_field(d[i][j], vn, vdims, derived_dataset,
+            vn = f"{vname}_{i:1d}_{j:1d}"
+            def_r, def_s = filter_field(d[i][j], vn, vdims, filtered_dataset,
                                 options, twod_filter, grid='p',
                                 three_d=True, sync=False)
             d_j_r.append(def_r)
             d_j_s.append(def_s)
         d_ij_r.append(d_j_r)
         d_ij_s.append(d_j_s)
-    derived_dataset.sync()
+    filtered_dataset.sync()
 
     return d_ij_r, d_ij_s
 
@@ -758,7 +897,7 @@ def shear(d, no_trace=True) :
                 mod_S += 0.5 * S_ij * S_ij
             else :
                 mod_S +=  S_ij * S_ij
-            S["{:1d}_{:1d}".format(i,j)] = (S_ij)
+            S[f"{i:1d}_{j:1d}"] = (S_ij)
     return S, mod_S
 
 def vorticity(d) :
@@ -770,8 +909,8 @@ def vorticity(d) :
 
     return V
 
-def quadratic_subfilter(source_dataset,  ref_dataset,
-                        derived_dataset, options, twod_filter,
+def quadratic_subfilter(source_dataset,  ref_dataset, derived_dataset,
+                        filtered_dataset, options, twod_filter,
                         v1_name, v2_name, grid='p') :
     """
     Create filtered versions of pair of input variables on required grid, stored in derived_dataset.
@@ -779,6 +918,7 @@ def quadratic_subfilter(source_dataset,  ref_dataset,
     Args:
         source_dataset  : NetCDF dataset for input
         derived_dataset : NetCDF dataset for derived data
+        filtered_dataset: NetCDF dataset for derived data
         options         : General options e.g. FFT method used.
         twod_filter     : 2D filter
         v1_name, v2_name: Variable names.
@@ -791,20 +931,23 @@ def quadratic_subfilter(source_dataset,  ref_dataset,
     @author: Peter Clark
 
     """
-    vard1, vd1, vp1 = get_data_on_grid(source_dataset,  ref_dataset,
-                                       v1_name, grid=grid)
-    print("Reading ", v1_name+"_r"+"_on"+grid)
-    var1_r = derived_dataset[v1_name+"_r"+"_on"+grid]
+
+    v1_name, vard1, vd1, vp1 = get_data_on_grid(source_dataset,  ref_dataset,
+                                       derived_dataset, v1_name, options,
+                                       grid=grid)
+    print("Reading ", v1_name+"_r")
+    var1_r = filtered_dataset[v1_name+"_r"]
 
     vdims = var1_r.dimensions
 
-    print(np.shape(var1_r))
+#    print(np.shape(var1_r))
 
-    vard2, vd2, vp2 = get_data_on_grid(source_dataset,  ref_dataset,
-                                       v2_name, grid=grid)
-    print("Reading ", v2_name+"_r"+"_on"+grid)
-    var2_r = derived_dataset[v2_name+"_r"+"_on"+grid]
-    print(np.shape(var2_r))
+    v2_name, vard2, vd2, vp2 = get_data_on_grid(source_dataset,  ref_dataset,
+                                       derived_dataset, v2_name, options,
+                                       grid=grid)
+    print("Reading ", v2_name+"_r")
+    var2_r = filtered_dataset[v2_name+"_r"]
+#    print(np.shape(var2_r))
 
     var1var2 = vard1 * vard2
     var1var2_r, var1var2_s = filtered_field_calc(var1var2, options,
