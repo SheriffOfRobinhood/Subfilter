@@ -49,6 +49,7 @@ class filter_2d :
                 data = self.filter_2d_error(filter_name, 'width')
             else:
                 data = running_mean_filter_2d(width)
+                width = np.shape(data)[0]
         elif (filter_name == 'wave_cutoff'):
             if (wavenumber == -1):
                 data = self.filter_2d_error(filter_name, 'wavenumber')
@@ -118,7 +119,9 @@ def running_mean_filter_2d(width):
       ndarray: 2D array of size width*width. Every element equals 1.0/(width**2)
     '''
     width = int(width)
-    return (np.ones(width**2)/width**2).reshape(width, width)
+    result = np.ones((width,width))/(width*width)
+    result = np.pad(result,(1,1))
+    return result
 
 
 def running_mean_filter(width):
@@ -132,7 +135,9 @@ def running_mean_filter(width):
       ndarray: 1D array of size width. Every element equals 1.0/(width)
     '''
     width = int(width)
-    return np.ones(width)/width
+    result = np.ones(width)/width
+    result = np.pad(result,1)
+    return result
 
 
 def wave_cutoff_filter(wavenumber, delta_x=1000.0, width=-1, cutoff=0.0001,

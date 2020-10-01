@@ -23,9 +23,9 @@ sigma_list = [2000.0, 1000.0, 500.0, 200.0, 100.0]
 #sigma_list = [2000.0]
 dx = 100.0
 
-filter_name = 'gaussian'
+#filter_name = 'gaussian'
 #filter_name = 'wave_cutoff'
-#filter_name = 'running_mean'
+filter_name = 'running_mean'
 filter_list = list([])
 
 N = 128
@@ -53,14 +53,17 @@ cxy /= 1000
 
 for i,sigma in enumerate(sigma_list):
     filter_id = 'filter_{:02d}'.format(i)
-    width = min(N, int(np.ceil( sigma/dx *4)*2+1))
+    if filter_name == 'running_mean':
+        width = min(N-2,int(np.round( sigma/dx * np.pi *2.0/3.0)+1))
+    else:
+        width = min(N, int(np.ceil( sigma/dx *4)*2+1))
  #   width = -1
     twod_filter = filt.filter_2d(filter_id,
-                                 filter_name, wavenumber=2*np.pi/sigma,
+                                 filter_name, wavenumber=np.pi/(2*sigma),
                                  sigma=sigma, width=width,
                                  delta_x=dx, use_ave=False)
     twod_filter_ave = filt.filter_2d(filter_id,
-                                 filter_name, wavenumber=2*np.pi/sigma,
+                                 filter_name, wavenumber=np.pi/(2*sigma),
                                  sigma=sigma, width=width,
                                  delta_x=dx, use_ave=True)
 

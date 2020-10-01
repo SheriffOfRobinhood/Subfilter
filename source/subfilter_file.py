@@ -19,6 +19,7 @@ options = {
 #        'FFT_type': 'FFTconvolve',
 #        'FFT_type': 'FFT',
         'FFT_type': 'RFFT',
+        'save_all': 'Yes',
           }
 
 
@@ -42,15 +43,15 @@ plot_type = '.png'
 data_dir = '' # Directory containing data
 figshow = True
 
-def plot_field(var_name, derived_data, twod_filter, ilev, iy, grid='p'):
+def plot_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
 
-    var_r = derived_data[var_name+"_r_on"+grid]
-    var_s = derived_data[var_name+"_s_on"+grid]
+    var_r = filtered_data[f"{var_name}_on_{grid}_r"]
+    var_s = filtered_data[f"{var_name}_on_{grid}_s"]
 
 
     for it in range(var_r.shape[0]):
         if twod_filter.attributes['filter_type']=='domain' :
-            zcoord = sf.last_dim(derived_data[var_r.dimensions[1]])
+            zcoord = sf.last_dim(filtered_data[var_r.dimensions[1]])
             pltdat = (var_r[it,:])
 
             fig1, axa = plt.subplots(1,1,figsize=(5,5))
@@ -66,7 +67,7 @@ def plot_field(var_name, derived_data, twod_filter, ilev, iy, grid='p'):
                     twod_filter.id+'_%02d'%it+plot_type)
             plt.close()
         else :
-            zcoord = sf.last_dim(derived_data[var_r.dimensions[3]])
+            zcoord = sf.last_dim(filtered_data[var_r.dimensions[3]])
             meanfield= np.mean(var_r[it,...],axis=(0,1),keepdims=True)
             pltdat = (var_r[it,...]-meanfield)
 
@@ -133,22 +134,23 @@ def plot_field(var_name, derived_data, twod_filter, ilev, iy, grid='p'):
 
     return
 
-def plot_quad_field(var_name, derived_data, twod_filter, ilev, iy, grid='p'):
+def plot_quad_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
 
     v1 = var_name[0]
     v2 = var_name[1]
 
-    v1_r = derived_data[v1+"_r_on"+grid]
-    v2_r = derived_data[v2+"_r_on"+grid]
+    v1_r = filtered_data[f"{v1}_on_{grid}_r"]
+    v2_r = filtered_data[f"{v2}_on_{grid}_r"]
 
     print(v1,v2)
-    s_v1v2 = derived_data["{}_{}_on{}".format(v1,v2,grid)]
+    s_v1v2 = filtered_data[f"{v1}_{v2}_on_{grid}"]
+    print(s_v1v2)
 
     for it in range(s_v1v2.shape[0]):
 
         if twod_filter.attributes['filter_type']=='domain' :
             pltdat = (s_v1v2[it,:])
-            zcoord = sf.last_dim(derived_data[v1_r.dimensions[1]])
+            zcoord = sf.last_dim(filtered_data[v1_r.dimensions[1]])
 
             fig1, axa = plt.subplots(1,1,figsize=(5,5))
 
@@ -163,7 +165,7 @@ def plot_quad_field(var_name, derived_data, twod_filter, ilev, iy, grid='p'):
                     twod_filter.id+'_%02d'%it+plot_type)
             plt.close()
         else :
-            zcoord = sf.last_dim(derived_data[v1_r.dimensions[3]])
+            zcoord = sf.last_dim(filtered_data[v1_r.dimensions[3]])
             var_r = (v1_r[it,...] - np.mean(v1_r[it,...], axis=(0,1))) * \
                     (v2_r[it,...] - np.mean(v2_r[it,...], axis=(0,1)))
 
@@ -327,15 +329,14 @@ def main():
     Top level code, a bit of a mess.
     '''
 #   Non-global variables that are set once
-#    sigma_list = [0.2,0.25,0.3,0.4,0.8,1.0,1.5,2.0] # Sigma used in Gaussian filter function
-#    sigma_list = [2.0] # Sigma used in Gaussian#
-    sigma_list = [500.0, 200.0]
+    sigma_list = [500.0, 220.0]
     width = -1
     dx = 100.0
     dy = 100.0
     filter_name = 'gaussian'
 #    width = 20
 #    filter_name = 'running_mean'
+#    filter_name = 'wave_cutoff'
 
     dataset = Dataset(dir+file, 'r') # Dataset is the class behavior to open the file
                                  # and create an instance of the ncCDF4 class
@@ -345,17 +346,38 @@ def main():
 
     opgrid = 'w'
     fname = 'test_plot'
+
+    derived_dataset_name, derived_data, exists = \
+        sf.setup_derived_data_file( dir+file, odir, dir+ref_file, fname,
+                                   options, override=True)
+    print("Variables in derived dataset.")
+    print(derived_data.variables)
+
 #
 # Just looking at anyhb at present
 
     filter_list = list([])
 
     for i,sigma in enumerate(sigma_list):
-        filter_id = 'filter_{:02d}'.format(i)
-        twod_filter = filt.filter_2d(filter_id,\
-                                   filter_name, \
-                                   sigma=sigma, width=width, \
-                                   delta_x=dx)
+        if filter_name == 'gaussian':
+            filter_id = 'filter_{:02d}'.format(i)
+            twod_filter = filt.filter_2d(filter_id,
+                                       filter_name,
+                                       sigma=sigma, width=width,
+                                       delta_x=dx)
+        elif filter_name == 'wave_cutoff':
+            filter_id = 'filter_wc{:02d}'.format(i)
+            twod_filter = filt.filter_2d(filter_id,
+                                       filter_name, wavenumber=np.pi/(2*sigma),
+                                       width=width,
+                                       delta_x=dx)
+        elif filter_name == 'running_mean':
+            filter_id = 'filter_rm{:02d}'.format(i)
+            width = int(np.round( sigma/dx * np.pi * 2.0 / 3.0)+1)
+            twod_filter = filt.filter_2d(filter_id,
+                                       filter_name,
+                                       width=width,
+                                       delta_x=dx)
 
         print(twod_filter)
         filter_list.append(twod_filter)
@@ -375,8 +397,8 @@ def main():
 
         print(twod_filter)
 
-        derived_dataset_name, derived_data, exists = \
-            sf.setup_derived_data_file( dir+file, odir, dir+ref_file, fname,
+        filtered_dataset_name, filtered_data, exists = \
+            sf.setup_filtered_data_file( dir+file, odir, dir+ref_file, fname,
                                        options, twod_filter, override=True)
         print("Variables in derived dataset.")
         print(derived_data.variables)
@@ -386,17 +408,20 @@ def main():
         else :
 
             field_list =sf.filter_variable_list(dataset, ref_dataset,
-                                                derived_data, options,
+                                                derived_data, filtered_data,
+                                                options,
                                                 twod_filter, var_list=None,
                                                 grid = opgrid)
     #        quad_field_list=list([])
             quad_field_list =sf.filter_variable_pair_list(dataset, ref_dataset,
-                                                derived_data, options,
+                                                derived_data, filtered_data,
+                                                options,
                                                 twod_filter, var_list=None,
                                                 grid = opgrid)
 
 
-            d_r, d_s = sf.filtered_deformation(dataset, derived_data, options,
+            d_r, d_s = sf.filtered_deformation(dataset, derived_data,
+                                               filtered_data, options,
                                                twod_filter, dx, dy, z, zn,
                                                xaxis=1, grid='w')
 
@@ -436,20 +461,19 @@ def main():
 
         for field in field_list:
             print("Plotting {}".format(field))
-            plot_field(field, derived_data, twod_filter, ilev, iy, grid=opgrid)
+            plot_field(field, filtered_data, twod_filter, ilev, iy, grid=opgrid)
 
         for field in quad_field_list :
             print("Plotting {}".format(field))
-            plot_quad_field(field, derived_data, twod_filter, ilev, iy, \
+            plot_quad_field(field, filtered_data, twod_filter, ilev, iy, \
                             grid=opgrid)
 
         plot_shear(mod_Sn_r, mod_Sn_s, z, twod_filter, ilev, iy, no_trace = True)
         plot_shear(mod_S_r, mod_S_s, z, twod_filter, ilev, iy, no_trace = False)
 
-#        test_filter(dataset, twod_filter)
-        derived_data.close()
-        dataset.close()
-#    filter_dataset.close()
+        filtered_data.close()
+    derived_data.close()
+    dataset.close()
 
 if __name__ == "__main__":
     main()
