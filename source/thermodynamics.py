@@ -116,7 +116,7 @@ def q_to_mix(q):
      Output : Mixing Ratio(kg/kg)
     '''
     qc=np.clip(q,0,0.999)
-    m = q / (1-q)
+    m = qc / (1-qc)
     return m
 
 def mix_to_q(m):
