@@ -16,16 +16,16 @@ import filters as filt
 import difference_ops as do
 from thermodynamics_constants import *
 import thermodynamics as th
-dir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
+dir = '/gws/nopw/j04/paracon_rdg/users/torau/test_data/'
 destdir = dir
-file = 'diagnostics_ts_18000.0.nc'
-ref_file = 'diagnostics_ts_18000.0.nc'
+file = 'BOMEX_m0025_g0600_all_88200.0.nc'
+ref_file = 'BOMEX_m0025_g0600_all_88200.0.nc'
 
 #w = dataset.variables['w']
 #var_tvar = w.dimensions[0]
 #var_time = dataset.variables[var_tvar]
 
-plot_dir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/plots/' 
+plot_dir = '/gws/nopw/j04/paracon_rdg/users/torau/test_data/plots/' 
 
 plot_type = '.png'
 data_dir = '' # Directory containing data
@@ -45,36 +45,37 @@ def main():
     ref_dataset=Dataset(dir + ref_file)
 
 #    sigma_list = [0.5,0.2]
-    sigma_list = [0.5]
+    sigma_list = [0.04]
     width = -1
-    dx = 100.0
-    dy = 100.0 
+    dx = 25.0
+    dy = 25.0 
     filter_name = 'gaussian'
 
     
     var_list = ["w", \
-                "th", \
-                "th_v", \
-                "th_L", \
-                "q_vapour", \
-                "q_cloud_liquid_mass", \
-                "q_total", \
+#                "th", \
+#                "th_v", \
+#                "th_L", \
+#                "q_vapour", \
+#                "q_cloud_liquid_mass", \
+#                "q_total", \
                 ]
     
-    var_pair_list = [
-                ["w","w"], \
-                ["w","th"], \
-                ["w","th_v"], \
-                ["w","th_L"], \
-                ["w","q_vapour"], \
-                ["w","q_cloud_liquid_mass"], \
-                ["w","q_total"], \
-                ["th_L","th_L"], \
-                ["th_L","q_total"], \
-                ["q_total","q_total"], \
-                ["th_L","q_vapour"], \
-                ["th_L","q_cloud_liquid_mass"], \
-              ]
+    var_pair_list = []
+#    var_pair_list = [
+#                ["w","w"], \
+#                ["w","th"], \
+#                ["w","th_v"], \
+#                ["w","th_L"], \
+#                ["w","q_vapour"], \
+#                ["w","q_cloud_liquid_mass"], \
+#                ["w","q_total"], \
+#                ["th_L","th_L"], \
+#                ["th_L","q_total"], \
+#                ["q_total","q_total"], \
+#                ["th_L","q_vapour"], \
+#                ["th_L","q_cloud_liquid_mass"], \
+#              ]
     
     opgrid = 'p'
     #
