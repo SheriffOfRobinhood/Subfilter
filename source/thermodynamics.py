@@ -269,9 +269,9 @@ def dewpoint(T, p, q) :
 
 def qsat(T, p) :
     '''
-     Output : saturation specific humidity (kg/kg) over water numpy array
      Input:   Temperature (K) numpy array
               pressure (Pa) numpy array
+     Output : saturation specific humidity (kg/kg) over water numpy array
     '''
     es = esat(T)
     fsubw = 1.0 + 1.0E-8 * p * (4.5 + 6.0E-4 * (T - tc.freeze_pt) * (T - tc.freeze_pt) )
@@ -280,7 +280,7 @@ def qsat(T, p) :
     return qs
 
 def dqsatbydT(T, p) :
-    alpha = tc.epsilon * tc.cfus_water * qsat(T, p) / \
+    alpha = tc.epsilon * tc.cvap_water * qsat(T, p) / \
             (tc.gas_const_air * T * T)
     return alpha
 
