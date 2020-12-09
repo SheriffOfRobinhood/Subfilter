@@ -1,5 +1,5 @@
 # General Thermodynamics functions
-# Last updated 30/01/2018 by Peter Clark
+# Last updated 29/10/2020 by Peter Clark
 #
 import numpy as np
 import thermodynamics_constants as tc
@@ -9,13 +9,13 @@ def esat(T):
      Input  : Temperature (K)
      Output : Vapour pressure over water (Pa)
     '''
-    
+
     T_ref=tc.freeze_pt
     T_ref2=243.04-T_ref # Bolton uses 243.5
     es_Tref=610.94      # Bolton uses 611.2
     const=17.625        # Bolton uses 17.67
     res = es_Tref * np.exp(const * (T - T_ref)/(T+T_ref2))
-    return res 
+    return res
 
 def esat_ice(T):
     '''
@@ -24,13 +24,13 @@ def esat_ice(T):
      Input  : Temperature (K)
      Output : Vapour pressure over ice (Pa)
     '''
-    
-    T_ref=tc.triple_pt 
+
+    T_ref=tc.triple_pt
     T_ref2= -7.66
-    es_Tref=610.87      
-    const= 21.8745584      
+    es_Tref=610.87
+    const= 21.8745584
     res = es_Tref * np.exp(const * (T - T_ref)/(T+T_ref2))
-    return res 
+    return res
 
 def inv_esat(es):
     '''
@@ -44,14 +44,14 @@ def inv_esat(es):
 #    es_Tref=610.94
 #    const=17.625
 #    ln_es_Tref = np.log(es_Tref)
-#    C1 = const * T_ref - ln_es_Tref * T_ref2 
+#    C1 = const * T_ref - ln_es_Tref * T_ref2
 #    C2 = const + ln_es_Tref
 #
     ln_es_Tref = 6.41499875468
     C1 = 5007.4243625
-    C2 = 24.039998754    
-    ln_es =  np.log(es) 
-    T = (T_ref2 * ln_es +  C1) / (C2 - ln_es)                                       
+    C2 = 24.039998754
+    ln_es =  np.log(es)
+    T = (T_ref2 * ln_es +  C1) / (C2 - ln_es)
     return T
 
 def inv_esat_ice(es):
@@ -66,17 +66,17 @@ def inv_esat_ice(es):
 #
 # This is how constants are derived:
 #    es_Tref = 610.87
-#    const = 21.8745584 
+#    const = 21.8745584
 #    ln_es_Tref = np.log(es_Tref)
-#    C1 = const * T_ref - ln_es_Tref * T_ref2 
+#    C1 = const * T_ref - ln_es_Tref * T_ref2
 #    C2 = const + ln_es_Tref
 #
     ln_es_Tref = 6.4148841705762614
     C1 = 6024.3923852906155
     C2 = 28.289442570576263
-   
-    ln_es =  np.log(es) 
-    T = (T_ref2 * ln_es +  C1) / (C2 - ln_es)                                       
+
+    ln_es =  np.log(es)
+    T = (T_ref2 * ln_es +  C1) / (C2 - ln_es)
     return T
 
 def esat_over_Tkappa(T):
@@ -89,9 +89,9 @@ def esat_over_Tkappa(T):
     es_over_Tkappa_Tref = 1.7743E-6
     const=12.992
     res = es_over_Tkappa_Tref * np.exp(const * (T - T_ref)/(T+T_ref2))
-    return res       
-                                                                
-def potential_temperature(T, p): 
+    return res
+
+def potential_temperature(T, p):
     '''
     Input:   Temperature (K) numpy array
              Pressure (Pa) numpy array
@@ -109,10 +109,10 @@ def moist_potential_temperature(T, p, m):
     '''
     theta=T*(tc.p_ref_um/p)**(tc.kappa*(1-tc.kappa_v * m))
     return theta
-        
+
 def q_to_mix(q):
     '''
-     Input  : Specific humidity (kg/kg)      
+     Input  : Specific humidity (kg/kg)
      Output : Mixing Ratio(kg/kg)
     '''
     qc=np.clip(q,0,0.999)
@@ -121,7 +121,7 @@ def q_to_mix(q):
 
 def mix_to_q(m):
     '''
-     Input  : Mixing Ratio(kg/kg)      
+     Input  : Mixing Ratio(kg/kg)
      Output : Specific humidity (kg/kg)
     '''
     q = m / (1+m)
@@ -151,7 +151,7 @@ def T_LCL_TD(T, TD):
     From Bolton 1980
      Input :  Temperature (K) numpy array
               Dew point (K) numpy array
-     Output : temperature at lifting condensation level (K) 
+     Output : temperature at lifting condensation level (K)
 
     '''
     T_ref = 56.0
@@ -164,7 +164,7 @@ def T_LCL_e(T, e):
     From Bolton 1980
      Input :  Temperature (K) numpy array
               Vapour pressure (Pa) numpy array
-     Output : temperature at lifting condensation level (K) 
+     Output : temperature at lifting condensation level (K)
     '''
     T_ref = 55.0
     const = 2840.0
@@ -177,14 +177,14 @@ def T_LCL_RH(T, RH):
     '''
     From Bolton 1980
      Input :  Temperature (K) numpy array
-              Relative humidity (%) 
-     Output : temperature at lifting condensation level (K) 
+              Relative humidity (%)
+     Output : temperature at lifting condensation level (K)
     '''
     T_ref = 55.0
     const = 2840.0
     res = 1 / (1 / (T-T_ref) - np.log(RH/100) / const) + T_ref
-    return res   
-    
+    return res
+
 def latheat(T, sublim=0, Model=0, focwil_T=[]) :
     '''
      Input :  Temperature (K) numpy array
@@ -192,23 +192,23 @@ def latheat(T, sublim=0, Model=0, focwil_T=[]) :
      Options :sublim = 1 return Latent heat of sublimation
               Model = 1 use UM fixed values
               focwil_T = nonempty array or single element
-                         use linear ramp in ice fraction from 
-                         focwil_T to freezing.   
+                         use linear ramp in ice fraction from
+                         focwil_T to freezing.
     '''
 
 #    T=np.array(T)
-    if Model == 1 : 
-        el0 = tc.cvap_water 
+    if Model == 1 :
+        el0 = tc.cvap_water
         elm = tc.cfus_water
-        
+
         el=np.copy(T)
         el[:]=el0
         if (sublim == 1) or (np.size(focwil_T) == 1) :
- 
+
             ix = np.where(T < tc.freeze_pt)[0]
 #            print ix
             if np.size(ix) > 0 :
-                TC=T[ix]-tc.freeze_pt     
+                TC=T[ix]-tc.freeze_pt
                 if np.size(focwil_T) == 1 :
                     focwil=TC/focwil_T
                     focwil[np.where(focwil > 1)] = 1
@@ -219,16 +219,16 @@ def latheat(T, sublim=0, Model=0, focwil_T=[]) :
 # From Pruppacher and Klett
         el0 = 2.5e6
         p1 = 0.167e0
-        pg = 3.67e-4  
+        pg = 3.67e-4
         lm0 = 333584.0
         lm1 = 2029.97
-        lm2 = -10.4638        
+        lm2 = -10.4638
         el = el0*((tc.freeze_pt/T)**(p1+pg*T))
-               
+
         if (sublim == 1) or (np.size(focwil_T) == 1) :
             ix = np.where(T < tc.freeze_pt)[0]
             if np.size(ix) > 0 :
-                TC=T[ix]-tc.freeze_pt     
+                TC=T[ix]-tc.freeze_pt
                 elm=lm0+lm1*TC+lm2*TC*TC
                 if np.size(focwil_T) == 1 :
                     focwil=TC/focwil_T
@@ -237,8 +237,8 @@ def latheat(T, sublim=0, Model=0, focwil_T=[]) :
                 else :
                     el[ix]=el[ix]+elm
 
-    return el 
-    
+    return el
+
 def dewpoint(T, p, q) :
     '''
      Input:   Temperature (K) numpy array
@@ -250,37 +250,37 @@ def dewpoint(T, p, q) :
 #    q=np.array(q)
 #    p=np.array(p)
 
-    rv=tc.gas_const_air/tc.epsilon                                                                          
+    rv=tc.gas_const_air/tc.epsilon
     TD=np.copy(T)
-                                             
-#  calculate vapour pressure, and from that the dewpoint in kelvins.      
+
+#  calculate vapour pressure, and from that the dewpoint in kelvins.
     v_pres = q * p/( tc.epsilon + q)
 
 #    print v_pres
-  
-    v_pres[np.where(v_pres <= 0.0)] = 1e-10   
-                      
+
+    v_pres[np.where(v_pres <= 0.0)] = 1e-10
+
     TD = inv_esat(v_pres)
-                                  
-    i = np.where(TD > T)[0] 
+
+    i = np.where(TD > T)[0]
     if np.size(i) > 0 :
-        TD[i] = T[i]  
+        TD[i] = T[i]
     return TD
 
-def qsat(T, p) :    
+def qsat(T, p) :
     '''
-     Output : saturation specific humidity (kg/kg) over water numpy array
      Input:   Temperature (K) numpy array
               pressure (Pa) numpy array
+     Output : saturation specific humidity (kg/kg) over water numpy array
     '''
-    es = esat(T)    
+    es = esat(T)
     fsubw = 1.0 + 1.0E-8 * p * (4.5 + 6.0E-4 * (T - tc.freeze_pt) * (T - tc.freeze_pt) )
     es = es * fsubw
     qs = e_p_to_q(es, p)
     return qs
 
 def dqsatbydT(T, p) :
-    alpha = tc.epsilon * tc.cfus_water * qsat(T, p) / \
+    alpha = tc.epsilon * tc.cvap_water * qsat(T, p) / \
             (tc.gas_const_air * T * T)
     return alpha
 
@@ -299,7 +299,7 @@ def equiv_potential_temperature(T, p, q):
     e = q_p_to_e(q, p)
     m = q_to_mix(q)
     T_LCL = T_LCL_e(T, e)
-    theta= moist_potential_temperature(T , p, m) 
+    theta= moist_potential_temperature(T , p, m)
 
     theta_e = theta * \
       np.exp((C1/T_LCL-C2) * m * (1 + C3 * m) )
@@ -360,7 +360,7 @@ def wet_bulb_potential_temperature(T, p, q):
         dlnesdT = const * b / (th_E[ir1] + T_ref2)**2
         th_W[ir1] = th_E[ir1] -  Ars/(1+Ars*dlnesdT)
     if np.size(ir2) !=  0:
-        th_W[ir2] = Tref3 + C1 * (T_ref/th_E[ir2])**tc.rk     
+        th_W[ir2] = Tref3 + C1 * (T_ref/th_E[ir2])**tc.rk
     if np.size(ir3) !=  0:
         th_W[ir3] = Tref4 + C1 * (T_ref/th_E[ir3])**tc.rk \
           + C2 * (th_E[ir3]/T_ref)**tc.rk \
@@ -393,14 +393,14 @@ def wet_bulb_temperature(T, p, q):
     k2_pi = 56.831 * pi -4.392 * pi2 - 0.384
 
 #    print D_pi, k1_pi, k2_pi
-    
+
     th_E = equiv_potential_temperature_accurate(T, p, q)
-    TE=th_E/pi 
+    TE=th_E/pi
     inv_TE = (tc.freeze_pt/TE)**tc.rk
 
     ir1 = np.where(  inv_TE > D_pi )
     ir2 = np.where( (1 <= inv_TE) & (inv_TE <= D_pi) )
-    ir3 = np.where( (0.4 <= inv_TE) & (inv_TE < 1) )   
+    ir3 = np.where( (0.4 <= inv_TE) & (inv_TE < 1) )
     ir4 = np.where(  inv_TE < 0.4 )
     TW = np.copy(TE)
     if np.size(ir1) !=  0:
@@ -410,7 +410,7 @@ def wet_bulb_temperature(T, p, q):
         TW[ir1] = TE[ir1] -  Ars/(1+Ars*dlnesdT)
     if np.size(ir2) !=  0:
 #        print '2:', TE, inv_TE
-        TW[ir2] = tc.freeze_pt + k1_pi[ir2] - k2_pi[ir2] * inv_TE[ir2] 
+        TW[ir2] = tc.freeze_pt + k1_pi[ir2] - k2_pi[ir2] * inv_TE[ir2]
     if np.size(ir3) !=  0:
 #        print '3:', TE, inv_TE
         TW[ir3] = tc.freeze_pt + (k1_pi[ir3] - 1.21) - (k2_pi[ir3] - 1.21) * inv_TE[ir3]

@@ -404,7 +404,7 @@ def gaussian_filter(sigma, delta_x=1000.0, cutoff = 0.0001, width = -1):
 
 def gaussian_filter_2d(sigma, delta_x=1000.0, cutoff=0.0001, width=-1):
     '''
-    Calculates a 2D Gaussian filter caculated with the given lengthscale (sigma)
+    Calculates a 2D Gaussian filter calculated with the given lengthscale (sigma)
 
     Uses filter(x,y) = EXP(-(x+y)^2/2.0*sigma^2). Normalised by sum(filter(x)).
     Note that this returns the sampled value of filter(x).

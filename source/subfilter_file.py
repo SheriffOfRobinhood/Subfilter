@@ -353,9 +353,6 @@ def main():
     print("Variables in derived dataset.")
     print(derived_data.variables)
 
-#
-# Just looking at anyhb at present
-
     filter_list = list([])
 
     for i,sigma in enumerate(sigma_list):
