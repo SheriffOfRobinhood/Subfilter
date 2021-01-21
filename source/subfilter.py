@@ -5,6 +5,7 @@ Created on Tue Oct 23 11:07:05 2018
 @author: Peter Clark
 """
 import os
+import sys
 import netCDF4
 
 from netCDF4 import Dataset
@@ -16,7 +17,7 @@ from difference_ops import *
 import time
 from thermodynamics_constants import *
 
-test_level = 0
+test_level = 1
 
 
 def filter_variable_list(source_dataset, ref_dataset, derived_dataset,
@@ -29,7 +30,7 @@ def filter_variable_list(source_dataset, ref_dataset, derived_dataset,
     Args:
         source_dataset  : NetCDF dataset for input
         ref_dataset     : NetCDF dataset for input containing reference
-                          profiles
+                          profiles. Can be None
         derived_dataset : NetCDF dataset for derived data
         filtered_dataset: NetCDF dataset for derived data
         options         : General options e.g. FFT method used.
@@ -141,7 +142,7 @@ def get_default_variable_list() :
         var_list = [
             "u",
             "w",
-            "th_L",
+            "th",
             ]
     elif test_level == 2:
 # For testing
@@ -178,7 +179,7 @@ def get_default_variable_pair_list() :
     if test_level == 1:
 # For testing
         var_list = [
-                ["w","th_L"],
+                ["w","th"],
               ]
     elif test_level == 2:
 # For testing
@@ -305,7 +306,9 @@ def filtered_field_calc(field, options, twod_filter, three_d=True ):
 
     sh = np.shape(field)
     ndims = len(sh)
+    
     if twod_filter.attributes['filter_type'] == 'domain' :
+        
         fshape = np.asarray(field.shape)
         if ndims == 2 :
             axis=(0,1)
@@ -320,8 +323,11 @@ def filtered_field_calc(field, options, twod_filter, three_d=True ):
 
         field_r = np.mean(field[...], axis=axis)
         field_s = field[...] - np.reshape(field_r,si)
+        
     else :
-        print("Filtering using {}".format(options['FFT_type']))
+        
+        print(f"Filtering using {options['FFT_type']}")
+        
         if options['FFT_type'].upper() == 'FFTCONVOLVE':
             field_r = np.zeros(field.shape)
             dims = (0,1)
@@ -446,17 +452,14 @@ def setup_data_file(source_file, ref_file, derived_dataset_name,
         derived_dataset = Dataset(derived_dataset_name, "w", clobber=True)
 
         source_dataset = Dataset(source_file,"r")
-        ref_dataset=Dataset(ref_file)
         w = source_dataset["w"]
-    #    print(w.dimensions)
-    #    u = source_dataset["u"]
 
         tvar = w.dimensions[0]
 
         times = nc_dimcopy(source_dataset, derived_dataset, tvar)
 
-        z = nc_dimcopy(ref_dataset, derived_dataset, "z")
-        zn = nc_dimcopy(ref_dataset, derived_dataset, "zn")
+        z = nc_dimcopy(source_dataset, derived_dataset, "z")
+        zn = nc_dimcopy(source_dataset, derived_dataset, "zn")
 
         derived_dataset.createDimension("x",np.shape(w[:])[1])
         x = derived_dataset.createVariable("x","f8",("x",))
@@ -465,7 +468,6 @@ def setup_data_file(source_file, ref_file, derived_dataset_name,
 
         derived_dataset.sync()
         source_dataset.close()
-        ref_dataset.close()
 
     return derived_dataset, exists
 
@@ -530,7 +532,7 @@ def setup_filtered_data_file(source_file, destdir, ref_file, fname,
 
     return filtered_dataset_name, filtered_dataset, exists
 
-def get_data(source_dataset, ref_dataset, var_name) :
+def get_data(source_dataset, ref_dataset, var_name, options) :
     """
     Extract data from source NetCDF dataset or derived data.
 
@@ -553,7 +555,7 @@ def get_data(source_dataset, ref_dataset, var_name) :
                       "q_vapour":[False,False,False],
                       "q_cloud_liquid_mass":[False,False,False],
                       }
-    print(var_name)
+    print(f'Retrieving {var_name:s}.')
     try :
         var = source_dataset[var_name]
         vardim = var.dimensions
@@ -562,51 +564,60 @@ def get_data(source_dataset, ref_dataset, var_name) :
 
         print(vardim)
         if var_name == 'th' :
-            thref = ref_dataset['thref']
-            for it in range(np.shape(vard[...])[0]) :
-                vard[it,...] += thref[it,...]
+            thref = get_thref(ref_dataset, options)
+            vard[...] += thref
+
     except :
-        print("Data {} not in dataset".format(var_name))
+        
         if var_name == 'th_L' :
 #            rhoref = ref_dataset.variables['rhon'][-1,...]
-            theta, vardim, varp = get_data(source_dataset, ref_dataset, 'th')
-            pref = ref_dataset.variables['prefn'][-1,...]
-            piref = (pref[:]/1.0E5)**kappa
+            theta, vardim, varp = get_data(source_dataset, ref_dataset, 'th',
+                                           options)
+            (pref, piref) = get_pref(source_dataset, ref_dataset,  options)
             q_cl, vd, vp = get_data(source_dataset, ref_dataset,
-                                    'q_cloud_liquid_mass')
+                                    'q_cloud_liquid_mass', options)
 #            print("Delta theta_L",np.max(L_over_cp * q_cl / piref))
             vard = theta - L_over_cp * q_cl / piref
 #            input("Press enter")
 
-        if var_name == 'th_v' :
+        elif var_name == 'th_v' :
 #            rhoref = ref_dataset.variables['rhon'][-1,...]
-            theta, vardim, varp = get_data(source_dataset, ref_dataset, 'th')
-            thref = ref_dataset['thref'][-1,...]
+            theta, vardim, varp = get_data(source_dataset, ref_dataset, 'th',
+                                           options)
+            thref = get_thref(ref_dataset, options)
             q_v, vardim, varp = get_data(source_dataset, ref_dataset,
-                                         'q_vapour')
+                                         'q_vapour', options)
             q_cl, vd, vp = get_data(source_dataset, ref_dataset,
-                                    'q_cloud_liquid_mass')
+                                    'q_cloud_liquid_mass', options)
 #            print("Delta theta_L",np.max(L_over_cp * q_cl / piref))
             vard = theta + thref * (c_virtual * q_v - q_cl)
 
-        if var_name == 'q_total' :
+        elif var_name == 'q_total' :
 #            rhoref = ref_dataset.variables['rhon'][-1,...]
             q_v, vardim, varp = get_data(source_dataset, ref_dataset,
-                                         'q_vapour')
+                                         'q_vapour', options)
             q_cl, vd, vp = get_data(source_dataset, ref_dataset,
-                                    'q_cloud_liquid_mass')
+                                    'q_cloud_liquid_mass', options)
             vard = q_v + q_cl
 
-        if var_name == 'buoyancy':
-            th_v, vardim, varp = get_data(source_dataset, ref_dataset, 'th_v')
+        elif var_name == 'buoyancy':
+            th_v, vardim, varp = get_data(source_dataset, ref_dataset, 'th_v',
+                                           options)
             mean_thv = np.mean(th_v, axis = (1,2))
             varp = grav * (th_v - mean_thv)/mean_thv
+            
+        else :
+            
+            sys.exit(f"Data {var_name:s} not in dataset.")
+            
 
     return vard, vardim, varp
 
-def get_and_transform(source_dataset, ref_dataset, var_name, grid='p'):
+def get_and_transform(source_dataset, ref_dataset, var_name, options, 
+                      grid='p'):
 
-    var, vdim, vp = get_data(source_dataset, ref_dataset, var_name)
+    var, vdim, vp = get_data(source_dataset, ref_dataset, var_name,
+                                           options)
     #    print(np.shape(var), vdim, vp)
     if grid=='p' :
         if vp[0] :
@@ -617,8 +628,8 @@ def get_and_transform(source_dataset, ref_dataset, var_name, grid='p'):
             var = field_on_v_to_p(var, xaxis=1)
         if vp[2] :
             print("Mapping {} from w grid to p grid.".format(var_name))
-            z = ref_dataset["z"]
-            zn = ref_dataset["zn"]
+            z = source_dataset["z"]
+            zn = source_dataset["zn"]
             var = field_on_w_to_p(var,  z, zn)
     elif grid=='u' :
         if not ( vp[0] or vp[1] or vp[2]):
@@ -630,8 +641,8 @@ def get_and_transform(source_dataset, ref_dataset, var_name, grid='p'):
             var = field_on_p_to_u(var, xaxis=1)
         if vp[2] :
             print("Mapping {} from w grid to u grid.".format(var_name))
-            z = ref_dataset["z"]
-            zn = ref_dataset["zn"]
+            z = source_dataset["z"]
+            zn = source_dataset["zn"]
             var = field_on_w_to_p(var,  z, zn)
             var = field_on_p_to_u(var, xaxis=1)
     elif grid=='v' :
@@ -644,8 +655,8 @@ def get_and_transform(source_dataset, ref_dataset, var_name, grid='p'):
             var = field_on_v_to_p(var, xaxis=1)
         if vp[2] :
             print("Mapping {} from w grid to v grid.".format(var_name))
-            z = ref_dataset["z"]
-            zn = ref_dataset["zn"]
+            z = source_dataset["z"]
+            zn = source_dataset["zn"]
             var = field_on_w_to_p(var,  z, zn)
             var = field_on_p_to_v(var, xaxis=1)
     elif grid=='w' :
@@ -722,7 +733,7 @@ def get_data_on_grid(source_dataset, ref_dataset, derived_dataset, var_name,
 
     if var is None:
         var, vdims, vp = get_and_transform(source_dataset, ref_dataset,
-                                          var_name, grid=grid)
+                                          var_name, options, grid=grid)
 
         if options['save_all'].lower() == 'yes':
 
@@ -805,7 +816,7 @@ def filter_field(vard, vname, vdims, filtered_dataset, options, twod_filter,
     """
     if grid=='w' : zvar = "z"
     else : zvar = "zn"
-    print(vname)
+    print(f"Filtering {vname:s}")
 
     var_r, var_s = filtered_field_calc(vard, options, twod_filter,
                                        three_d=True )
@@ -815,20 +826,24 @@ def filter_field(vard, vname, vdims, filtered_dataset, options, twod_filter,
     else:
         if twod_filter.attributes['filter_type'] == 'domain' :
             ncvar_r = filtered_dataset.createVariable(vname+"_r","f8",
-                                     (vdims[0],zvar,))
+                                     (vdims[0], zvar,))
         else :
             ncvar_r = filtered_dataset.createVariable(vname+"_r","f8",
-                                     (vdims[0],vdims[1],vdims[2],zvar,))
+                                     (vdims[0], vdims[1], vdims[2], zvar,))
 
         ncvar_r[...] = var_r
+        
+    print(f"Saved {ncvar_r.name:s}")
     print(ncvar_r)
 
     if vname+"_s" in filtered_dataset.variables:
         ncvar_s = filtered_dataset[vname+"_s"]
     else:
         ncvar_s = filtered_dataset.createVariable(vname+"_s","f8",
-                                     (vdims[0],vdims[1],vdims[2],zvar,))
+                                     (vdims[0], vdims[1], vdims[2], zvar,))
         ncvar_s[...] = var_s
+        
+    print(f"Saved {ncvar_s.name:s}")
     print(ncvar_s)
 
     if sync : filtered_dataset.sync()
@@ -950,6 +965,7 @@ def quadratic_subfilter(source_dataset,  ref_dataset, derived_dataset,
 #    print(np.shape(var2_r))
 
     var1var2 = vard1 * vard2
+    print(f"Filtering {v1_name:s}*{v2_name:s}")
     var1var2_r, var1var2_s = filtered_field_calc(var1var2, options,
                                                  twod_filter, three_d=True )
 
@@ -957,3 +973,39 @@ def quadratic_subfilter(source_dataset,  ref_dataset, derived_dataset,
 
     return var1var2, vdims
 
+def bytarr_to_dict(d):
+    res = {}
+    for i in range(np.size(d[0])):
+        opt = bytearray(d[i,0,:].compressed()).decode('utf-8')
+        val = bytearray(d[i,1,:].compressed()).decode('utf-8')
+        res[opt] = val
+    return res
+
+def get_pref(source_dataset, ref_dataset,  options):
+    if ref_dataset is None:
+        if 'options_database' in source_dataset.variables:
+            options_database = bytarr_to_dict(
+                source_dataset.variables['options_database'][...])
+            p_surf = float(options_database['surface_pressure'])                  
+        else:
+            p_surf = 1.0E5
+            
+        thref = options['th_ref']
+
+        zn = source_dataset.variables['zn'][...]              
+        piref0 = (p_surf/1.0E5)**kappa
+        piref = piref0 - (g/(cp_air * thref)) * zn
+        pref = 1.0E5 * piref**rk
+#                print('pref', pref)
+    else:
+        pref = ref_dataset.variables['prefn'][-1,...]
+        piref = (pref[:]/1.0E5)**kappa
+                
+    return (pref, piref)
+
+def get_thref(ref_dataset, options):
+    if ref_dataset is None:
+        thref = options['th_ref']
+    else:
+        thref = ref_dataset['thref']
+    return thref
