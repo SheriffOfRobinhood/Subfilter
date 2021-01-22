@@ -76,7 +76,7 @@ def main():
 
     for i,width in enumerate(width_list):
         if filter_name == 'gaussian':
-            filter_id = 'filter_{:02d}'.format(i)
+            filter_id = 'filter_ga{:02d}'.format(i)
             twod_filter = filt.filter_2d(filter_id,
                                        filter_name,
                                        sigma=sigma, width=width,
@@ -99,7 +99,7 @@ def main():
 
 # Add whole domain filter
     filter_name = 'domain'
-    filter_id = 'filter_{:02d}'.format(len(filter_list))
+    # filter_id = 'filter_do{:02d}'.format(len(filter_list))
     twod_filter = filt.filter_2d(filter_id, filter_name, delta_x=dx)
     filter_list.append(twod_filter)
 
