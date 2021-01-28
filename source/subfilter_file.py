@@ -357,7 +357,7 @@ def main():
 
     for i,sigma in enumerate(sigma_list):
         if filter_name == 'gaussian':
-            filter_id = 'filter_{:02d}'.format(i)
+            filter_id = 'filter_ga{:02d}'.format(i)
             twod_filter = filt.filter_2d(filter_id,
                                        filter_name,
                                        sigma=sigma, width=width,
@@ -381,13 +381,13 @@ def main():
 
 # Add whole domain filter
     filter_name = 'domain'
-    filter_id = 'filter_{:02d}'.format(len(filter_list))
+    filter_id = 'filter_do{:02d}'.format(len(filter_list))
     twod_filter = filt.filter_2d(filter_id, filter_name, delta_x=dx)
     filter_list.append(twod_filter)
 
     print(filter_list)
 
-    z = do.last_dim(dataset["z"])
+    # z = do.last_dim(dataset["z"])
     zn = do.last_dim(dataset["zn"])
 
     for twod_filter in filter_list:
@@ -397,8 +397,8 @@ def main():
         filtered_dataset_name, filtered_data, exists = \
             sf.setup_filtered_data_file( dir+file, odir, dir+ref_file, fname,
                                        options, twod_filter, override=True)
-        print("Variables in derived dataset.")
-        print(derived_data.variables)
+        print("Variables in filtered dataset.")
+        print(filtered_data.variables)
         exists = False
         if exists :
             print('Derived data file exists' )
