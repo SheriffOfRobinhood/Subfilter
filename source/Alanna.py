@@ -44,14 +44,21 @@ def main():
     '''
 #   Non-global variables that are set once
     width_list = [3, 5, 20, 40, 80, 200]
-    dx = 5.0
-    dy = 5.0
+#    width_list = [3]
     filter_name = 'running_mean'
 #    filter_name = 'wave_cutoff'
 
     dataset = Dataset(dir+file, 'r') # Dataset is the class behavior to open the file
                                  # and create an instance of the ncCDF4 class
                                  
+    od = sf.options_database(dataset)
+    if od is None:
+        dx = 5.0
+        dy = 5.0
+    else :
+        dx = float(od['dxx'])
+        dy = float(od['dyy'])
+    
     if ref_file is not None:
         ref_path = dir+ref_file
         ref_dataset = Dataset(dir+ref_file, 'r')
@@ -66,7 +73,7 @@ def main():
 
     derived_dataset_name, derived_data, exists = \
         sf.setup_derived_data_file( dir+file, odir, ref_path, fname,
-                                   options, override=False)
+                                   options, override=True)
         
     print(f"Derived dataset name:{derived_dataset_name:s}")
     print("Variables in derived dataset.")
@@ -114,10 +121,10 @@ def main():
 
         filtered_dataset_name, filtered_data, exists = \
             sf.setup_filtered_data_file( dir+file, odir, ref_path, fname,
-                                       options, twod_filter, override=False)
+                                       options, twod_filter, override=True)
         print("Variables in filtered dataset.")
         print(filtered_data.variables)
-        exists = False
+#        exists = False
         if exists :
             print('Derived data file exists' )
         else :
@@ -129,11 +136,11 @@ def main():
                                                  grid = opgrid)
 
             quad_field_list = sf.filter_variable_pair_list(dataset, 
-                                                 ref_dataset,
-                                                 derived_data, filtered_data,
-                                                 options,
-                                                 twod_filter, var_list=None,
-                                                 grid = opgrid)
+                                                  ref_dataset,
+                                                  derived_data, filtered_data,
+                                                  options,
+                                                  twod_filter, var_list=None,
+                                                  grid = opgrid)
 
 
         z = derived_data["z"]

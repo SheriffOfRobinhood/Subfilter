@@ -461,10 +461,16 @@ def setup_data_file(source_file, ref_file, derived_dataset_name,
         z = nc_dimcopy(source_dataset, derived_dataset, "z")
         zn = nc_dimcopy(source_dataset, derived_dataset, "zn")
 
-        derived_dataset.createDimension("x",np.shape(w[:])[1])
-        x = derived_dataset.createVariable("x","f8",("x",))
-        derived_dataset.createDimension("y",np.shape(w[:])[2])
-        y = derived_dataset.createVariable("y","f8",("y",))
+        if "x" in source_dataset.variables:
+            x = nc_dimcopy(source_dataset, derived_dataset, "x")
+        else:            
+            derived_dataset.createDimension("x",np.shape(w[:])[1])
+#            x = derived_dataset.createVariable("x","f8",("x",))
+        if "x" in source_dataset.variables:
+            x = nc_dimcopy(source_dataset, derived_dataset, "x")
+        else:            
+            derived_dataset.createDimension("y",np.shape(w[:])[2])
+#            y = derived_dataset.createVariable("y","f8",("y",))
 
         derived_dataset.sync()
         source_dataset.close()
@@ -886,12 +892,13 @@ def filtered_deformation(source_dataset, derived_dataset, filtered_dataset,
         for j in range(3) :
             vn = f"{vname}_{i:1d}_{j:1d}"
             def_r, def_s = filter_field(d[i][j], vn, vdims, filtered_dataset,
-                                options, twod_filter, grid='p',
+                                options, twod_filter, grid='grid',
                                 three_d=True, sync=False)
             d_j_r.append(def_r)
             d_j_s.append(def_s)
         d_ij_r.append(d_j_r)
         d_ij_s.append(d_j_s)
+        
     filtered_dataset.sync()
 
     return d_ij_r, d_ij_s
@@ -981,7 +988,49 @@ def bytarr_to_dict(d):
         res[opt] = val
     return res
 
+def options_database(source_dataset):
+    '''
+    Convert options_database in source_dataset to dictionary.
+
+    Parameters
+    ----------
+    source_dataset : netCDF4 file
+        MONC output file.
+
+    Returns
+    -------
+    options_database : dict
+
+    '''
+    
+    if 'options_database' in source_dataset.variables:
+        options_database = bytarr_to_dict(
+            source_dataset.variables['options_database'][...])
+    else:
+        options_database = None
+    return options_database
+
+    
 def get_pref(source_dataset, ref_dataset,  options):
+    '''
+    Get reference pressure profile for source_dataset from ref_dataset
+    or calculate from surface_press in source_dataset options_database
+    and options['th_ref'].
+
+    Parameters
+    ----------
+    source_dataset :  netCDF4 file
+        MONC output file.
+    ref_dataset :  netCDF4 file or None
+        MONC output file containing pref
+    options : dict
+
+    Returns
+    -------
+    (pref, piref)
+
+    '''
+    
     if ref_dataset is None:
         if 'options_database' in source_dataset.variables:
             options_database = bytarr_to_dict(
@@ -1004,6 +1053,22 @@ def get_pref(source_dataset, ref_dataset,  options):
     return (pref, piref)
 
 def get_thref(ref_dataset, options):
+    '''
+    Get thref profile from ref_dataset
+
+    Parameters
+    ----------
+    ref_dataset : TnetCDF4 file or None
+        MONC output file containing pref
+    options : dict
+
+
+    Returns
+    -------
+    thref : float or float array.
+        Reference theta constant or profile
+
+    '''
     if ref_dataset is None:
         thref = options['th_ref']
     else:
