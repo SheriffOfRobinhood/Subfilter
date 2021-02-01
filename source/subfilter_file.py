@@ -1,19 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-
-  subfilter_file.py
-    - Control subfilter engine.  Operating on a single file, filters 3D vars and outputs filtered fields (and plots).
-    - Contains sample plotting routines.
-
 Created on Tue Oct 23 11:27:25 2018
 
 @author: Peter Clark
-@modified: Todd Jones
-
 """
-import os 
-import sys
-import getopt
+import os
 import netCDF4
 from netCDF4 import Dataset
 import numpy as np
@@ -24,133 +15,33 @@ import subfilter as sf
 import filters as filt
 import difference_ops as do
 
-import pdb
-  # pdb.set_trace()
-
-# Configure directories
-# (from PAC original)
-# dir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
-# file = 'diagnostics_ts_18000.0.nc'
-# ref_file = 'diagnostics_ts_18000.0.nc'
-# plot_dir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/plots/'
-# ---
-
-# Hardcode test:
-# dir  = '/gws/nopw/j04/paracon_rdg/users/toddj/MONC_RCE_1.5/MONC_RCE_1.5_m1600_g0084/diagnostic_files/'
-# file = 'diagnostics_ts_4784400.0.nc'
-# dir = '/gws/nopw/j04/paracon_rdg/users/tomw/Turb_Comp/CA/S/CA_S_SC_BOMEX_25_600/checkpoint_files/'
-# file = 'BOMEX_dump_210800.nc'
-
-#dir  = '/gws/nopw/j04/paracon_rdg/users/toddj/BOMEX/CA_S_SC_BOMEX_25_600/diagnostic_files/'
-#outpath = '/gws/nopw/j04/paracon_rdg/users/toddj/BOMEX/CA_S_SC_BOMEX_25_600/filtered/'
-
-#  # change to input-specified in/out directories and input filenames
-#  dir  = sys.argv[1]
-#  file = sys.argv[2]
-#  print "Operating on file: ", file
-#  outpath = sys.argv[3]
-#  print "Directing output to: ", outpath
-#  
-#  
-#  # Retain existing variable names
-#  ref_file = file      # file that contains the reference profile
-#                       # currently in all, might need to change this to input.
-#  plot_dir = outpath
-#  
-#  
-#  # Configure plot styles
-#  plot_type = '.png'
-#  figshow = False #True
+options = {
+#        'FFT_type': 'FFTconvolve',
+#        'FFT_type': 'FFT',
+        'FFT_type': 'RFFT',
+        'save_all': 'Yes',
+          }
 
 
+dir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
+odir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
+odir = odir + 'test_op_' + options['FFT_type']+'/'
 
+os.makedirs(odir, exist_ok = True)
 
-# Set global defaults
-indir  = ''
-infile = ''
-ref_file = ''
-outpath = ''
-plot_dir = ''
+file = 'diagnostics_ts_18000.0.nc'
+ref_file = 'diagnostics_ts_18000.0.nc'
+
+#w = dataset.variables['w']
+#var_tvar = w.dimensions[0]
+#var_time = dataset.variables[var_tvar]
+
+plot_dir = odir + 'plots/'
+os.makedirs(plot_dir, exist_ok = True)
+
 plot_type = '.png'
-figshow = False
-
-
-# Usage Message
-def print_usage_message():
-    print('Usage of subfilter_file.py:')
-    print('  subfilter_file.py -i <input path> -f <input file> -r <reference profile file> -o <output path for filtered data> -p <ouput path for plots> -t <plot type extension> -s <True or False>')
-    print('    -i or --input_path:  Text string path to input data')
-    print('    -f or --input_file:  Text string file name')
-    print('    -r or --ref_file:    Text string reference profile-containing file name')
-    print('    -o or --out_data:    Text string path to output filtered data')
-    print('    -p or --out_plot:    Text string path to output plots')
-    print('    -t or --plot_type:   Text string plot file type extension, DEFAULT: .png')
-    print('    -s or --figshow:     Text string logical whether to display figures on screen, DEFAULT: False')
-    sys.exit()
-
-
-# Read in user-supplied options arguments
-def read_cl_arguments():
-
-    # Modifying globals
-    global indir
-    global infile
-    global ref_file
-    global outpath
-    global plot_dir
-    global plot_type
-    global figshow
-
-    if len(sys.argv) > 1 :
-        options, args = getopt.getopt(sys.argv[1:],"hi:f:r:o:p:t:s:", \
-                        ["input_path=", "input_file=", "ref_file=", "out_data=", "out_plot=", \
-                         "plot_type=", "figshow=",])
-        for opt, arg in options:
-            if opt == '-h' :
-                print_usage_message()
-            if opt in ("-i", "--input_path"):
-                indir = os.path.join(arg,'')  # ensure trailing slash
-            if opt in ("-f", "--input_file"):
-                infile = arg
-            if opt in ("-r", "--ref_file"):
-                ref_file = arg
-            if opt in ("-o", "--out_data"):
-                outpath = os.path.join(arg,'')
-            if opt in ("-p", "--out_plot"):
-                plot_dir = os.path.join(arg,'')
-            if opt in ("-t", "--plot_type"):
-                plot_type = arg
-            if opt in ("-s", "--figshow"):
-                figshow = strtobool(arg)
-    else :
-        print('No options arguments provided.')
-        print(' STOP - Must provide path and file information:')
-        print('')
-        print_usage_message()
-
-    if not bool(indir.strip()):
-        print(' STOP Must provide input path:\n')
-        print_usage_message()
-    if not bool(infile.strip()):
-        print(' STOP Must provide input file:\n')
-        print_usage_message()
-    if not bool(ref_file.strip()):
-        print(' WARN: No ref_file provided; trying with input_file.')
-        ref_file = infile
-    if not bool(ref_file.strip()):
-        print(' STOP Must provide reference file:\n')
-        print_usage_message()
-    if not bool(outpath.strip()):
-        print(' STOP Must provide data output path:\n')
-        print_usage_message()
-    if not bool(plot_dir.strip()):
-        print(' WARN: No out_plot provided; trying with out_data.')
-        plot_dir = outpath
-    if not bool(plot_dir.strip()):
-        print(' STOP Must provide plot output path:\n')
-        print_usage_message()
-    print("")
-
+data_dir = '' # Directory containing data
+figshow = True
 
 def plot_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
 
@@ -437,172 +328,149 @@ def main():
     '''
     Top level code, a bit of a mess.
     '''
+#   Non-global variables that are set once
+    sigma_list = [500.0, 220.0]
+    width = -1
+    dx = 100.0
+    dy = 100.0
+    filter_name = 'gaussian'
+#    width = 20
+#    filter_name = 'running_mean'
+#    filter_name = 'wave_cutoff'
 
-# Read the command line arguments (directories, files, etc.)
-    read_cl_arguments()
-
-
-# Set filter attributes:
-    filter_name = 'gaussian'  # Can be: gaussian, running_mean, wave_cutoff, or domain
-    sigma_list = [0.100, 0.200, 0.400, 0.800, 1.600] #[0.050, 0.100, 0.200, 0.400, 0.800, 1.600]  # lengthscale of Gaussian filter [km]
-
-
-
-
-    #trjh
-    #sigma_list = [0.800]
-
-
-
-    width = -1     # If set, controls the width of the filter. 
-                   # Must be set for running-mean filter:
-                   #   filtername = 'running_mean'
-                   #   width = 20  #
-
-
-# Horizontal resolution (NOTE: want to automate this)
-    dx = 25.0   # [m]
-    dy = 25.0   # [m]
-
-
-# Open the diagnostic file and the file containing the reference profile.
-    dataset = Dataset(indir+infile, 'r') # Dataset is the class behavior to open the file
+    dataset = Dataset(dir+file, 'r') # Dataset is the class behavior to open the file
                                  # and create an instance of the ncCDF4 class
-    ref_dataset = Dataset(indir+ref_file, 'r')
-
-# Set arbitrary height level (ilev) and y-position (iy) for plotting
+    ref_dataset = Dataset(dir+ref_file, 'r')
     ilev = 15
-    iy = 40 
+    iy = 40
 
-# Set the output grid type from [u,v,w,p]    
     opgrid = 'w'
+    fname = 'test_plot'
 
-# Construct list of 2D filters to be applied    
+    derived_dataset_name, derived_data, exists = \
+        sf.setup_derived_data_file( dir+file, odir, dir+ref_file, fname,
+                                   options, override=True)
+    print("Variables in derived dataset.")
+    print(derived_data.variables)
+
     filter_list = list([])
+
     for i,sigma in enumerate(sigma_list):
-        filter_id ='f{:04n}'.format(sigma_list[i]*1000)  # 4-integer [m] filter label
-        twod_filter = filt.filter_2d(filter_id,\
-                                   filter_name, \
-                                   sigma=sigma, width=width, \
-                                   delta_x=dx/1000.0)
+        if filter_name == 'gaussian':
+            filter_id = 'filter_{:02d}'.format(i)
+            twod_filter = filt.filter_2d(filter_id,
+                                       filter_name,
+                                       sigma=sigma, width=width,
+                                       delta_x=dx)
+        elif filter_name == 'wave_cutoff':
+            filter_id = 'filter_wc{:02d}'.format(i)
+            twod_filter = filt.filter_2d(filter_id,
+                                       filter_name, wavenumber=np.pi/(2*sigma),
+                                       width=width,
+                                       delta_x=dx)
+        elif filter_name == 'running_mean':
+            filter_id = 'filter_rm{:02d}'.format(i)
+            width = int(np.round( sigma/dx * np.pi * 2.0 / 3.0)+1)
+            twod_filter = filt.filter_2d(filter_id,
+                                       filter_name,
+                                       width=width,
+                                       delta_x=dx)
+
         print(twod_filter)
         filter_list.append(twod_filter)
 
-# NOTE:         
-#        class filter_2d :
-#            def __init__(self, filter_id, filter_name, wavenumber=-1, \
-#                                 delta_x=1.0, width=-1,cutoff=0.0001, \
-#                                 high_pass=0, sigma=-1):
-#                '''    Args:
-#                  filter_name (str): Name of filter used. Either Gaussian, wave-cutoff or
-#                                     running-mean.
-#                  wavenumber (float): If a wave-cutoff filter is used, contains the cutoff
-#                                      wavenumber.
-#                  delta_x (float): Distance between points in the horizontal,
-#                                   used to caculate the filter
-#                  width (int): If set, controls the width of the filter. Must be set for
-#                               running-mean filter.
-#                  cutoff (float): If float is not set, this controls the width of the
-#                                  filter. The width of the filter is extended until the
-#                                  minimum value in the filter is less than this cutoff
-#                                  value.
-#                  high_pass (bool): If a wave-cutoff filter is used, this determines whether
-#                                    it is high or low pass (note high pass hasn't actually
-#                                    been coded yet!)
-#                  sigma (float): If a Gaussian filter is used, this is the lengthscale of
-#                                 the filter.
-#                '''
-#        
-
-        
 # Add whole domain filter
     filter_name = 'domain'
-#    filter_id = 'filter_{:02d}'.format(len(filter_list))    
-    filter_id = 'fmean'
-    twod_filter = filt.filter_2d(filter_id, filter_name, delta_x=dx/1000.0)
+    filter_id = 'filter_{:02d}'.format(len(filter_list))
+    twod_filter = filt.filter_2d(filter_id, filter_name, delta_x=dx)
     filter_list.append(twod_filter)
 
     print(filter_list)
 
-
-# Pulls height coordinates that have been possibly stored with a time dimension.    
     z = do.last_dim(dataset["z"])
     zn = do.last_dim(dataset["zn"])
 
-
-# Loop over list of 2D filters    
     for twod_filter in filter_list:
 
         print(twod_filter)
-        
-# Construct derived data (or read existing from file) NOTE: input the override option
-#  Puts basic and additional fields on output grid (opgrid)
 
-# Create the NetCDF dataset
-        derived_dataset_name, derived_data, exists = sf.setup_derived_data_file(\
-                                            indir+infile, outpath, twod_filter,\
-                                            override=True)
+        filtered_dataset_name, filtered_data, exists = \
+            sf.setup_filtered_data_file( dir+file, odir, dir+ref_file, fname,
+                                       options, twod_filter, override=True)
+        print("Variables in derived dataset.")
         print(derived_data.variables)
         exists = False
         if exists :
             print('Derived data file exists' )
         else :
 
-# Creates filtered versions of input variables
-            field_list =sf.filter_variable_list(dataset, ref_dataset, \
-                                                derived_data, twod_filter, \
-                                                var_list=None, grid = opgrid)    
-# Creates filtered versions of paired input variables
-            quad_field_list =sf.filter_variable_pair_list(dataset, ref_dataset, \
-                                                derived_data, twod_filter, 
-                                                var_list=None, grid = opgrid)        
-# Creates filtered versions of the deformation field
-            d_r, d_s = sf.filtered_deformation(dataset, derived_data, twod_filter,\
-                             dx, dy, z, zn, xaxis=1, grid='w')
-            
-            if False :
-# Something about shear (testing??)
-                for i in range(3) :
-                    for j in range(3) :
-                        print(d_r[i][j],d_s[i][j])
-                
-                Sn_ij_r, mod_Sn_r = sf.shear(d_r)
-                Sn_ij_s, mod_Sn_s = sf.shear(d_s)
-                S_ij_r, mod_S_r = sf.shear(d_r, no_trace = False)
-                S_ij_s, mod_S_s = sf.shear(d_s, no_trace = False)
-                print(S_ij_r.keys())
-        # end if exists        
+            field_list =sf.filter_variable_list(dataset, ref_dataset,
+                                                derived_data, filtered_data,
+                                                options,
+                                                twod_filter, var_list=None,
+                                                grid = opgrid)
+    #        quad_field_list=list([])
+            quad_field_list =sf.filter_variable_pair_list(dataset, ref_dataset,
+                                                derived_data, filtered_data,
+                                                options,
+                                                twod_filter, var_list=None,
+                                                grid = opgrid)
 
-        u_r = derived_data["u_r_on"+opgrid]
-        print(u_r)
 
-        if figshow :
-# Plotting section
-            if twod_filter.attributes['filter_type']!='domain' :
-                fig1 = plt.figure(1)
-                plt.contourf(twod_filter.data,20) 
-                
-                fig2 = plt.figure(2)
-                plt.plot(twod_filter.data[np.shape(twod_filter.data)[0]//2,:])
-# disable plot to screen                plt.show()
-            
-            for field in field_list:
-                print("Plotting {}".format(field))
-                plot_field(field, derived_data, twod_filter, ilev, iy, grid=opgrid)            
-    
-            for field in quad_field_list :
-                print("Plotting {}".format(field))
-                plot_quad_field(field, derived_data, twod_filter, ilev, iy, \
-                                grid=opgrid)    
-                
-            #plot_shear(mod_Sn_r, mod_Sn_s, z, twod_filter, ilev, iy, no_trace = True)
-            #plot_shear(mod_S_r, mod_S_s, z, twod_filter, ilev, iy, no_trace = False)
-       # end if figshow 
+            d_r, d_s = sf.filtered_deformation(dataset, derived_data,
+                                               filtered_data, options,
+                                               twod_filter, dx, dy, z, zn,
+                                               xaxis=1, grid='w')
 
-# Close derived data file.        
-        derived_data.close()
-        
-    # end for loop over 2D filters
-    
+            times = derived_data['time_series_50_100.0']
+            print(times)
+            print(times[:])
+            for i in range(3) :
+                for j in range(3) :
+                    print(d_r[i][j],d_s[i][j])
+
+            Sn_ij_r, mod_Sn_r = sf.shear(d_r)
+            Sn_ij_s, mod_Sn_s = sf.shear(d_s)
+            S_ij_r, mod_S_r = sf.shear(d_r, no_trace = False)
+            S_ij_s, mod_S_s = sf.shear(d_s, no_trace = False)
+            print(S_ij_r.keys())
+#        input("Press enter")
+
+        z = derived_data["z"]
+        zn = derived_data["zn"]
+
+#        u_r = derived_data["u_r_on"+opgrid]
+#        print(u_r)
+#        os.remove(derived_dataset_name)
+#        print twod_filter
+        if twod_filter.attributes['filter_type']!='domain' :
+            fig1 = plt.figure(1)
+            plt.contourf(twod_filter.data,20)
+            plt.savefig(plot_dir+'Filter_'+\
+                        twod_filter.id+plot_type)
+            plt.close()
+
+            fig2 = plt.figure(2)
+            plt.plot(twod_filter.data[np.shape(twod_filter.data)[0]//2,:])
+            plt.savefig(plot_dir+'Filter_y_xsect_'+\
+                        twod_filter.id+plot_type)
+            plt.close()
+
+        for field in field_list:
+            print("Plotting {}".format(field))
+            plot_field(field, filtered_data, twod_filter, ilev, iy, grid=opgrid)
+
+        for field in quad_field_list :
+            print("Plotting {}".format(field))
+            plot_quad_field(field, filtered_data, twod_filter, ilev, iy, \
+                            grid=opgrid)
+
+        plot_shear(mod_Sn_r, mod_Sn_s, z, twod_filter, ilev, iy, no_trace = True)
+        plot_shear(mod_S_r, mod_S_s, z, twod_filter, ilev, iy, no_trace = False)
+
+        filtered_data.close()
+    derived_data.close()
+    dataset.close()
+
 if __name__ == "__main__":
     main()
