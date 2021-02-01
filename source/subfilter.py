@@ -480,7 +480,7 @@ def setup_derived_data_file(source_file, destdir, ref_file, fname,
     """
     Create NetCDF dataset for derived data in destdir.
 
-    File name is original file name concatenated with twod_filter.id.
+    File name is original file name concatenated with fname.
 
     Args:
         source_file     : NetCDF file name.
@@ -506,7 +506,7 @@ def setup_filtered_data_file(source_file, destdir, ref_file, fname,
     """
     Create NetCDF dataset for filtered data in destdir.
 
-    File name is original file name concatenated with twod_filter.id.
+    File name is original file name concatenated with fname.
 
     Args:
         source_file     : NetCDF file name.
