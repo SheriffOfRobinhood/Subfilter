@@ -152,54 +152,51 @@ def read_cl_arguments():
     print("")
 
 
-def plot_field(var_name, derived_data, twod_filter, ilev, iy, grid='p'):
-    
-    var_r = derived_data[var_name+"_r_on"+grid]
-    var_s = derived_data[var_name+"_s_on"+grid]
-   
-    
+def plot_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
+
+    var_r = filtered_data[f"{var_name}_on_{grid}_r"]
+    var_s = filtered_data[f"{var_name}_on_{grid}_s"]
+
+
     for it in range(var_r.shape[0]):
         if twod_filter.attributes['filter_type']=='domain' :
-            zcoord = sf.last_dim(derived_data[var_r.dimensions[1]])
+            zcoord = sf.last_dim(filtered_data[var_r.dimensions[1]])
             pltdat = (var_r[it,:])
-        
+
             fig1, axa = plt.subplots(1,1,figsize=(5,5))
-        
+
     #    plt.subplot(3, 2, 1)
             Cs1 = axa.plot(pltdat, zcoord)
             axa.set_xlabel(r'%s$^r$'%(var_name))
             axa.set_ylabel('z')
-    
+
             plt.tight_layout()
-        
+
             plt.savefig(plot_dir+var_name+'_prof_'+\
                     twod_filter.id+'_%02d'%it+plot_type)
             plt.close()
-        else : 
-            zcoord = sf.last_dim(derived_data[var_r.dimensions[3]])
+        else :
+            zcoord = sf.last_dim(filtered_data[var_r.dimensions[3]])
             meanfield= np.mean(var_r[it,...],axis=(0,1),keepdims=True)
             pltdat = (var_r[it,...]-meanfield)
-        
-            lev1 = np.arange(-10,10.1,0.1)
-            lev2 = np.arange(-10,10.1,0.1)
-            
+
             nlevels = 40
             plt.clf
-        
+
             fig1, axa = plt.subplots(3,2,figsize=(10,12))
-            
+
         #    plt.subplot(3, 2, 1)
             Cs1 = axa[0,0].contourf(np.transpose(pltdat[:, :, ilev]),\
                      nlevels)
             axa[0,0].set_title(r'%s$^r$ pert level %03d'%(var_name,ilev))
             axa[0,0].set_xlabel('x')
-        
+
         # Make a colorbar for the ContourSet returned by the contourf call.
             cbar1 = fig1.colorbar(Cs1,ax=axa[0,0])
             cbar1.ax.set_ylabel(var_name)
         # Add the contour line levels to the colorbar
         #  cbar.add_lines(CS2)
-        
+
         #    plt.subplot(3, 2, 2)
             Cs2 = axa[0,1].contourf(np.transpose(var_s[it, :, :, ilev]),\
                      nlevels)
@@ -225,84 +222,85 @@ def plot_field(var_name, derived_data, twod_filter, ilev, iy, grid='p'):
         ## Make a colorbar for the ContourSet returned by the contourf call.
             cbar4 = fig1.colorbar(Cs4,ax=axa[1,1])
             cbar4.ax.set_ylabel(var_name)
-        #    
+        #
             x=(np.arange(0,var_r.shape[2])-0.5*var_r.shape[2])*0.1
         #    plt.subplot(3, 2, 5)
             ax1 = axa[2,0].plot(x,pltdat[:,iy,ilev])
-        #    
+        #
         #    plt.subplot(3, 2, 6)
             ax2 = axa[2,1].plot(x,var_s[it,:,iy,ilev])
-        #    
+        #
             plt.tight_layout()
-            
+
             plt.savefig(plot_dir+var_name+'_lev_'+'%03d'%ilev+'_x_z'+'%03d'%iy+'_'+\
                         twod_filter.id+'_%02d'%it+plot_type)
             plt.close()
-        
-            
+
+
     #
     #    plt.show()
     #plt.close()
 
     return
 
-def plot_quad_field(var_name, derived_data, twod_filter, ilev, iy, grid='p'):
-    
+def plot_quad_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
+
     v1 = var_name[0]
     v2 = var_name[1]
-    
-    v1_r = derived_data[v1+"_r_on"+grid]
-    v2_r = derived_data[v2+"_r_on"+grid]
-        
+
+    v1_r = filtered_data[f"{v1}_on_{grid}_r"]
+    v2_r = filtered_data[f"{v2}_on_{grid}_r"]
+
     print(v1,v2)
-    s_v1v2 = derived_data["{}_{}_on{}".format(v1,v2,grid)]
-    
+    s_v1v2 = filtered_data[f"{v1}_{v2}_on_{grid}"]
+    print(s_v1v2)
+
     for it in range(s_v1v2.shape[0]):
-        
+
         if twod_filter.attributes['filter_type']=='domain' :
             pltdat = (s_v1v2[it,:])
-            zcoord = sf.last_dim(derived_data[v1_r.dimensions[1]])
-        
+            zcoord = sf.last_dim(filtered_data[v1_r.dimensions[1]])
+
             fig1, axa = plt.subplots(1,1,figsize=(5,5))
-        
+
     #    plt.subplot(3, 2, 1)
             Cs1 = axa.plot(pltdat, zcoord)
             axa.set_xlabel('s({},{})'.format(v1,v2))
             axa.set_ylabel('z')
-    
+
             plt.tight_layout()
-        
+
             plt.savefig(plot_dir+var_name[0]+'_'+var_name[1]+'_prof_'+\
                     twod_filter.id+'_%02d'%it+plot_type)
             plt.close()
         else :
-            zcoord = sf.last_dim(derived_data[v1_r.dimensions[3]])
+            zcoord = sf.last_dim(filtered_data[v1_r.dimensions[3]])
             var_r = (v1_r[it,...] - np.mean(v1_r[it,...], axis=(0,1))) * \
                     (v2_r[it,...] - np.mean(v2_r[it,...], axis=(0,1)))
-                    
+
             meanfield= np.mean(var_r[...],axis=(0,1),keepdims=True)
             pltdat = (var_r[...]-meanfield)
-        
-            lev1 = np.arange(-10,10.1,0.1)
-            lev2 = np.arange(-10,10.1,0.1)
-            
+
+#            lev1 = np.arange(-10,10.1,0.1)
+#            lev2 = np.arange(-10,10.1,0.1)
+
             nlevels = 40
             plt.clf
-        
+
             fig1, axa = plt.subplots(3,2,figsize=(10,12))
-            
+
         #    plt.subplot(3, 2, 1)
             Cs1 = axa[0,0].contourf(np.transpose(pltdat[:, :, ilev]),\
                      nlevels)
             axa[0,0].set_title(r'{}$^r${}$^r$ pert level {:03d}'.format(v1, v2,ilev))
             axa[0,0].set_xlabel('x')
-        
+
         # Make a colorbar for the ContourSet returned by the contourf call.
             cbar1 = fig1.colorbar(Cs1,ax=axa[0,0])
             cbar1.ax.set_ylabel(var_name)
         # Add the contour line levels to the colorbar
         #  cbar.add_lines(CS2)
-        
+
         #    plt.subplot(3, 2, 2)
             Cs2 = axa[0,1].contourf(np.transpose(s_v1v2[it, :, :, ilev]),\
                      nlevels)
@@ -328,20 +326,20 @@ def plot_quad_field(var_name, derived_data, twod_filter, ilev, iy, grid='p'):
         ## Make a colorbar for the ContourSet returned by the contourf call.
             cbar4 = fig1.colorbar(Cs4,ax=axa[1,1])
             cbar4.ax.set_ylabel(var_name)
-        #    
+        #
             x=(np.arange(0,var_r.shape[1])-0.5*var_r.shape[1])*0.1
         #    plt.subplot(3, 2, 5)
             ax1 = axa[2,0].plot(x,pltdat[:,iy,ilev])
-        #    
+        #
         #    plt.subplot(3, 2, 6)
             ax2 = axa[2,1].plot(x,s_v1v2[it,:,iy,ilev])
-        #    
+        #
             plt.tight_layout()
-            
+
             plt.savefig(plot_dir+var_name[0]+'_'+var_name[1]+'_lev_'+'%03d'%ilev+'_x_z'+'%03d'%iy+'_'+\
                         twod_filter.id+'_%02d'%it+plot_type)
             plt.close()
-        
+
     #
     #    plt.show()
     #plt.close()
@@ -357,42 +355,39 @@ def plot_shear(var_r, var_s, zcoord,  twod_filter, ilev, iy, no_trace = True):
 #        pltdat = (var_r[it,...]-meanfield)
         if twod_filter.attributes['filter_type']=='domain' :
             pltdat = (var_r[it,:])
-        
+
             fig1, axa = plt.subplots(1,1,figsize=(5,5))
-        
+
     #    plt.subplot(3, 2, 1)
             Cs1 = axa.plot(pltdat[1:], zcoord[1:])
             axa.set_xlabel(var_name)
             axa.set_ylabel('z')
-    
+
             plt.tight_layout()
-        
+
             plt.savefig(plot_dir+var_name+'_prof_'+\
                     twod_filter.id+'_%02d'%it+plot_type)
             plt.close()
         else :
             pltdat = var_r[it,...]
-        
-            lev1 = np.arange(-10,10.1,0.1)
-            lev2 = np.arange(-10,10.1,0.1)
-            
+
             nlevels = 40
             plt.clf
-        
+
             fig1, axa = plt.subplots(3,2,figsize=(10,12))
-            
+
         #    plt.subplot(3, 2, 1)
             Cs1 = axa[0,0].contourf(np.transpose(pltdat[:, :, ilev]),\
                      nlevels)
             axa[0,0].set_title(r'%s$^r$ level %03d'%(var_name,ilev))
             axa[0,0].set_xlabel('x')
-        
+
         # Make a colorbar for the ContourSet returned by the contourf call.
             cbar1 = fig1.colorbar(Cs1,ax=axa[0,0])
             cbar1.ax.set_ylabel(var_name)
         # Add the contour line levels to the colorbar
         #  cbar.add_lines(CS2)
-        
+
         #    plt.subplot(3, 2, 2)
             Cs2 = axa[0,1].contourf(np.transpose(var_s[it, :, :, ilev]),\
                      nlevels)
@@ -418,20 +413,20 @@ def plot_shear(var_r, var_s, zcoord,  twod_filter, ilev, iy, no_trace = True):
         ## Make a colorbar for the ContourSet returned by the contourf call.
             cbar4 = fig1.colorbar(Cs4,ax=axa[1,1])
             cbar4.ax.set_ylabel(var_name)
-        #    
+        #
             x=(np.arange(0,var_r.shape[2])-0.5*var_r.shape[2])*0.1
         #    plt.subplot(3, 2, 5)
             ax1 = axa[2,0].plot(x,pltdat[:,iy,ilev])
-        #    
+        #
         #    plt.subplot(3, 2, 6)
             ax2 = axa[2,1].plot(x,var_s[it,:,iy,ilev])
-        #    
+        #
             plt.tight_layout()
-            
+
             plt.savefig(plot_dir+var_name+'_lev_'+'%03d'%ilev+'_x_z'+'%03d'%iy+'_'+\
                         twod_filter.id+'_%02d'%it+plot_type)
             plt.close()
-        
+
     #
     #    plt.show()
 #    plt.close()
@@ -526,7 +521,7 @@ def main():
     filter_id = 'fmean'
     twod_filter = filt.filter_2d(filter_id, filter_name, delta_x=dx/1000.0)
     filter_list.append(twod_filter)
-        
+
     print(filter_list)
 
 
@@ -537,7 +532,7 @@ def main():
 
 # Loop over list of 2D filters    
     for twod_filter in filter_list:
-        
+
         print(twod_filter)
         
 # Construct derived data (or read existing from file) NOTE: input the override option
