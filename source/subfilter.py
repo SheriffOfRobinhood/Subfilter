@@ -22,7 +22,7 @@ from difference_ops import *
 import time
 from thermodynamics_constants import *
 
-test_level = 0
+test_level = 1
 
 
 def filter_variable_list(source_dataset, ref_dataset, derived_dataset,
