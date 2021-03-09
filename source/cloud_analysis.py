@@ -22,9 +22,10 @@ import filters as filt
 import difference_ops as do
 from thermodynamics_constants import *
 import thermodynamics as th
-#dir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
-dir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/r15/'
+dir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
+#dir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/r15/'
 destdir = dir
+odir = destdir
 file = 'diagnostics_3d_ts_7200.0.nc'
 ref_file = 'diagnostics_ts_7200.0.nc'
 
@@ -39,6 +40,14 @@ data_dir = '' # Directory containing data
 figshow = True
 
 fname = 'cloud'
+
+options = {
+#        'FFT_type': 'FFTconvolve',
+#        'FFT_type': 'FFT',
+        'FFT_type': 'RFFT',
+        'save_all': 'Yes',
+          }
+
 
 def main():
     '''
@@ -87,15 +96,21 @@ def main():
 
     opgrid = 'p'
     #
+    derived_dataset_name, derived_data, exists = \
+                                        sf.setup_derived_data_file(
+                                        dir+file, destdir, dir + ref_file,
+                                        fname, options, override = False)
+
+    print(derived_dataset_name)
 
     filter_list = list([])
 
     for i,sigma in enumerate(sigma_list):
-        filter_id = 'filter_{:02d}'.format(i)
-        twod_filter = filt.filter_2d(filter_id,\
+        filter_id = 'filter_ga{:02d}'.format(i)
+        twod_filter = filt.Filter(filter_id,\
                                        filter_name, \
                                        sigma=sigma, width=width, \
-                                       delta_x=dx/1000.0)
+                                       delta_x=dx)
 
         print(twod_filter)
         filter_list.append(twod_filter)
@@ -104,25 +119,27 @@ def main():
 
         print(twod_filter)
 
-        derived_dataset_name, derived_data, exists = \
-                                            sf.setup_derived_data_file(\
-                                            dir+file, destdir, dir + ref_file, \
-                                            fname, twod_filter, \
-                                            override = False)
-        print(derived_dataset_name)
+        filtered_dataset_name, filtered_data, exists = \
+            sf.setup_filtered_data_file( dir+file, odir, dir+ref_file, fname,
+                                       options, twod_filter, override=True)
+
 
         if exists :
             print('File exists - opened for reading.')
         else :
             print('Creating derived data file.')
-            field_list =sf.filter_variable_list(dataset, ref_dataset, \
-                                            derived_data, twod_filter, \
-                                            var_list=var_list, grid = opgrid)
+            field_list =sf.filter_variable_list(dataset, ref_dataset,
+                                                derived_data, filtered_data,
+                                                options, twod_filter,
+                                                var_list=var_list,
+                                                grid = opgrid)
 #        quad_field_list=list([])
-            quad_field_list =sf.filter_variable_pair_list(dataset, \
-                                            ref_dataset, \
-                                            derived_data, twod_filter,
-                                            var_list=var_pair_list, grid = opgrid)
+            quad_field_list =sf.filter_variable_pair_list(dataset,
+                                                ref_dataset,
+                                                derived_data, filtered_data,
+                                                options, twod_filter,
+                                                var_list=var_pair_list,
+                                                grid = opgrid)
         times = derived_data[w.dimensions[0]]
         print(derived_data.variables)
         print(times)
