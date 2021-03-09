@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
 """
+
+  subfilter.py
+    - This is the "subfilter module"
+    - Defines many useful routines for the subfilter calculations.
+    - examples of their use are present in subfilter_file.py
+
 Created on Tue Oct 23 11:07:05 2018
 
 @author: Peter Clark
@@ -17,7 +23,7 @@ from difference_ops import *
 import time
 from thermodynamics_constants import *
 
-test_level = 0
+test_level = 1
 
 subfilter_version = '0.3'
 
@@ -564,6 +570,7 @@ def setup_derived_data_file(source_file, destdir, ref_file, fname,
 
     File name is original file name concatenated with filter_def.id.
 
+
     Args:
         source_file     : NetCDF file name.
         destdir         : Directory for derived data.
@@ -635,7 +642,9 @@ def get_data(source_dataset, ref_dataset, var_name, options) :
     @author: Peter Clark
 
     """
-
+#   Mapping of data locations on grid via logical triplet:
+#   logical[u-point,v-point,w-point]
+#          [False,  False,  False  ] --> (p,th,q)-point
     var_properties = {"u":[True,False,False],
                       "v":[False,True,False],
                       "w":[False,False,True],
