@@ -50,7 +50,7 @@ def main():
 
     dataset = Dataset(dir+file, 'r') # Dataset is the class behavior to open the file
                                  # and create an instance of the ncCDF4 class
-                                 
+
     od = sf.options_database(dataset)
     if od is None:
         dx = 5.0
@@ -58,7 +58,7 @@ def main():
     else :
         dx = float(od['dxx'])
         dy = float(od['dyy'])
-    
+
     if ref_file is not None:
         ref_path = dir+ref_file
         ref_dataset = Dataset(dir+ref_file, 'r')
@@ -74,7 +74,7 @@ def main():
     derived_dataset_name, derived_data, exists = \
         sf.setup_derived_data_file( dir+file, odir, ref_path, fname,
                                    options, override=True)
-        
+
     print(f"Derived dataset name:{derived_dataset_name:s}")
     print("Variables in derived dataset.")
     print(derived_data.variables)
@@ -84,19 +84,19 @@ def main():
     for i,width in enumerate(width_list):
         if filter_name == 'gaussian':
             filter_id = 'filter_ga{:02d}'.format(i)
-            twod_filter = filt.filter_2d(filter_id,
+            twod_filter = filt.Filter(filter_id,
                                        filter_name,
                                        sigma=sigma, width=width,
                                        delta_x=dx)
         elif filter_name == 'wave_cutoff':
             filter_id = 'filter_wc{:02d}'.format(i)
-            twod_filter = filt.filter_2d(filter_id,
+            twod_filter = filt.Filter(filter_id,
                                        filter_name, wavenumber=np.pi/(2*sigma),
                                        width=width,
                                        delta_x=dx)
         elif filter_name == 'running_mean':
             filter_id = 'filter_rm{:02d}'.format(i)
-            twod_filter = filt.filter_2d(filter_id,
+            twod_filter = filt.Filter(filter_id,
                                        filter_name,
                                        width=width,
                                        delta_x=dx)
@@ -107,7 +107,7 @@ def main():
 # Add whole domain filter
     filter_name = 'domain'
     # filter_id = 'filter_do{:02d}'.format(len(filter_list))
-    twod_filter = filt.filter_2d(filter_id, filter_name, delta_x=dx)
+    twod_filter = filt.Filter(filter_id, filter_name, delta_x=dx)
     filter_list.append(twod_filter)
 
     print(filter_list)
@@ -135,7 +135,7 @@ def main():
                                                  twod_filter, var_list=None,
                                                  grid = opgrid)
 
-            quad_field_list = sf.filter_variable_pair_list(dataset, 
+            quad_field_list = sf.filter_variable_pair_list(dataset,
                                                   ref_dataset,
                                                   derived_data, filtered_data,
                                                   options,
@@ -158,7 +158,7 @@ def main():
             plt.savefig(plot_dir+'Filter_y_xsect_'+\
                         twod_filter.id+plot_type)
             plt.close()
-            
+
         filtered_data.close()
     derived_data.close()
     dataset.close()

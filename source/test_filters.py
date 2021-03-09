@@ -42,6 +42,11 @@ kx = 2.0 * np.pi / Lx
 ky = 2.0 * np.pi / Ly
 
 field = np.cos(kx * xc)*np.cos(ky * yc)
+
+var = {'name' : 'test',
+       'dims' : ['x','y'],
+       'data' : field,
+       }
 levs=np.linspace(-1,1,41)
 
 xc /= 1000
@@ -58,38 +63,29 @@ for i,sigma in enumerate(sigma_list):
     else:
         width = min(N, int(np.ceil( sigma/dx *4)*2+1))
  #   width = -1
-    twod_filter = filt.filter_2d(filter_id,
+    twod_filter = filt.filter(filter_id,
                                  filter_name, wavenumber=np.pi/(2*sigma),
                                  sigma=sigma, width=width,
-                                 delta_x=dx, use_ave=False)
-    twod_filter_ave = filt.filter_2d(filter_id,
-                                 filter_name, wavenumber=np.pi/(2*sigma),
-                                 sigma=sigma, width=width,
-                                 delta_x=dx, use_ave=True)
+                                 delta_x=dx)
 
     print(twod_filter)
-    filter_list.append([twod_filter, twod_filter_ave])
+    filter_list.append(twod_filter)
 
 
 print(filter_list)
 
-for twod_filter, twod_filter_ave in filter_list:
+for twod_filter in filter_list:
 
-    print(np.sum(twod_filter.data), np.sum(twod_filter_ave.data))
+    print(np.sum(twod_filter.data))
 
 #    f = plt.figure()
     nx, ny = np.shape(twod_filter.data)
 
     x = np.linspace(-(nx//2), nx//2, nx) * twod_filter.attributes['delta_x']/1000
 
-    nx1, ny1 = np.shape(twod_filter_ave.data)
-
-    x1 = np.linspace(-(nx1//2), nx1//2, nx1) * twod_filter.attributes['delta_x']/1000
-
     f, ax = plt.subplots(2,2,figsize=(12,12))
 
     c = ax[0,0].contour(x, x, twod_filter.data,20,colors='blue')
-    c1 = ax[0,0].contour(x1, x1, twod_filter_ave.data,20,colors='red')
     ax[0,0].set_xlabel("x/km")
     ax[0,0].set_ylabel("y/km")
 
@@ -97,22 +93,21 @@ for twod_filter, twod_filter_ave in filter_list:
 
 
     p1 = ax[0,1].plot(x, twod_filter.data[nx//2, :],label='Sampled')
-    p1 = ax[0,1].plot(x1, twod_filter_ave.data[nx1//2, :],label='Averaged')
     ax[0,1].set_xlabel("x/km")
     ax[0,1].legend()
     p2 = ax[1,0].plot(x, twod_filter.data[:, ny//2],label='Sampled')
-    p2 = ax[1,0].plot(x1, twod_filter_ave.data[:, ny1//2],label='Averaged')
     ax[1,0].set_xlabel("x/km")
     ax[1,0].legend()
     p3 = ax[1,1].plot(x*np.sqrt(2),twod_filter.data.diagonal(),label='Sampled')
-    p3 = ax[1,1].plot(x1*np.sqrt(2),twod_filter_ave.data.diagonal(),label='Averaged')
     ax[1,1].set_xlabel("x/km")
     ax[1,1].legend()
     plt.tight_layout()
 
 
-    field_r, field_s = sf.filtered_field_calc(field, options, twod_filter, three_d=False )
-
+    (var_r, var_s) = sf.filtered_field_calc(var, options, twod_filter )
+    field_r = var_r['data']
+    field_s = var_s['data']
+    
     E_field = np.mean(field * field)
     E_field_r = np.mean(field_r * field_r)
     E_field_s = np.mean(field_s * field_s)
