@@ -397,20 +397,20 @@ def main():
         print("Making filter for: ",'filter_gn_{:05n}'.format(sigma))
         if filter_name == 'gaussian':
             filter_id = 'filter_gn_{:05n}'.format(sigma)
-            twod_filter = filt.filter_2d(filter_id,
+            twod_filter = filt.Filter(filter_id,
                                        filter_name,
                                        sigma=sigma, width=width,
                                        delta_x=dx,  cutoff = 0.00001)  # smaller cutoff
         elif filter_name == 'wave_cutoff':
             filter_id = 'filter_wc_{:05n}'.format(sigma)
-            twod_filter = filt.filter_2d(filter_id,
+            twod_filter = filt.Filter(filter_id,
                                        filter_name, wavenumber=np.pi/(2*sigma),
                                        width=width,
                                        delta_x=dx)
         elif filter_name == 'running_mean':
             filter_id = 'filter_rm_{:05n}'.format(sigma)
             width = int(np.round( sigma/dx * np.pi * 2.0 / 3.0)+1)
-            twod_filter = filt.filter_2d(filter_id,
+            twod_filter = filt.Filter(filter_id,
                                        filter_name,
                                        width=width,
                                        delta_x=dx)
@@ -421,7 +421,7 @@ def main():
 # Add whole domain filter
 #    filter_name = 'domain'
 #    filter_id = 'filter_mean'
-#    twod_filter = filt.filter_2d(filter_id, filter_name, delta_x=dx)
+#    twod_filter = filt.Filter(filter_id, filter_name, delta_x=dx)
 #    filter_list.append(twod_filter)
 
     print(filter_list)
