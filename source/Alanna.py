@@ -1,13 +1,16 @@
 import os
-import netCDF4
-from netCDF4 import Dataset
+#import netCDF4
+#from netCDF4 import Dataset
 import numpy as np
+import xarray as xr
 import matplotlib
 import matplotlib.pyplot as plt
 
 import subfilter as sf
 import filters as filt
 import difference_ops as do
+import dask
+
 
 options = {
 #        'FFT_type': 'FFTconvolve',
@@ -15,14 +18,18 @@ options = {
         'FFT_type': 'RFFT',
         'save_all': 'Yes',
         'th_ref': 300.0,
+        'dx': 5.0,
+        'dy': 5.0,
           }
 
 
-dir = '/storage/silver/scenario/si818415/phd/first_data/'
+#dir = '/storage/silver/scenario/si818415/phd/first_data/'
 #dir = '/storage/silver/wxproc/xm904103/'
+dir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/CBL/'
 #odir = '/storage/silver/scenario/si818415/phd/first_data/'
-odir = '/storage/silver/wxproc/xm904103/'
-odir = odir + 'test_op_' + options['FFT_type']+'/'
+#odir = '/storage/silver/wxproc/xm904103/'
+odir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/CBL/'
+odir = odir + 'test_dask_Alanna_' + options['FFT_type']+'/'
 
 os.makedirs(odir, exist_ok = True)
 
@@ -43,41 +50,60 @@ def main():
     Peter's top level code, altered slightly.
     '''
 #   Non-global variables that are set once
-    width_list = [3, 5, 20, 40, 80, 200]
-#    width_list = [3]
+#    width_list = [3, 5, 20, 40, 80, 200]
+    width_list = [20]
     filter_name = 'running_mean'
 #    filter_name = 'wave_cutoff'
 
-    dataset = Dataset(dir+file, 'r') # Dataset is the class behavior to open the file
-                                 # and create an instance of the ncCDF4 class
+    dask.config.set({"array.slicing.split_large_chunks": True})
+    dataset = xr.open_dataset(dir+file)
+    [itime, iix, iiy, iiz] = sf.find_var(dataset.dims, ['time', 'x', 'y', 'z'])
+    timevar = list(dataset.dims)[itime]
+    xvar = list(dataset.dims)[iix]
+    yvar = list(dataset.dims)[iiy]
+    zvar = list(dataset.dims)[iiz]
+    max_ch = sf.subfilter_setup['chunk_size']
+
+# This is a rough way to estimate chunck size
+    nch = np.min([int(dataset.dims[xvar]/(2**int(np.log(dataset.dims[xvar]
+                                                *dataset.dims[yvar]
+                                                *dataset.dims[zvar]
+                                                /max_ch)/np.log(2)/2))),
+                  dataset.dims[xvar]])
+
+    print(f'nch={nch}')
+
+    dataset.close()
+
+    defn = 1
+
+    dataset = xr.open_dataset(dir+file, chunks={timevar: defn,
+                                                xvar:nch, yvar:nch,
+                                                'z':'auto', 'zn':'auto'})
+    print(dataset)
+#    ref_dataset = Dataset(dir+ref_file, 'r')
+    if ref_file is not None:
+        ref_dataset = xr.open_dataset(dir+ref_file)
+    else:
+        ref_dataset = None
 
     od = sf.options_database(dataset)
     if od is None:
-        dx = 5.0
-        dy = 5.0
-    else :
+        dx = options['dx']
+        dy = options['dy']
+    else:
         dx = float(od['dxx'])
         dy = float(od['dyy'])
 
-    if ref_file is not None:
-        ref_path = dir+ref_file
-        ref_dataset = Dataset(dir+ref_file, 'r')
-    else:
-        ref_path = ref_file
-        ref_dataset = None
     ilev = 15
     iy = 40
 
     opgrid = 'w'
-    fname = 'test_plot'
+    fname = 'test_dask'
 
-    derived_dataset_name, derived_data, exists = \
-        sf.setup_derived_data_file( dir+file, odir, ref_path, fname,
+    derived_data, exists = \
+        sf.setup_derived_data_file( dir+file, odir, fname,
                                    options, override=True)
-
-    print(f"Derived dataset name:{derived_dataset_name:s}")
-    print("Variables in derived dataset.")
-    print(derived_data.variables)
 
     filter_list = list([])
 
@@ -101,50 +127,50 @@ def main():
                                        width=width,
                                        delta_x=dx)
 
-        print(twod_filter)
         filter_list.append(twod_filter)
 
 # Add whole domain filter
     filter_name = 'domain'
+    filter_id = 'filter_do'
     # filter_id = 'filter_do{:02d}'.format(len(filter_list))
     twod_filter = filt.Filter(filter_id, filter_name, delta_x=dx)
     filter_list.append(twod_filter)
 
     print(filter_list)
 
-    z = do.last_dim(dataset["z"])
-    zn = do.last_dim(dataset["zn"])
-
     for twod_filter in filter_list:
 
+        print("Processing using filter: ")
         print(twod_filter)
 
-        filtered_dataset_name, filtered_data, exists = \
-            sf.setup_filtered_data_file( dir+file, odir, ref_path, fname,
+        filtered_data, exists = \
+            sf.setup_filtered_data_file( dir+file, odir, fname,
                                        options, twod_filter, override=True)
-        print("Variables in filtered dataset.")
-        print(filtered_data.variables)
-#        exists = False
         if exists :
             print('Derived data file exists' )
         else :
 
+            var_list = [
+                "u",
+                "w",
+                "th",
+                ]
             field_list = sf.filter_variable_list(dataset, ref_dataset,
                                                  derived_data, filtered_data,
-                                                 options,
-                                                 twod_filter, var_list=None,
+                                                 options, twod_filter,
+                                                 var_list=var_list,
                                                  grid = opgrid)
 
+            var_list = [
+                    ["w","th"],
+                  ]
             quad_field_list = sf.filter_variable_pair_list(dataset,
                                                   ref_dataset,
                                                   derived_data, filtered_data,
-                                                  options,
-                                                  twod_filter, var_list=None,
+                                                  options, twod_filter,
+                                                  var_list=var_list,
                                                   grid = opgrid)
 
-
-        z = derived_data["z"]
-        zn = derived_data["zn"]
 
         if twod_filter.attributes['filter_type']!='domain' :
             fig1 = plt.figure(1)
@@ -159,8 +185,8 @@ def main():
                         twod_filter.id+plot_type)
             plt.close()
 
-        filtered_data.close()
-    derived_data.close()
+        filtered_data['ds'].close()
+    derived_data['ds'].close()
     dataset.close()
 
 if __name__ == "__main__":

@@ -14,515 +14,675 @@ import numpy as np
 def last_dim(z) :
     """
     Remove all but last dimension of z.
-    
+
     Args:
         z : n-dimensional array.
-    
+
     Returns:
         z[0,0, etc. ,:]
     @author: Peter Clark
-    """ 
+    """
 
     zd = z[...]
     while len(np.shape(zd))>1 :
         zd = zd[0,...]
     return zd
 
-def interpolate(field, z, zn) :
+def interpolate(field, znew) :
     """
-    Interpolate field from z to zn 
-    
+    Interpolate field from z to zn
+
     Args:
-        field : nD field
-        z     : 1D array
-        zn    : 1D array
-    
+        field : xarray nD field
+        znew  : xarray coordinate new z.
+
     Returns:
         field on zn levels
     @author: Peter Clark
-    """ 
+    """
+    if 'z' in field.dims:
+        zvar = 'z'
+    elif 'zn' in field.dims:
+        zvar = 'zn'
 
-    zd = last_dim(z)
-    znd = last_dim(zn)   
-#    print "zd",zd
-#    print "znd",znd
-    ss = np.shape(field)[:-1]
-    newfield=np.zeros((ss+(len(znd),)))
-#    print("Newfield", np.shape(newfield))
-    for i in range(0,len(znd)):
-        k = np.max([np.searchsorted(zd, znd[i], side='right')-1, 0])
-        if (k == (len(zd)-1)) :
-            k = k-1
-        w = (znd[i] - zd[k])/(zd[k+1] - zd[k])
-#        print k, znd[i], zd[k],zd[k+1],w
-        newfield[...,i] = w * field[..., k+1] + (1 - w) * field[..., k]
+    newfield = field.interp({zvar:znew}, kwargs={"fill_value": "extrapolate"})
+    newfield = newfield.drop_vars(zvar)
+
     return newfield
 
-def field_on_w_to_p(field, z, zn) :
+def field_on_w_to_p(field, znew) :
     print("w_to_p")
-    return interpolate(field, z, zn)
+    return interpolate(field, znew)
 
-def field_on_p_to_w(field, z, zn) :
+def field_on_p_to_w(field, znew) :
     print("p_to_w")
-    return interpolate(field, zn, z)
+    return interpolate(field, znew)
 
-def field_on_u_to_p(field, xaxis=0) :
+def field_on_u_to_p(field) :
     """
-    Interpolate field from u to p points in C grid 
-    
+    Interpolate field from u to p points in C grid
+
     Args:
-        field : nD field
-        xaxis=0: Specify axis to interpolate
-    
+        field : nD xarray field
+
     Returns:
         field on p points
     @author: Peter Clark
     """
 
-    d = field[...]
-    newfield=0.5 * (d + np.roll(d,-1,axis=xaxis))
+    d = field.data
+    x = field.coords['x_u'].data
+    xaxis = field.get_axis_num('x_u')
+    depths = np.zeros(len(field.dims))
+    depths[xaxis] = 1
+    newfield = field.rename({'x_u':'x_p'})
+    xmn = lambda arr:(0.5 * (arr + np.roll(arr,-1,axis=xaxis)))
+    newfield.data = d.map_overlap(xmn, depth=tuple(depths), boundary={xaxis:'periodic'})
+    newfield.coords['x_p'] = x - x[0]
     return newfield
 
-def field_on_p_to_u(field, xaxis=0) :
+def field_on_p_to_u(field) :
     """
-    Interpolate field from p to u points in C grid 
-    
+    Interpolate field from p to u points in C grid
+
     Args:
-        field : nD field
-        xaxis=0: Specify axis to interpolate
-    
+        field : nD xarray field
+
     Returns:
         field on p points
     @author: Peter Clark
     """
 
-    d = field[...]
-    newfield=0.5 * (d + np.roll(d,1,axis=xaxis))
+    d = field.data
+    x = field.coords['x_p'].data
+    xaxis = field.get_axis_num('x_p')
+    depths = np.zeros(len(field.dims))
+    depths[xaxis] = 1
+    newfield = field.rename({'x_p':'x_u'})
+    xmn = lambda arr:(0.5 * (arr + np.roll(arr,+1,axis=xaxis)))
+    newfield.data = d.map_overlap(xmn, depth=tuple(depths), boundary={xaxis:'periodic'})
+    newfield.coords['x_u'] = x + (x[1] - x[0]) / 2.0
     return newfield
 
-def field_on_v_to_p(field, xaxis=0) :
+def field_on_v_to_p(field) :
     """
-    Interpolate field from v to p points in C grid 
-    
+    Interpolate field from v to p points in C grid
+
     Args:
-        field : nD field
-        xaxis=0: Specify xaxis 
-    
+        field : nD xarray  field
+
     Returns:
         field on p points
     @author: Peter Clark
     """
 
-    d = field[...]
-    newfield=0.5 * (d + np.roll(d,-1,axis=xaxis+1))
+    d = field.data
+    y = field.coords['y_v'].data
+    yaxis = field.get_axis_num('y_v')
+    depths = np.zeros(len(field.dims))
+    depths[yaxis] = 1
+    newfield = field.rename({'y_v':'y_p'})
+    ymn = lambda arr:(0.5 * (arr + np.roll(arr,-1,axis=yaxis)))
+    newfield.data = d.map_overlap(ymn, depth=tuple(depths), boundary={yaxis:'periodic'})
+    newfield.coords['y_p'] = y - y[0]
     return newfield
 
-def field_on_p_to_v(field, xaxis=0) :
+def field_on_p_to_v(field) :
     """
-    Interpolate field from p to v points in C grid 
-    
+    Interpolate field from p to v points in C grid
+
     Args:
-        field : nD field
-        yaxis=1: Specify axis to interpolate
-    
+        field : nD xarray field
+
     Returns:
         field on p points
     @author: Peter Clark
     """
 
-    d = field[...]
-    newfield=0.5 * (d + np.roll(d,1,axis=xaxis+1))
+    d = field.data
+    y = field.coords['y_p'].data
+    yaxis = field.get_axis_num('y_p')
+    depths = np.zeros(len(field.dims))
+    depths[yaxis] = 1
+
+    newfield = field.rename({'y_p':'y_v'})
+    ymn = lambda arr:(0.5 * (arr + np.roll(arr,1,axis=yaxis)))
+    newfield.data = d.map_overlap(ymn, depth=tuple(depths), boundary={yaxis:'periodic'})
+    newfield.coords['y_v'] = y + (y[1] - y[0]) / 2.0
     return newfield
 
-def d_by_dx_field_on_u(field, dx, z, zn, xaxis=0, grid = 'p' ) :
+def d_by_dz_field_on_zn(field):
     """
-    Differentiate field on u points in x direction then average to req grid 
-    
+    Differentiate field on zn levels in z direction.
+
     Args:
-        field : nD field
-        dx    : grid length
-        xaxis=0: Specify axis corresponding to x
+        field : xarray nD field
+
+    Returns:
+        field on required grid
+    @author: Peter Clark
+    """
+    print("d_by_dz_field_on_zn ")
+
+    zn = field.coords['zn']
+    new = field.diff('zn')/field.coords['zn'].diff('zn')
+    new = new.pad(pad_width={'zn':(0,1)}, mode = 'edge')
+#    new[{'zn':-1}] = 2 * new[{'zn':-2}] - new[{'zn':-3}]
+
+    new = new.rename({'zn':'zi'})
+    zi = 0.5 * (zn.data + np.roll(zn.data, -1))
+    zi[-1] = 2 * zn.data[-2] - zn.data[-3]
+    new.coords['zi'] = zi
+
+    return new
+
+def d_by_dz_field_on_z(field):
+    """
+    Differentiate field on z levels in z direction.
+
+    Args:
+        field : xarray nD field
+
+    Returns:
+        field on required grid
+    @author: Peter Clark
+    """
+    print("d_by_dz_field_on_z ")
+
+    z = field.coords['z']
+    new = field.diff('z')/field.coords['z'].diff('z')
+    new = new.pad(pad_width={'z':(1,0)}, mode = 'edge')
+#    new[{'z':0}] = 2 * new[{'z':1}] - new[{'z':2}]
+
+    new = new.rename({'z':'zn'})
+    zi = 0.5 * (z.data + np.roll(z.data, 1))
+    zi[0] = 2 * z.data[2] - z.data[3]
+    new.coords['zn'] = zi
+
+    return new
+
+def d_by_dx_field_on_u(field, z, grid = 'p' ) :
+    """
+    Differentiate field on u points in x direction then average to req grid
+
+    Args:
+        field : xarray nD field
+        z: zcoord - needed if changing vertical grid to w.
         grid = 'p': destination grid
-    
+
     Returns:
         field on required grid
     @author: Peter Clark
     """
 
     print("d_by_dx_field_on_u ",grid)
-    d = field[...]
-    newfield = (d - np.roll(d,1,axis=xaxis)) / dx
+    d = field.data
+    x = field.coords['x_u'].data
+    dx = x[1] - x[0]
+#    dx = 50.0
+    xaxis = field.get_axis_num('x_u')
+    depths = np.zeros(len(field.dims))
+    depths[xaxis] = 1
+    newfield = field.rename({'x_u':'x_p'})
+    xdrv = lambda arr:((arr - np.roll(arr,1,axis=xaxis)) / dx)
+    newfield.data = d.map_overlap(xdrv, depth=tuple(depths), boundary={xaxis:'periodic'})
+    newfield = field.rename({'x_u':'x_p'})
+    newfield.coords['x_p'] = x - dx / 2.0
+
     # Derivative on p
     if grid == 'u' :
-        newfield = field_on_p_to_u(newfield, xaxis=xaxis)
+        newfield = field_on_p_to_u(newfield)
     if grid == 'v' :
-        newfield = field_on_p_to_v(newfield, xaxis=xaxis)
+        newfield = field_on_p_to_v(newfield)
     if grid == 'w' :
-        newfield = field_on_p_to_w(newfield, z, zn)
-        
+        newfield = field_on_p_to_w(newfield, z)
+
+    newfield.name = f"d{field.name:s}_by_dx_on_{grid:s}"
+
     return newfield
 
-def d_by_dy_field_on_u(field, dy, z, zn, xaxis=0, grid = 'p' ) :
+def d_by_dy_field_on_u(field, z, grid = 'p' ) :
     """
-    Differentiate field on u points in y direction then average to req grid 
-    
+    Differentiate field on u points in y direction then average to req grid
+
     Args:
-        field : nD field
-        dx    : grid length
-        xaxis=0: Specify axis corresponding to x
+        field : xarray nD field
+        z: zcoord - needed if changing vertical grid.
         grid = 'p': destination grid
-    
+
     Returns:
         field on required grid
     @author: Peter Clark
     """
 
     print("d_by_dy_field_on_u ",grid)
-    d = field[...]
-    newfield = (np.roll(d,-1,axis=xaxis+1) - d) / dy
+    d = field.data
+    y = field.coords['y_p'].data
+    dy = y[1] - y[0]
+    yaxis = field.get_axis_num('y_p')
+    depths = np.zeros(len(field.dims))
+    depths[yaxis] = 1
+    newfield = field.rename({'y_p':'y_v'})
+    ydrv = lambda arr:((np.roll(arr,-1,axis=yaxis) - arr) / dy)
+    newfield.data = d.map_overlap(ydrv, depth=tuple(depths), boundary={yaxis:'periodic'})
+    newfield.coords['y_v'] = y + dy / 2.0
+
     # Derivative on u,v
     if grid == 'p' :
-        newfield = field_on_u_to_p(newfield, xaxis=xaxis)
-        newfield = field_on_v_to_p(newfield, xaxis=xaxis)
+        newfield = field_on_u_to_p(newfield)
+        newfield = field_on_v_to_p(newfield)
     if grid == 'u' :
-        newfield = field_on_v_to_p(newfield, xaxis=xaxis)
+        newfield = field_on_v_to_p(newfield)
     if grid == 'v' :
-        newfield = field_on_u_to_p(newfield, xaxis=xaxis)
+        newfield = field_on_u_to_p(newfield)
     if grid == 'w' :
-        newfield = field_on_u_to_p(newfield, xaxis=xaxis)
-        newfield = field_on_v_to_p(newfield, xaxis=xaxis)
-        newfield = field_on_p_to_w(newfield, z, zn)
-        
+        newfield = field_on_u_to_p(newfield)
+        newfield = field_on_v_to_p(newfield)
+        newfield = field_on_p_to_w(newfield, z)
+
+    newfield.name = f"d{field.name:s}_by_dy_on_{grid:s}"
+
     return newfield
 
-def d_by_dz_field_on_u(field, z, zn, xaxis=0, grid = 'p' ) :
+def d_by_dz_field_on_u(field, z, grid = 'p' ) :
     """
-    Differentiate field on u points in z direction then average to req grid 
-    
+    Differentiate field on u points in z direction then average to req grid
+
     Args:
-        field : nD field
-        dx    : grid length
-        xaxis=0: Specify axis corresponding to x
+        field : xarray nD field
+        z: zcoord - needed if changing vertical grid.
         grid = 'p': destination grid
-    
+
     Returns:
         field on required grid
     @author: Peter Clark
     """
 
-    print("d_by_dz_field_on_u ",grid)
-#    print(zn)
-    d = field[...]
-    new = (d[..., 1:] - d[...,:-1])/ (zn[1:] - zn[:-1])
-    zt = 0.5 * (zn[1:] + zn[:-1])
-    newfield, newz = padright(new, zt, axis=xaxis+2)
+    zn = field.coords['zn']
+    newfield = d_by_dz_field_on_zn(field)
+
     # Derivative on u,w
     if grid == 'p' :
-        newfield = field_on_w_to_p(newfield, newz, zn) 
-        newfield = field_on_u_to_p(newfield, xaxis=xaxis) 
+        newfield = field_on_w_to_p(newfield, zn)
+        newfield = field_on_u_to_p(newfield)
     if grid == 'u' :
-        newfield = field_on_w_to_p(newfield, newz, zn) 
+        newfield = field_on_w_to_p(newfield, zn)
     if grid == 'v' :
-        newfield = field_on_w_to_p(newfield, newz, zn) 
-        newfield = field_on_u_to_p(newfield, xaxis=xaxis)
-        newfield = field_on_p_to_v(newfield, xaxis=xaxis)
+        newfield = field_on_w_to_p(newfield, zn)
+        newfield = field_on_u_to_p(newfield)
+        newfield = field_on_p_to_v(newfield)
     if grid == 'w' :
-        newfield = field_on_u_to_p(newfield, xaxis=xaxis)
-        
+        newfield = newfield.interp({'zi':z},
+                                   kwargs={"fill_value": "extrapolate"})
+        newfield = newfield.drop_vars('zi')
+        newfield = field_on_u_to_p(newfield)
+
+    newfield.name = f"d{field.name:s}_by_dz_on_{grid:s}"
+
     return newfield
 
-def d_by_dx_field_on_v(field, dy, z, zn, xaxis=0, grid = 'p' ) :
+def d_by_dx_field_on_v(field, z, grid = 'p' ) :
     """
-    Differentiate field on u points in y direction then average to req grid 
-    
+    Differentiate field on u points in y direction then average to req grid
+
     Args:
         field : nD field
-        dx    : grid length
-        xaxis=0: Specify axis corresponding to x
+        z: zcoord - needed if changing vertical grid.
         grid = 'p': destination grid
-    
+
     Returns:
         field on required grid
     @author: Peter Clark
     """
 
     print("d_by_dx_field_on_v ",grid)
-    d = field[...]
-    newfield = (np.roll(d,-1,axis=xaxis) - d) / dy
+    d = field.data
+    x = field.coords['x_p'].data
+    dx = x[1] - x[0]
+    xaxis = field.get_axis_num('x_p')
+    depths = np.zeros(len(field.dims))
+    depths[xaxis] = 1
+    newfield = field.rename({'x_p':'x_u'})
+    xdrv = lambda arr:((np.roll(arr,-1,axis=xaxis) - arr)/dx)
+    newfield.data = d.map_overlap(xdrv, depth=tuple(depths), boundary={xaxis:'periodic'})
+    newfield.coords['x_u'] = x - dx / 2.0
+
     # Derivative on u,v
     if grid == 'p' :
-        newfield = field_on_u_to_p(newfield, xaxis=xaxis)
-        newfield = field_on_v_to_p(newfield, xaxis=xaxis)
+        newfield = field_on_u_to_p(newfield)
+        newfield = field_on_v_to_p(newfield)
     if grid == 'u' :
-        newfield = field_on_v_to_p(newfield, xaxis=xaxis)
+        newfield = field_on_v_to_p(newfield)
     if grid == 'v' :
-        newfield = field_on_u_to_p(newfield, xaxis=xaxis)
+        newfield = field_on_u_to_p(newfield)
     if grid == 'w' :
-        newfield = field_on_u_to_p(newfield, xaxis=xaxis)
-        newfield = field_on_v_to_p(newfield, xaxis=xaxis)
-        newfield = field_on_p_to_w(newfield, z, zn)
-        
+        newfield = field_on_u_to_p(newfield)
+        newfield = field_on_v_to_p(newfield)
+        newfield = field_on_p_to_w(newfield, z)
+
+    newfield.name = f"d{field.name:s}_by_dx_on_{grid:s}"
+
     return newfield
 
-def d_by_dy_field_on_v(field, dy, z, zn, xaxis=0, grid = 'p' ) :
+def d_by_dy_field_on_v(field, z, grid = 'p' ) :
     """
-    Differentiate field on u points in x direction then average to req grid 
-    
+    Differentiate field on u points in x direction then average to req grid
+
     Args:
-        field : nD field
-        dy    : grid length
-        xaxis=0: Specify axis corresponding to x
+        field : xarray nD field
+        z: zcoord - needed if changing vertical grid.
         grid = 'p': destination grid
-    
+
     Returns:
         field on required grid
     @author: Peter Clark
     """
 
     print("d_by_dy_field_on_v ",grid)
-    d = field[...]
-    newfield = (d - np.roll(d,1,axis=xaxis+1)) / dy
+    d = field.data
+    y = field.coords['y_v'].data
+    dy = y[1] - y[0]
+    yaxis = field.get_axis_num('y_v')
+    depths = np.zeros(len(field.dims))
+    depths[yaxis] = 1
+    newfield = field.rename({'y_v':'y_p'})
+    ydrv = lambda arr:((arr - np.roll(arr,1,axis=yaxis)) / dy)
+    newfield.data = d.map_overlap(ydrv, depth=tuple(depths), boundary={yaxis:'periodic'})
+    newfield.coords['y_p'] = y - dy / 2.0
+
     # Derivative on p
     if grid == 'u' :
-        newfield = field_on_p_to_u(newfield, xaxis=xaxis)
+        newfield = field_on_p_to_u(newfield)
     if grid == 'v' :
-        newfield = field_on_p_to_v(newfield, xaxis=xaxis)
+        newfield = field_on_p_to_v(newfield)
     if grid == 'w' :
-        newfield = field_on_p_to_w(newfield, z, zn)
-        
+        newfield = field_on_p_to_w(newfield, z)
+
+    newfield.name = f"d{field.name:s}_by_dy_on_{grid:s}"
+
     return newfield
 
-def d_by_dz_field_on_v(field, z, zn, xaxis=0, grid = 'p' ) :
+def d_by_dz_field_on_v(field, z, grid = 'p' ) :
     """
-    Differentiate field on u points in z direction then average to req grid 
-    
+    Differentiate field on u points in z direction then average to req grid
+
     Args:
-        field : nD field
-        dx    : grid length
-        xaxis=0: Specify axis corresponding to x
-        grid = 'p': destination grid
-    
+         field : nD xarray field
+         z: zcoord - needed if changing vertical grid.
+         grid = 'p': destination grid
+
     Returns:
         field on required grid
     @author: Peter Clark
     """
 
     print("d_by_dz_field_on_v ",grid)
-#    print(zn)
-    d = field[...]
-    new = (d[..., 1:] - d[...,:-1])/ (zn[1:] - zn[:-1])
-    zt = 0.5 * (zn[1:] + zn[:-1])
-    newfield, newz = padright(new, zt, axis=xaxis+2)
+
+    zn = field.coords['zn']
+    newfield = d_by_dz_field_on_zn(field)
+
     # Derivative on v,w
     if grid == 'p' :
-        newfield = field_on_w_to_p(newfield, newz, zn) 
-        newfield = field_on_u_to_p(newfield, xaxis=xaxis) 
+        newfield = field_on_w_to_p(newfield, zn)
+        newfield = field_on_u_to_p(newfield)
     if grid == 'u' :
-        newfield = field_on_w_to_p(newfield, newz, zn) 
+        newfield = field_on_w_to_p(newfield, zn)
     if grid == 'v' :
-        newfield = field_on_w_to_p(newfield, newz, zn) 
-        newfield = field_on_u_to_p(newfield, xaxis=xaxis)
-        newfield = field_on_p_to_v(newfield, xaxis=xaxis)
+        newfield = field_on_w_to_p(newfield, zn)
+        newfield = field_on_u_to_p(newfield)
+        newfield = field_on_p_to_v(newfield)
     if grid == 'w' :
-        newfield = field_on_u_to_p(newfield, xaxis=xaxis)
-        
+        newfield = newfield.interp({'zi':z},
+                                   kwargs={"fill_value": "extrapolate"})
+        newfield = newfield.drop_vars('zi')
+        newfield = field_on_v_to_p(newfield)
+
+    newfield.name = f"d{field.name:s}_by_dz_on_{grid:s}"
+
     return newfield
 
-def d_by_dx_field_on_p(field, dx, z, zn, xaxis=0, grid = 'p' ) :
+def d_by_dx_field_on_p(field, z, grid = 'p' ) :
     """
-    Differentiate field on u points in x direction then average to req grid 
-    
+    Differentiate field on u points in x direction then average to req grid
+
     Args:
-        field : nD field
-        dy    : grid length
-        xaxis=0: Specify axis corresponding to x
-        grid = 'p': destination grid
-    
+        field : nD xarray field
+        z: zcoord - needed if changing vertical grid.
+       grid = 'p': destination grid
+
     Returns:
         field on required grid
     @author: Peter Clark
     """
 
     print("d_by_dx_field_on_p ",grid)
-    d = field[...]
-    newfield = (np.roll(d,-1,axis=xaxis)- d ) / dx
+    d = field.data
+    x = field.coords['x_p'].data
+    dx = x[1] - x[0]
+    xaxis = field.get_axis_num('x_p')
+
+    newfield = field.rename({'x_p':'x_u'})
+    newfield.data = (np.roll(d,-1,axis=xaxis)- d ) / dx
+    newfield.coords['x_u'] = x + dx / 2.0
+
     # Derivative on u
     if grid == 'p' :
-        newfield = field_on_u_to_p(newfield, xaxis=xaxis)
+        newfield = field_on_u_to_p(newfield)
     if grid == 'v' :
-        newfield = field_on_u_to_p(newfield, xaxis=xaxis)
-        newfield = field_on_p_to_v(newfield, xaxis=xaxis)
+        newfield = field_on_u_to_p(newfield)
+        newfield = field_on_p_to_v(newfield)
     if grid == 'w' :
-        newfield = field_on_u_to_p(newfield, xaxis=xaxis)
-        newfield = field_on_p_to_w(newfield, z, zn)
-        
+        newfield = field_on_u_to_p(newfield)
+        newfield = field_on_p_to_w(newfield, z)
+
+    newfield.name = f"d{field.name:s}_by_dx_on_{grid:s}"
+
     return newfield
 
-def d_by_dy_field_on_p(field, dy, z, zn, xaxis=0, grid = 'p' ) :
+def d_by_dy_field_on_p(field, z, grid = 'p' ) :
     """
-    Differentiate field on u points in y direction then average to req grid 
-    
+    Differentiate field on u points in y direction then average to req grid
+
     Args:
-        field : nD field
-        dy    : grid length
-        xaxis=0: Specify axis corresponding to x
+        field : nD xarray field
+        z: zcoord - needed if changing vertical grid.
         grid = 'p': destination grid
-    
+
     Returns:
         field on required grid
     @author: Peter Clark
     """
 
     print("d_by_dy_field_on_p ",grid)
-    d = field[...]
-    newfield = (np.roll(d,-1,axis=xaxis+1) - d) / dy
+    d = field.data
+    y = field.coords['y_p'].data
+    dy = y[1] - y[0]
+    yaxis = field.get_axis_num('y_p')
+
+    newfield = field.rename({'y_p':'y_v'})
+    newfield.data = (np.roll(d,-1,axis=yaxis) - d) / dy
+    newfield.coords['y_v'] = y + dy / 2.0
+
     # Derivative on v
     if grid == 'p' :
-        newfield = field_on_v_to_p(newfield, xaxis=xaxis)
+        newfield = field_on_v_to_p(newfield)
     if grid == 'u' :
-        newfield = field_on_v_to_p(newfield, xaxis=xaxis)
-        newfield = field_on_p_to_u(newfield, xaxis=xaxis)
+        newfield = field_on_v_to_p(newfield)
+        newfield = field_on_p_to_u(newfield)
     if grid == 'w' :
-        newfield = field_on_v_to_p(newfield, xaxis=xaxis)
-        newfield = field_on_p_to_w(newfield, z, zn)
-        
+        newfield = field_on_v_to_p(newfield)
+        newfield = field_on_p_to_w(newfield, z)
+
+    newfield.name = f"d{field.name:s}_by_dy_on_{grid:s}"
+
     return newfield
 
-def d_by_dz_field_on_p(field, z, zn, xaxis=0, grid = 'p' ) :
+def d_by_dz_field_on_p(field, z, grid = 'p' ) :
     """
-    Differentiate field on u points in z direction then average to req grid 
-    
+    Differentiate field on u points in z direction then average to req grid
+
     Args:
-        field : nD field
-        dx    : grid length
-        xaxis=0: Specify axis corresponding to x
+        field : nD xarray field
+        z: zcoord - needed if changing vertical grid.
         grid = 'p': destination grid
-    
+
     Returns:
         field on required grid
     @author: Peter Clark
     """
 
     print("d_by_dz_field_on_p ",grid)
-    d = field[...]
-    new = (d[..., 1:] - d[...,:-1])/ (zn[1:] - zn[:-1])
-    print(zn)
-    zt = 0.5 * (zn[1:] + zn[:-1])
-    newfield, newz = padright(new, zt, axis=xaxis+2)
+    zn = field.coords['zn']
+    newfield = d_by_dz_field_on_zn(field)
+
     # Derivative on w
     if grid == 'p' :
-        newfield = field_on_w_to_p(newfield, newz, zn) 
+        newfield = field_on_w_to_p(newfield, zn)
     if grid == 'u' :
-        newfield = field_on_w_to_p(newfield, newz, zn) 
-        newfield = field_on_p_to_u(newfield, xaxis=xaxis)
+        newfield = field_on_w_to_p(newfield, zn)
+        newfield = field_on_p_to_u(newfield)
     if grid == 'v' :
-        newfield = field_on_w_to_p(newfield, newz, zn) 
-        newfield = field_on_p_to_v(newfield, xaxis=xaxis)
-        
+        newfield = field_on_w_to_p(newfield, zn)
+        newfield = field_on_p_to_v(newfield)
+    if grid == 'w' :
+        newfield = newfield.interp({'zi':z},
+                                   kwargs={"fill_value": "extrapolate"})
+        newfield = newfield.drop_vars('zi')
+
+    newfield.name = f"d{field.name:s}_by_dz_on_{grid:s}"
+
     return newfield
 
-def d_by_dx_field_on_w(field, dx, z, zn, xaxis=0, grid = 'p' ) :
+def d_by_dx_field_on_w(field, zn, grid = 'p' ) :
     """
-    Differentiate field on u points in x direction then average to req grid 
-    
+    Differentiate field on u points in x direction then average to req grid
+
     Args:
         field : nD field
-        dy    : grid length
-        xaxis=0: Specify axis corresponding to x
+        zn: zcoord - needed if changing vertical grid.
         grid = 'p': destination grid
-    
+
     Returns:
         field on required grid
     @author: Peter Clark
     """
 
     print("d_by_dx_field_on_w ",grid)
-    d = field[...]
-    newfield = (np.roll(d,-1,axis=xaxis)- d ) / dx
+    d = field.data
+    x = field.coords['x_p'].data
+    dx = x[1] - x[0]
+    xaxis = field.get_axis_num('x_p')
+    depths = np.zeros(len(field.dims))
+    depths[xaxis] = 1
+    newfield = field.rename({'x_p':'x_u'})
+    xdrv = lambda arr:((np.roll(arr,-1,axis=xaxis) - arr) / dx)
+    newfield.data = d.map_overlap(xdrv, depth=tuple(depths), boundary={xaxis:'periodic'})
+    newfield.coords['x_u'] = x + dx / 2.0
+
     # Derivative on u,w
     if grid == 'p' :
-        newfield = field_on_w_to_p(newfield, z, zn)
-        newfield = field_on_u_to_p(newfield, xaxis=xaxis)
+        newfield = field_on_w_to_p(newfield, zn)
+        newfield = field_on_u_to_p(newfield)
     if grid == 'u' :
-        newfield = field_on_w_to_p(newfield, z, zn)
+        newfield = field_on_w_to_p(newfield, zn)
     if grid == 'v' :
-        newfield = field_on_w_to_p(newfield, z, zn)
-        newfield = field_on_u_to_p(newfield, xaxis=xaxis)
-        newfield = field_on_p_to_v(newfield, xaxis=xaxis)
-        
+        newfield = field_on_w_to_p(newfield, zn)
+        newfield = field_on_u_to_p(newfield)
+        newfield = field_on_p_to_v(newfield)
+    if grid == 'w' :
+        newfield = field_on_u_to_p(newfield)
+
+    newfield.name = f"d{field.name:s}_by_dx_on_{grid:s}"
+
     return newfield
 
-def d_by_dy_field_on_w(field, dy, z, zn, xaxis=0, grid = 'p' ) :
+def d_by_dy_field_on_w(field, zn, grid = 'p' ) :
     """
-    Differentiate field on u points in y direction then average to req grid 
-    
+    Differentiate field on u points in y direction then average to req grid
+
     Args:
         field : nD field
-        dy    : grid length
-        xaxis=0: Specify axis corresponding to x
+        zn: zcoord - needed if changing vertical grid.
         grid = 'p': destination grid
-    
+
     Returns:
         field on required grid
     @author: Peter Clark
     """
 
     print("d_by_dy_field_on_w ",grid)
-    d = field[...]
-    newfield = (np.roll(d,-1,axis=xaxis+1) - d) / dy
+    d = field.data
+    y = field.coords['y_p'].data
+    dy = y[1] - y[0]
+    yaxis = field.get_axis_num('y_p')
+    depths = np.zeros(len(field.dims))
+    depths[yaxis] = 1
+    newfield = field.rename({'y_p':'y_v'})
+    ydrv = lambda arr:((np.roll(arr,-1,axis=yaxis) - arr) / dy)
+    newfield.data = d.map_overlap(ydrv, depth=tuple(depths), boundary={yaxis:'periodic'})
+    newfield.coords['y_v'] = y + dy / 2.0
+
     # Derivative on v,w
     if grid == 'p' :
-        newfield = field_on_w_to_p(newfield, z, zn)
-        newfield = field_on_v_to_p(newfield, xaxis=xaxis)
+        newfield = field_on_w_to_p(newfield, zn)
+        newfield = field_on_v_to_p(newfield)
     if grid == 'u' :
-        newfield = field_on_w_to_p(newfield, z, zn)
-        newfield = field_on_v_to_p(newfield, xaxis=xaxis)
-        newfield = field_on_p_to_u(newfield, xaxis=xaxis)
+        newfield = field_on_w_to_p(newfield, zn)
+        newfield = field_on_v_to_p(newfield)
+        newfield = field_on_p_to_u(newfield)
     if grid == 'v' :
-        newfield = field_on_w_to_p(newfield, z, zn)
-        
+        newfield = field_on_w_to_p(newfield, zn)
+    if grid == 'w' :
+        newfield = field_on_v_to_p(newfield)
+
+    newfield.name = f"d{field.name:s}_by_dy_on_{grid:s}"
+
     return newfield
 
-def d_by_dz_field_on_w(field, z, zn, xaxis=0, grid = 'p' ) :
+def d_by_dz_field_on_w(field, zn, grid = 'p' ) :
     """
-    Differentiate field on u points in z direction then average to req grid 
-    
+    Differentiate field on u points in z direction then average to req grid
+
     Args:
         field : nD field
-        dx    : grid length
-        xaxis=0: Specify axis corresponding to x
+        zn: zcoord - needed if changing vertical grid.
         grid = 'p': destination grid
-    
+
     Returns:
         field on required grid
     @author: Peter Clark
     """
 
     print("d_by_dz_field_on_w ",grid)
-#    print(z)
-    d = field[...]
-    new = (d[..., 1:] - d[...,0:-1])/ (z[1:] - z[:-1])
-    zt = 0.5 * (z[1:] + z[:-1])
-    newfield, newz = padleft(new, zt, axis=xaxis+2)
+
+    z = field.coords['z']
+    newfield = d_by_dz_field_on_z(field)
+
     # Derivative on p
+    if grid == 'p' :
+        newfield = newfield.interp({'zi':zn},
+                                   kwargs={"fill_value": "extrapolate"})
+        newfield = newfield.drop_vars('zi')
     if grid == 'u' :
-        newfield = field_on_p_to_u(newfield, xaxis=xaxis)
+        newfield = field_on_p_to_u(newfield)
     if grid == 'v' :
-        newfield = field_on_p_to_v(newfield, xaxis=xaxis)
+        newfield = field_on_p_to_v(newfield)
     if grid == 'w' :
-        newfield = field_on_p_to_w(newfield, z, newz) 
-        
+        newfield = field_on_p_to_w(newfield, z)
+
+    newfield.name = f"d{field.name:s}_by_dz_on_{grid:s}"
+
     return newfield
 
 def padleft(f, zt, axis=0) :
     """
     Add dummy field at bottom of nD array
-    
+
     Args:
         f : nD field
         zt: 1D zcoordinates
         axis=0: Specify axis to extend
-    
+
     Returns:
         extended field, extended coord
     @author: Peter Clark
@@ -542,12 +702,12 @@ def padleft(f, zt, axis=0) :
 def padright(f, zt, axis=0) :
     """
     Add dummy field at top of nD array
-    
+
     Args:
         f : nD field
         zt: 1D zcoordinates
         axis=0: Specify axis to extend
-    
+
     Returns:
         extended field, extended coord
     @author: Peter Clark

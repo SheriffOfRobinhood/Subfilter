@@ -5,60 +5,93 @@ Created on Tue Oct 23 11:27:25 2018
 @author: Peter Clark
 """
 import os
-import netCDF4
-from netCDF4 import Dataset
+#import netCDF4
+#from netCDF4 import Dataset
 import numpy as np
+#import pandas as pd
+import xarray as xr
 import matplotlib
 import matplotlib.pyplot as plt
 
 import subfilter as sf
 import filters as filt
-import difference_ops as do
+#import difference_ops as do
+import dask
 
-options = {
-#        'FFT_type': 'FFTconvolve',
-#        'FFT_type': 'FFT',
-        'FFT_type': 'RFFT',
-        'save_all': 'Yes',
-          }
+#from dask.diagnostics import Profiler, ResourceProfiler, CacheProfiler
+#from dask.diagnostics import ProgressBar
 
+from dask.distributed import Client
 
-dir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
-odir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
-odir = odir + 'test_op_' + options['FFT_type']+'/'
+test_case = 0
+
+if test_case == 0:
+    options = {
+    #        'FFT_type': 'FFTconvolve',
+    #        'FFT_type': 'FFT',
+            'FFT_type': 'RFFT',
+            'save_all': 'Yes',
+            'th_ref': 300.0,
+            'dx': 50.0,
+            'dy': 50.0,
+              }
+    dir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
+    odir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
+    odir = odir + 'test_dask_' + options['FFT_type']+'/'
+    file = 'diagnostics_3d_ts_21600.nc'
+    ref_file = 'diagnostics_ts_21600.nc'
+elif test_case == 1:
+    options = {
+    #        'FFT_type': 'FFTconvolve',
+    #        'FFT_type': 'FFT',
+            'FFT_type': 'RFFT',
+            'save_all': 'Yes',
+            'th_ref': 300.0,
+            'dx': 5.0,
+            'dy': 5.0,
+              }
+    dir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/CBL/'
+    odir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/CBL/'
+    odir = odir + 'test_dask_' + options['FFT_type']+'/'
+    file = 'diagnostics_3d_ts_13200.nc'
+    ref_file = None
+
+#dir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
+#odir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
 
 os.makedirs(odir, exist_ok = True)
 
-file = 'diagnostics_ts_18000.0.nc'
-ref_file = 'diagnostics_ts_18000.0.nc'
-
-#w = dataset.variables['w']
-#var_tvar = w.dimensions[0]
-#var_time = dataset.variables[var_tvar]
+#file = 'diagnostics_ts_18000.0.nc'
+#ref_file = 'diagnostics_ts_18000.0.nc'
 
 plot_dir = odir + 'plots/'
 os.makedirs(plot_dir, exist_ok = True)
 
 plot_type = '.png'
-data_dir = '' # Directory containing data
 figshow = True
 
 def plot_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
 
-    var_r = filtered_data[f"{var_name}_on_{grid}_r"]
-    var_s = filtered_data[f"{var_name}_on_{grid}_s"]
+    var_r = filtered_data['ds'][f"{var_name}_on_{grid}_r"]
+    var_s = filtered_data['ds'][f"{var_name}_on_{grid}_s"]
 
+    [iix, iiy, iiz] = sf.find_var(var_s.dims, ['x', 'y', 'z'])
+    xvar = var_s.dims[iix]
+    yvar = var_s.dims[iiy]
+    zvar = var_s.dims[iiz]
 
-    for it in range(var_r.shape[0]):
+    for it, time in enumerate(var_r.coords['time']):
+
+        print(f'it:{it}')
+
         if twod_filter.attributes['filter_type']=='domain' :
-            zcoord = sf.last_dim(filtered_data[var_r.dimensions[1]])
-            pltdat = (var_r[it,:])
+
+#            zcoord = sf.last_dim(filtered_data['ds'][var_r.dimensions[1]])
+ #           pltdat = (var_r[it,:])
 
             fig1, axa = plt.subplots(1,1,figsize=(5,5))
 
-            Cs1 = axa.plot(pltdat, zcoord)
-            axa.set_xlabel(r'%s$^r$'%(var_name))
-            axa.set_ylabel('z')
+            Cs1 = var_r.isel(time=it).plot(y=zvar, ax = axa)
 
             plt.tight_layout()
 
@@ -66,50 +99,36 @@ def plot_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
                     twod_filter.id+'_%02d'%it+plot_type)
             plt.close()
         else :
-            zcoord = sf.last_dim(filtered_data[var_r.dimensions[3]])
-            meanfield= np.mean(var_r[it,...],axis=(0,1),keepdims=True)
-            pltdat = (var_r[it,...]-meanfield)
+            meanfield= var_r.isel(time=it).mean(dim=(xvar, yvar))
+            pltdat = (var_r.isel(time=it)-meanfield)
 
             nlevels = 40
             plt.clf
 
             fig1, axa = plt.subplots(3,2,figsize=(10,12))
 
-            Cs1 = axa[0,0].contourf(np.transpose(pltdat[:, :, ilev]),\
-                     nlevels)
-            axa[0,0].set_title(r'%s$^r$ pert level %03d'%(var_name,ilev))
-            axa[0,0].set_xlabel('x')
+            Cs1 = pltdat.isel({zvar:ilev}).plot.imshow(x=xvar, y=yvar, ax=axa[0,0], levels=nlevels)
 
-        # Make a colorbar for the ContourSet returned by the contourf call.
-            cbar1 = fig1.colorbar(Cs1,ax=axa[0,0])
-            cbar1.ax.set_ylabel(var_name)
-        # Add the contour line levels to the colorbar
+#            axa[0,0].set_title(r'%s$^r$ pert level %03d'%(var_name,ilev))
 
-            Cs2 = axa[0,1].contourf(np.transpose(var_s[it, :, :, ilev]),\
-                     nlevels)
-            axa[0,1].set_xlabel('x')
-            axa[0,1].set_title(r'%s$^s$ level %03d'%(var_name,ilev))
-            cbar2 = fig1.colorbar(Cs2,ax=axa[0,1])
-            cbar2.ax.set_ylabel(var_name)
+            Cs2 = var_s.isel({'time':it, zvar:ilev}).plot.imshow(x=xvar, y=yvar, ax=axa[0,1], levels=nlevels)
+#             axa[0,1].set_title(r'%s$^s$ level %03d'%(var_name,ilev))
 
-            Cs3 = axa[1,0].contourf(np.transpose(pltdat[:,iy,:]),nlevels)
+            Cs3 = pltdat.isel({yvar:iy}).plot.imshow(x=xvar, y=zvar, ax=axa[1,0], levels=nlevels)
 
-            axa[1,0].set_title(r'%s$^r$ pert at iy %03d'%(var_name,iy))
-        ## Make a colorbar for the ContourSet returned by the contourf call.
-            cbar3 = fig1.colorbar(Cs3,ax=axa[1,0])
-            cbar3.ax.set_ylabel(var_name)
-            Cs4 = axa[1,1].contourf(np.transpose(var_s[it, :, iy,:]),nlevels)
-            axa[1,1].set_title(r'%s$^s$ at iy %03d'%(var_name,iy))
-        ## Make a colorbar for the ContourSet returned by the contourf call.
-            cbar4 = fig1.colorbar(Cs4,ax=axa[1,1])
-            cbar4.ax.set_ylabel(var_name)
-            x=(np.arange(0,var_r.shape[2])-0.5*var_r.shape[2])*0.1
-            ax1 = axa[2,0].plot(x,pltdat[:,iy,ilev])
-            ax2 = axa[2,1].plot(x,var_s[it,:,iy,ilev])
+#             axa[1,0].set_title(r'%s$^r$ pert at iy %03d'%(var_name,iy))
+            Cs4 = var_s.isel({'time':it, yvar:iy}).plot.imshow(x=xvar, y=zvar, ax=axa[1,1], levels=nlevels)
+#             axa[1,1].set_title(r'%s$^s$ at iy %03d'%(var_name,iy))
+
+            p1 = pltdat.isel({yvar:iy, zvar:ilev}).plot(ax=axa[2,0])
+
+            p2 = var_s.isel({'time':it, yvar:iy, zvar:ilev}).plot(ax=axa[2,1])
+#             x=(np.arange(0,var_r.shape[2])-0.5*var_r.shape[2])*0.1
             plt.tight_layout()
 
             plt.savefig(plot_dir+var_name+'_lev_'+'%03d'%ilev+'_x_z'+'%03d'%iy+'_'+\
                         twod_filter.id+'_%02d'%it+plot_type)
+
             plt.close()
 
     return
@@ -119,24 +138,29 @@ def plot_quad_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
     v1 = var_name[0]
     v2 = var_name[1]
 
-    v1_r = filtered_data[f"{v1}_on_{grid}_r"]
-    v2_r = filtered_data[f"{v2}_on_{grid}_r"]
+    v1_r = filtered_data['ds'][f"{v1}_on_{grid}_r"]
+    v2_r = filtered_data['ds'][f"{v2}_on_{grid}_r"]
 
-    print(v1,v2)
-    s_v1v2 = filtered_data[f"s({v1},{v2})_on_{grid}"]
-    print(s_v1v2)
+#    print(v1,v2)
+    s_v1v2 = filtered_data['ds'][f"s({v1},{v2})_on_{grid}"]
+#    print(s_v1v2)
 
-    for it in range(s_v1v2.shape[0]):
+    [iix, iiy, iiz] = sf.find_var(s_v1v2.dims, ['x', 'y', 'z'])
+    if iix is not None:
+        xvar = s_v1v2.dims[iix]
+        yvar = s_v1v2.dims[iiy]
+    zvar = s_v1v2.dims[iiz]
+
+    for it, time in enumerate(s_v1v2.coords['time']):
+
+        print(f'it:{it}')
+
 
         if twod_filter.attributes['filter_type']=='domain' :
-            pltdat = (s_v1v2[it,:])
-            zcoord = sf.last_dim(filtered_data[v1_r.dimensions[1]])
 
             fig1, axa = plt.subplots(1,1,figsize=(5,5))
 
-            Cs1 = axa.plot(pltdat, zcoord)
-            axa.set_xlabel('s({},{})'.format(v1,v2))
-            axa.set_ylabel('z')
+            Cs1 = s_v1v2.isel(time=it).plot(y=zvar, ax = axa)
 
             plt.tight_layout()
 
@@ -144,49 +168,35 @@ def plot_quad_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
                     twod_filter.id+'_%02d'%it+plot_type)
             plt.close()
         else :
-            zcoord = sf.last_dim(filtered_data[v1_r.dimensions[3]])
-            var_r = (v1_r[it,...] - np.mean(v1_r[it,...], axis=(0,1))) * \
-                    (v2_r[it,...] - np.mean(v2_r[it,...], axis=(0,1)))
 
-            meanfield= np.mean(var_r[...],axis=(0,1),keepdims=True)
-            pltdat = (var_r[...]-meanfield)
+            var_r = (v1_r.isel(time=it) - v1_r.isel(time=it).mean(dim=(xvar, yvar))) * \
+                    (v2_r.isel(time=it) - v2_r.isel(time=it).mean(dim=(xvar, yvar)))
+
+
+            pltdat = (var_r - var_r.mean(dim=(xvar, yvar)))
+
+            pltdat.name = v1+'_r.'+v2+'_r'
 
             nlevels = 40
             plt.clf
 
             fig1, axa = plt.subplots(3,2,figsize=(10,12))
 
-            Cs1 = axa[0,0].contourf(np.transpose(pltdat[:, :, ilev]),\
-                     nlevels)
-            axa[0,0].set_title(r'{}$^r${}$^r$ pert level {:03d}'.format(v1, v2,ilev))
-            axa[0,0].set_xlabel('x')
+            Cs1 = pltdat.isel({zvar:ilev}).plot.imshow(x=xvar, y=yvar, ax=axa[0,0], levels=nlevels)
 
-        # Make a colorbar for the ContourSet returned by the contourf call.
-            cbar1 = fig1.colorbar(Cs1,ax=axa[0,0])
-            cbar1.ax.set_ylabel(var_name)
+#            axa[0,0].set_title(r'{}$^r${}$^r$ pert level {:03d}'.format(v1, v2,ilev))
 
-            Cs2 = axa[0,1].contourf(np.transpose(s_v1v2[it, :, :, ilev]),\
-                     nlevels)
-            axa[0,1].set_xlabel('x')
-            axa[0,1].set_title('s({},{}) level {:03d}'.format(v1,v2,ilev))
-            cbar2 = fig1.colorbar(Cs2,ax=axa[0,1])
-            cbar2.ax.set_ylabel(var_name)
-            Cs3 = axa[1,0].contourf(np.transpose(pltdat[:,iy,:]),nlevels)
-            axa[1,0].set_title(r'{}$^r${}$^r$ at iy={:03d}'.format(v1, v2,iy))
-        ## Make a colorbar for the ContourSet returned by the contourf call.
-            cbar3 = fig1.colorbar(Cs3,ax=axa[1,0])
-            cbar3.ax.set_ylabel(var_name)
-            Cs4 = axa[1,1].contourf(np.transpose(s_v1v2[it, :, iy,:]),nlevels)
-            axa[1,1].set_title('s({},{}) at iy={:03d}'.format(v1,v2,iy))
-        ## Make a colorbar for the ContourSet returned by the contourf call.
-            cbar4 = fig1.colorbar(Cs4,ax=axa[1,1])
-            cbar4.ax.set_ylabel(var_name)
-            x=(np.arange(0,var_r.shape[1])-0.5*var_r.shape[1])*0.1
-#            ax1 = axa[2,0].plot(x,pltdat[:,iy,ilev])
-#            ax2 = axa[2,1].plot(x,s_v1v2[it,:,iy,ilev])
-#            x=(np.arange(0,var_r.shape[1])-0.5*var_r.shape[1])*0.1
-            ax1 = axa[2,0].plot(pltdat[:,iy,ilev])
-            ax2 = axa[2,1].plot(s_v1v2[it,:,iy,ilev])
+
+            Cs2 = s_v1v2.isel({'time':it, zvar:ilev}).plot.imshow(x=xvar, y=yvar, ax=axa[0,1], levels=nlevels)
+
+            Cs3 = pltdat.isel({yvar:iy}).plot.imshow(x=xvar, y=zvar, ax=axa[1,0], levels=nlevels)
+
+            Cs4 = s_v1v2.isel({'time':it, yvar:iy}).plot.imshow(x=xvar, y=zvar, ax=axa[1,1], levels=nlevels)
+
+            p1 = pltdat.isel({yvar:iy, zvar:ilev}).plot(ax=axa[2,0])
+
+            p2 = s_v1v2.isel({'time':it, yvar:iy, zvar:ilev}).plot(ax=axa[2,1])
+
             plt.tight_layout()
 
             plt.savefig(plot_dir+var_name[0]+'_'+var_name[1]+'_lev_'+'%03d'%ilev+'_x_z'+'%03d'%iy+'_'+\
@@ -196,18 +206,22 @@ def plot_quad_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
     return
 
 def plot_shear(var_r, var_s, zcoord,  twod_filter, ilev, iy, no_trace = True):
-    var_name = "mod_S"
+    var_name = var_r.name
     if no_trace : var_name = var_name+'n'
 
-    for it in range(var_r.shape[0]):
+    [iix, iiy, iiz] = sf.find_var(var_s.dims, ['x', 'y', 'z'])
+    xvar = var_s.dims[iix]
+    yvar = var_s.dims[iiy]
+    zvar = var_s.dims[iiz]
+
+    for it, time in enumerate(var_r.coords['time']):
+        print(f'it:{it}')
+
         if twod_filter.attributes['filter_type']=='domain' :
-            pltdat = (var_r[it,:])
 
             fig1, axa = plt.subplots(1,1,figsize=(5,5))
 
-            Cs1 = axa.plot(pltdat[1:], zcoord[1:])
-            axa.set_xlabel(var_name)
-            axa.set_ylabel('z')
+            Cs1 = var_r.isel({'time':it, zvar:slice(1,None)}).plot(y=zvar, ax = axa)
 
             plt.tight_layout()
 
@@ -215,40 +229,25 @@ def plot_shear(var_r, var_s, zcoord,  twod_filter, ilev, iy, no_trace = True):
                     twod_filter.id+'_%02d'%it+plot_type)
             plt.close()
         else :
-            pltdat = var_r[it,...]
+            pltdat = var_r.isel(time=it)
 
             nlevels = 40
             plt.clf
 
             fig1, axa = plt.subplots(3,2,figsize=(10,12))
 
-            Cs1 = axa[0,0].contourf(np.transpose(pltdat[:, :, ilev]),\
-                     nlevels)
-            axa[0,0].set_title(r'%s$^r$ level %03d'%(var_name,ilev))
-            axa[0,0].set_xlabel('x')
+            Cs1 = pltdat.isel({zvar:ilev}).plot.imshow(x=xvar, y=yvar, ax=axa[0,0], levels=nlevels)
 
-        # Make a colorbar for the ContourSet returned by the contourf call.
-            cbar1 = fig1.colorbar(Cs1,ax=axa[0,0])
-            cbar1.ax.set_ylabel(var_name)
-            Cs2 = axa[0,1].contourf(np.transpose(var_s[it, :, :, ilev]),\
-                     nlevels)
-            axa[0,1].set_xlabel('x')
-            axa[0,1].set_title(r'%s$^s$ level %03d'%(var_name,ilev))
-            cbar2 = fig1.colorbar(Cs2,ax=axa[0,1])
-            cbar2.ax.set_ylabel(var_name)
-            Cs3 = axa[1,0].contourf(np.transpose(pltdat[:,iy,:]),nlevels)
-            axa[1,0].set_title(r'%s$^r$ at iy %03d'%(var_name,iy))
-        ## Make a colorbar for the ContourSet returned by the contourf call.
-            cbar3 = fig1.colorbar(Cs3,ax=axa[1,0])
-            cbar3.ax.set_ylabel(var_name)
-            Cs4 = axa[1,1].contourf(np.transpose(var_s[it, :, iy,:]),nlevels)
-            axa[1,1].set_title(r'%s$^s$ at iy %03d'%(var_name,iy))
-        ## Make a colorbar for the ContourSet returned by the contourf call.
-            cbar4 = fig1.colorbar(Cs4,ax=axa[1,1])
-            cbar4.ax.set_ylabel(var_name)
-            x=(np.arange(0,var_r.shape[2])-0.5*var_r.shape[2])*0.1
-            ax1 = axa[2,0].plot(x,pltdat[:,iy,ilev])
-            ax2 = axa[2,1].plot(x,var_s[it,:,iy,ilev])
+            Cs2 = var_s.isel({'time':it, zvar:ilev}).plot.imshow(x=xvar, y=yvar, ax=axa[0,1], levels=nlevels)
+
+            Cs3 = pltdat.isel({yvar:iy}).plot.imshow(x=xvar, y=zvar, ax=axa[1,0], levels=nlevels)
+
+#             axa[1,0].set_title(r'%s$^r$ pert at iy %03d'%(var_name,iy))
+            Cs4 = var_s.isel({'time':it, yvar:iy}).plot.imshow(x=xvar, y=zvar, ax=axa[1,1], levels=nlevels)
+
+            p1 = pltdat.isel({yvar:iy, zvar:ilev}).plot(ax=axa[2,0])
+
+            p2 = var_s.isel({'time':it, yvar:iy, zvar:ilev}).plot(ax=axa[2,1])
             plt.tight_layout()
 
             plt.savefig(plot_dir+var_name+'_lev_'+'%03d'%ilev+'_x_z'+'%03d'%iy+'_'+\
@@ -261,22 +260,59 @@ def main():
     '''
     Top level code, a bit of a mess.
     '''
+
+#    client = Client()
+#    client
+#    dask.config.set(scheduler='threads')
 #   Non-global variables that are set once
     sigma_list = [500.0, 220.0]
+#    sigma_list = [200.0]
     width = -1
     filter_name = 'gaussian'
 #    width = 20
 #    filter_name = 'running_mean'
 #    filter_name = 'wave_cutoff'
 
-    dataset = Dataset(dir+file, 'r') # Dataset is the class behavior to open the file
+#    dataset = Dataset(dir+file, 'r') # Dataset is the class behavior to open the file
                                  # and create an instance of the ncCDF4 class
-    ref_dataset = Dataset(dir+ref_file, 'r')
+    dask.config.set({"array.slicing.split_large_chunks": True})
+    dataset = xr.open_dataset(dir+file)
+    [itime, iix, iiy, iiz] = sf.find_var(dataset.dims, ['time', 'x', 'y', 'z'])
+    timevar = list(dataset.dims)[itime]
+    xvar = list(dataset.dims)[iix]
+    yvar = list(dataset.dims)[iiy]
+    zvar = list(dataset.dims)[iiz]
+    max_ch = sf.subfilter_setup['chunk_size']
+
+    nch = np.min([int(dataset.dims[xvar]/(2**int(np.log(dataset.dims[xvar]
+                                                *dataset.dims[yvar]
+                                                *dataset.dims[zvar]
+                                                /max_ch)/np.log(2)/2))),
+                  dataset.dims[xvar]])
+
+    print(f'nch={nch}')
+
+
+    dataset.close()
+
+    defn = 1
+#    dataset = xr.open_dataset(dir+file, chunks={timevar: defn,
+#                                                'z':'auto', 'zn':'auto'})
+
+    dataset = xr.open_dataset(dir+file, chunks={timevar: defn,
+                                                xvar:nch, yvar:nch,
+                                                'z':'auto', 'zn':'auto'})
+    print(dataset)
+#    ref_dataset = Dataset(dir+ref_file, 'r')
+    if ref_file is not None:
+        ref_dataset = xr.open_dataset(dir+ref_file)
+    else:
+        ref_dataset = None
 
     od = sf.options_database(dataset)
     if od is None:
-        dx = 100.0
-        dy = 100.0
+        dx = options['dx']
+        dy = options['dy']
     else:
         dx = float(od['dxx'])
         dy = float(od['dyy'])
@@ -286,13 +322,13 @@ def main():
     iy = 40
 
     opgrid = 'w'
-    fname = 'test_plot'
+    fname = 'test_dask'
 
-    derived_dataset_name, derived_data, exists = \
-        sf.setup_derived_data_file( dir+file, odir, dir+ref_file, fname,
+    derived_data, exists = \
+        sf.setup_derived_data_file( dir+file, odir, fname,
                                    options, override=True)
-    print("Variables in derived dataset.")
-    print(derived_data.variables)
+    # print("Variables in derived dataset.")
+    # print(derived_data['ds'].variables)
 
 # Now create list of filter definitions.
 
@@ -322,13 +358,13 @@ def main():
         print(twod_filter)
         filter_list.append(twod_filter)
 
-
     # Add whole domain filter
     filter_name = 'domain'
     filter_id = 'filter_do'
     twod_filter = filt.Filter(filter_id, filter_name, delta_x=dx)
     print(twod_filter)
     filter_list.append(twod_filter)
+
 
 #    print(filter_list)
 
@@ -339,27 +375,70 @@ def main():
         print("Processing using filter: ")
         print(twod_filter)
 
-        filtered_dataset_name, filtered_data, exists = \
-            sf.setup_filtered_data_file( dir+file, odir, dir+ref_file, fname,
+        filtered_data, exists = \
+            sf.setup_filtered_data_file( dir+file, odir, fname,
                                        options, twod_filter, override=True)
-        print("Variables in filtered dataset.")
-        print(filtered_data.variables)
+#        print("Variables in filtered dataset.")
+#        print(filtered_data['ds'].variables)
 
         if exists :
-            print('Derived data file exists' )
+            print('Filtered data file exists' )
         else :
-
+#            with Profiler() as prof, ResourceProfiler(dt=0.25) as rprof, \
+#                CacheProfiler() as cprof:
             field_list =sf.filter_variable_list(dataset, ref_dataset,
                                                 derived_data, filtered_data,
                                                 options,
                                                 twod_filter, var_list=None,
                                                 grid = opgrid)
-    #        quad_field_list=list([])
+
+
             quad_field_list =sf.filter_variable_pair_list(dataset, ref_dataset,
                                                 derived_data, filtered_data,
                                                 options,
                                                 twod_filter, var_list=None,
                                                 grid = opgrid)
+
+#            print(prof.results[0])
+#            print(rprof.results[0])
+#            print(cprof.results[0])
+            deformation_r, deformation_s = sf.filtered_deformation(dataset,
+                                                ref_dataset,
+                                                derived_data,
+                                                filtered_data, options,
+                                                twod_filter, grid='w')
+
+            Sn_ij_r, mod_Sn_r = sf.shear(deformation_r)
+            Sn_ij_r.name = Sn_ij_r.name + '_r'
+            Sn_ij_r = sf.save_field(filtered_data, Sn_ij_r)
+            mod_Sn_r.name = mod_Sn_r.name + '_r'
+            mod_Sn_r = sf.save_field(filtered_data, mod_Sn_r)
+
+            Sn_ij_s, mod_Sn_s = sf.shear(deformation_s)
+            Sn_ij_s.name = Sn_ij_s.name + '_s'
+            Sn_ij_s = sf.save_field(filtered_data, Sn_ij_s)
+            mod_Sn_s.name = mod_Sn_s.name + '_s'
+            mod_Sn_s = sf.save_field(filtered_data, mod_Sn_s)
+
+            S_ij_r, mod_S_r = sf.shear(deformation_r, no_trace = False)
+            S_ij_r.name = S_ij_r.name + '_r'
+            S_ij_r = sf.save_field(filtered_data, S_ij_r)
+            mod_S_r.name = mod_S_r.name + '_r'
+            mod_S_r = sf.save_field(filtered_data, mod_S_r)
+
+            S_ij_s, mod_S_s = sf.shear(deformation_s, no_trace = False)
+            S_ij_s.name = S_ij_s.name + '_s'
+            S_ij_s = sf.save_field(filtered_data, S_ij_s)
+            mod_S_s.name = mod_S_s.name + '_s'
+            mod_S_s = sf.save_field(filtered_data, mod_S_s)
+
+            print(S_ij_r)
+
+            v_r = sf.vorticity(deformation_r)
+            v_r.name = v_r.name + '_r'
+            v_r = sf.save_field(filtered_data, v_r)
+
+            print(v_r)
 
             print('--------------------------------------')
 
@@ -371,25 +450,14 @@ def main():
 
             print('--------------------------------------')
 
-            d_r, d_s = sf.filtered_deformation(dataset, derived_data,
-                                               filtered_data, options,
-                                               twod_filter, dx, dy, grid='w')
+            filtered_data['ds'].close()
 
-            times = derived_data['time_series_50_100.0']
-            print(times)
-            print(times[:])
-            for i in range(3) :
-                for j in range(3) :
-                    print(d_r[i][j],d_s[i][j])
 
-            Sn_ij_r, mod_Sn_r = sf.shear(d_r)
-            Sn_ij_s, mod_Sn_s = sf.shear(d_s)
-            S_ij_r, mod_S_r = sf.shear(d_r, no_trace = False)
-            S_ij_s, mod_S_s = sf.shear(d_s, no_trace = False)
-            print(S_ij_r.keys())
 
-        z = derived_data["z"]
-        zn = derived_data["zn"]
+        z = dataset["z"]
+        zn = dataset["zn"]
+
+        filtered_data['ds'] = xr.open_dataset(filtered_data['file'])
 
         if twod_filter.attributes['filter_type'] != 'domain' :
             fig1 = plt.figure(1)
@@ -405,19 +473,25 @@ def main():
             plt.close()
 
         for field in field_list:
-            print("Plotting {}".format(field))
-            plot_field(field, filtered_data, twod_filter, ilev, iy, grid=opgrid)
+            print(f"Plotting {field}")
+            plot_field(field, filtered_data, twod_filter, ilev, iy,
+                        grid=opgrid)
 
         for field in quad_field_list :
-            print("Plotting {}".format(field))
-            plot_quad_field(field, filtered_data, twod_filter, ilev, iy, \
+            print(f"Plotting {field}")
+            plot_quad_field(field, filtered_data, twod_filter, ilev, iy,
                             grid=opgrid)
 
-        plot_shear(mod_Sn_r, mod_Sn_s, z, twod_filter, ilev, iy, no_trace = True)
-        plot_shear(mod_S_r, mod_S_s, z, twod_filter, ilev, iy, no_trace = False)
 
-        filtered_data.close()
-    derived_data.close()
+        print("Plotting mod_Sn")
+        plot_shear(mod_Sn_r, mod_Sn_s, z, twod_filter, ilev, iy,
+                    no_trace = True)
+        print("Plotting mod_S")
+        plot_shear(mod_S_r, mod_S_s, z, twod_filter, ilev, iy,
+                    no_trace = False)
+
+        filtered_data['ds'].close()
+    derived_data['ds'].close()
     dataset.close()
 
 if __name__ == "__main__":
