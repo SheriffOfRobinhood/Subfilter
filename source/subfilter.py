@@ -12,20 +12,74 @@ Created on Tue Oct 23 11:07:05 2018
 """
 import os
 import sys
-import netCDF4
-
-from netCDF4 import Dataset
 
 import numpy as np
-from scipy.signal import fftconvolve
-from difference_ops import *
-
+import xarray as xr
+from dask.diagnostics import ProgressBar
 import time
+
+from scipy.signal import fftconvolve
+import difference_ops as do
+
 from thermodynamics_constants import *
 
-test_level = 1
+test_level = 0
 
-subfilter_version = '0.3'
+subfilter_version = '0.4.0'
+
+subfilter_setup = {'write_sleeptime':3,
+                   'use_concat':True,
+                   'chunk_size':2**22 }
+
+def save_field(dataset, field, write_to_file=True):
+    fn = dataset['file'].split('/')[-1]
+    if field.name not in dataset['ds']:
+        print(f"Saving {field.name} to {fn}")
+        dataset['ds'][field.name] = field
+        if write_to_file:
+            d = dataset['ds'][field.name].to_netcdf(
+                    dataset['file'], mode='a', compute=False)
+            with ProgressBar():
+                results = d.compute()
+            # This wait seems to be needed to give i/o time to flush caches.
+            time.sleep(subfilter_setup['write_sleeptime'])
+    else:
+        print(f"{field.name} already in {fn}")
+#    print(dataset['ds'])
+    return dataset['ds'][field.name]
+
+def re_chunk(f, chunks = None, xch = 'all', ych = 'all', zch = 'auto'):
+
+    defn = 1
+
+    if chunks is None:
+
+        chunks={}
+        sh = np.shape(f)
+        for ip, dim in enumerate(f.dims):
+            if 'x' in dim:
+                if xch == 'all':
+                    chunks[dim] = sh[ip]
+                else:
+                    chunks[dim] = np.min([xch, sh[ip]])
+            elif 'y' in dim:
+                if ych == 'all':
+                    chunks[dim] = sh[ip]
+                else:
+                    chunks[dim] = np.min([ych, sh[ip]])
+            elif 'z' in dim:
+                if zch == 'all':
+                    chunks[dim] = sh[ip]
+                elif zch == 'auto':
+                    chunks[dim] = 'auto'
+                else:
+                    chunks[dim] = np.min([zch, sh[ip]])
+            else:
+                chunks[f.dims[ip]] = defn
+
+    f = f.chunk(chunks=chunks)
+
+    return f
 
 
 def filter_variable_list(source_dataset, ref_dataset, derived_dataset,
@@ -64,18 +118,16 @@ def filter_variable_list(source_dataset, ref_dataset, derived_dataset,
                                    derived_dataset, vin, options,
                                    grid)
 
-        v = op_var['name']
+        v = op_var.name
 
-        if v+"_r" not in filtered_dataset.variables \
-            or v+"_s" not in filtered_dataset.variables:
+        if v+"_r" not in filtered_dataset['ds'].variables \
+            or v+"_s" not in filtered_dataset['ds'].variables:
 
             ncvar_r, ncvar_s = filter_field(op_var,
                                             filtered_dataset,
                                             options, filter_def,
-                                            grid=grid, sync=False)
+                                            grid=grid)
 
-    derived_dataset.sync()
-    filtered_dataset.sync()
     return var_list
 
 def filter_variable_pair_list(source_dataset, ref_dataset, derived_dataset,
@@ -87,6 +139,8 @@ def filter_variable_pair_list(source_dataset, ref_dataset, derived_dataset,
 
     Args:
         source_dataset  : NetCDF dataset for input
+        ref_dataset     : NetCDF dataset for input containing reference
+                          profiles. Can be None
         derived_dataset : NetCDF dataset for derived data
         filtered_dataset: NetCDF dataset for derived data
         options         : General options e.g. FFT method used.
@@ -104,36 +158,23 @@ def filter_variable_pair_list(source_dataset, ref_dataset, derived_dataset,
     if (var_list==None):
         var_list = get_default_variable_pair_list()
         print("Default list:\n",var_list)
-    if grid=='w' : zvar = "z"
-    else : zvar = "zn"
+
     for v in var_list:
-        print("Calculating s({},{})".format(v[0],v[1]))
-        svar, vdims = quadratic_subfilter(source_dataset, ref_dataset,
+
+        print(f"Calculating s({v[0]:s},{v[1]:s})")
+        svars = quadratic_subfilter(source_dataset, ref_dataset,
                                   derived_dataset, filtered_dataset, options,
                                   filter_def, v[0], v[1], grid=grid)
 
-        dims = find_var(vdims, ['x','y'])
-        svar_name = f"s({v[0]:s},{v[1]:s})_on_{grid:s}"
+        (s_var1var2, var1var2, var1var2_r, var1var2_s) = svars
 
-        if svar_name not in filtered_dataset.variables:
+        if options['save_all'].lower() == 'yes':
+            save_field(derived_dataset, var1var2)
 
-            if filter_def.attributes['filter_type'] == 'domain' :
-                edims = np.setdiff1d(np.arange(len(np.shape(svar))), dims)
-                odims = [ ]
-                for i in edims:
-                    odims.append(vdims[i])
-                ncsvar = filtered_dataset.createVariable(svar_name,"f8",
-                                         tuple(odims))
-            else :
-                ncsvar = filtered_dataset.createVariable(svar_name,"f8",
-                                                         vdims)
+        for f in (s_var1var2, var1var2_r, var1var2_s):
+            save_field(filtered_dataset, f)
 
 
-            ncsvar[...] = svar
-            print(ncsvar)
-
-    derived_dataset.sync()
-    filtered_dataset.sync()
     return var_list
 
 
@@ -300,6 +341,7 @@ def convolve(field, options, filter_def, dims):
     @author: Peter Clark
 
     """
+
     if len(np.shape(field)) > len(np.shape(filter_def)):
         edims = tuple(np.setdiff1d(np.arange(len(np.shape(field))), dims))
         filter_def = np.expand_dims(filter_def, axis=edims)
@@ -381,12 +423,12 @@ def filtered_field_calc(var, options, filter_def):
 
     """
 
-    vname = var['name']
-    field = var['data']
-    vdims = var['dims']
+    vname = var.name
+    field = var.data
+    vdims = var.dims
 
+#    print(field)
     sh = np.shape(field)
-    ndims = len(sh)
 
     if filter_def.attributes['ndim'] == 1:
 
@@ -406,6 +448,15 @@ def filtered_field_calc(var, options, filter_def):
 
         field_r = np.mean(field[...], axis=axis)
         field_s = field[...] - np.reshape(field_r, si)
+
+        rdims =  []
+        rcoords = {}
+        for i, d in enumerate(vdims):
+            if i not in axis:
+                rdims.append(d)
+                rcoords[d] = var.coords[d]
+        rdims = tuple(rdims)
+
 
     else :
 
@@ -474,42 +525,22 @@ def filtered_field_calc(var, options, filter_def):
                     filter_def.rfft = np.fft.rfft2(padfilt)
 
             field_r = convolve(field, options, filter_def.rfft, axis)
+            rdims = var.dims
+            rcoords = var.coords
 
         field_s = field[...] - field_r
 
-    var_r = var.copy()
-    var_r['name'] = var['name']+'_r'
-    var_r['data'] = field_r
+    sdims = var.dims
+    scoords = var.coords
 
-    var_s = var.copy()
-    var_s['name'] = var['name']+'_s'
-    var_s['data'] = field_s
+    var_r = xr.DataArray(field_r, name = vname+'_r', dims=rdims,
+                      coords=rcoords)
+    var_s = xr.DataArray(field_s, name = vname+'_s', dims=sdims,
+                      coords=scoords)
 
+    return (var_r, var_s)
 
-    return [var_r, var_s]
-
-def nc_dimcopy(source_dataset, derived_dataset, dimname) :
-    """
-    Copy dimension from source NetCDF dataset to destination
-
-    Args:
-        source_dataset
-        derived_dataset
-        dimname
-
-    Returns:
-        dimension
-
-    @author: Peter Clark
-    """
-    v = source_dataset.variables[dimname]
-    derived_dataset.createDimension(dimname,np.shape(v[:])[-1])
-    dv = derived_dataset.createVariable(dimname,"f8",(dimname,))
-    dv[:] = last_dim(v[:])
-    return dv
-
-
-def setup_data_file(source_file, ref_file, derived_dataset_name,
+def setup_data_file(source_file, derived_dataset_name,
                     override=False) :
     """
     Create NetCDF dataset for derived data in destdir.
@@ -531,39 +562,22 @@ def setup_data_file(source_file, ref_file, derived_dataset_name,
 
     if exists and not override :
 
-        derived_dataset = Dataset(derived_dataset_name, "a")
+        derived_dataset = xr.open_dataset(derived_dataset_name)
 
     else :
 
         exists = False
-        derived_dataset = Dataset(derived_dataset_name, "w", clobber=True)
 
-        source_dataset = Dataset(source_file,"r")
-        w = source_dataset["w"]
+        derived_dataset = xr.Dataset()
+        derived_dataset = derived_dataset.assign_attrs(
+            {'Parent file':source_file})
 
-        tvar = w.dimensions[0]
+        derived_dataset.to_netcdf(derived_dataset_name, mode='w')
 
-        times = nc_dimcopy(source_dataset, derived_dataset, tvar)
-
-        z = nc_dimcopy(source_dataset, derived_dataset, "z")
-        zn = nc_dimcopy(source_dataset, derived_dataset, "zn")
-
-        if "x" in source_dataset.variables:
-            x = nc_dimcopy(source_dataset, derived_dataset, "x")
-        else:
-            derived_dataset.createDimension("x",np.shape(w[:])[1])
-
-        if "x" in source_dataset.variables:
-            x = nc_dimcopy(source_dataset, derived_dataset, "x")
-        else:
-            derived_dataset.createDimension("y",np.shape(w[:])[2])
-
-        derived_dataset.sync()
-        source_dataset.close()
-
+    print(derived_dataset)
     return derived_dataset, exists
 
-def setup_derived_data_file(source_file, destdir, ref_file, fname,
+def setup_derived_data_file(source_file, destdir, fname,
                             options, override=False) :
     """
     Create NetCDF dataset for derived data in destdir.
@@ -583,14 +597,16 @@ def setup_derived_data_file(source_file, destdir, ref_file, fname,
     """
     derived_dataset_name = os.path.basename(source_file)
     derived_dataset_name = ('.').join(derived_dataset_name.split('.')[:-1])
-    derived_dataset_name = derived_dataset_name + "_" + fname + ".nc"
+    derived_dataset_name = destdir+derived_dataset_name + "_" + fname + ".nc"
 
-    derived_dataset, exists = setup_data_file(source_file, ref_file,
-                    destdir+derived_dataset_name, override=override)
+    derived_dataset, exists = setup_data_file(source_file,
+                    derived_dataset_name, override=override)
 
-    return derived_dataset_name, derived_dataset, exists
+    dataset = {'file': derived_dataset_name, 'ds':derived_dataset}
 
-def setup_filtered_data_file(source_file, destdir, ref_file, fname,
+    return dataset, exists
+
+def setup_filtered_data_file(source_file, destdir, fname,
                             options, filter_def, override=False) :
     """
     Create NetCDF dataset for filtered data in destdir.
@@ -612,18 +628,21 @@ def setup_filtered_data_file(source_file, destdir, ref_file, fname,
     """
     filtered_dataset_name = os.path.basename(source_file)
     filtered_dataset_name = ('.').join(filtered_dataset_name.split('.')[:-1])
-    filtered_dataset_name = filtered_dataset_name + "_" + fname + "_" + \
-        filter_def.id + ".nc"
-    filtered_dataset, exists = setup_data_file(source_file, ref_file,
-                    destdir+filtered_dataset_name, override=override)
+    filtered_dataset_name = destdir+filtered_dataset_name + "_" + fname \
+        + "_" + filter_def.id + ".nc"
+    filtered_dataset, exists = setup_data_file(source_file,
+                    filtered_dataset_name, override=override)
 
-    filtered_dataset.filter_def_id = filter_def.id
-    filtered_dataset.setncatts(filter_def.attributes)
-    filtered_dataset.setncatts(options)
+    filtered_dataset = filtered_dataset.assign_attrs(
+        {'filter_def_id' : filter_def.id})
+    filtered_dataset = filtered_dataset.assign_attrs(filter_def.attributes)
+    filtered_dataset = filtered_dataset.assign_attrs(options)
 
-    filtered_dataset.sync()
+    filtered_dataset.to_netcdf(filtered_dataset_name, mode='a')
 
-    return filtered_dataset_name, filtered_dataset, exists
+    dataset = {'file':filtered_dataset_name, 'ds':filtered_dataset}
+
+    return dataset, exists
 
 def get_data(source_dataset, ref_dataset, var_name, options) :
     """
@@ -645,153 +664,208 @@ def get_data(source_dataset, ref_dataset, var_name, options) :
 #   Mapping of data locations on grid via logical triplet:
 #   logical[u-point,v-point,w-point]
 #          [False,  False,  False  ] --> (p,th,q)-point
-    var_properties = {"u":[True,False,False],
-                      "v":[False,True,False],
-                      "w":[False,False,True],
-                      "th":[False,False,False],
-                      "p":[False,False,False],
-                      "q_vapour":[False,False,False],
-                      "q_cloud_liquid_mass":[False,False,False],
+    var_properties = {"u":{'grid':[True,False,False], "units":'m s-1'},
+                      "v":{'grid':[False,True,False], "units":'m s-1'},
+                      "w":{'grid':[False,False,True], "units":'m s-1'},
+                      "th":{'grid':[False,False,False], "units":'K'},
+                      "p":{'grid':[False,False,False], "units":'Pa'},
+                      "q_vapour":{'grid':[False,False,False], "units":'kg/kg'},
+                      "q_cloud_liquid_mass":{'grid':[False,False,False],
+                                             "units":'kg/kg'},
                       }
+
+    od = options_database(source_dataset)
+    if od is None:
+        dx = options['dx']
+        dy = options['dy']
+    else:
+        dx = float(od['dxx'])
+        dy = float(od['dyy'])
+
+
     print(f'Retrieving {var_name:s}.')
     try :
-        var = source_dataset[var_name]
-        vardim = var.dimensions
-        vard = var[...]
-        varp = var_properties[var_name]
+        vard = source_dataset[var_name]
 
-        print(vardim)
+        # Change 'timeseries...' variable to 'time'
+
+        [itime] = find_var(vard.dims, ['time'])
+        if itime is not None:
+            vard = vard.rename({vard.dims[itime]: 'time'})
+
+        # Add correct x and y grids.
+
+        if var_name in var_properties:
+
+            vp = var_properties[var_name]['grid']
+
+            if 'x' in vard.dims:
+                nx = vard.shape[vard.get_axis_num('x')]
+
+                if vp[0] :
+                    x = (np.arange(nx) + 0.5) * np.float64(od['dxx'])
+                    xn = 'x_u'
+                else:
+                    x = np.arange(nx) * np.float64(od['dxx'])
+                    xn = 'x_p'
+
+                vard = vard.rename({'x':xn})
+                vard.coords[xn] = x
+
+            if 'y' in vard.dims:
+                ny = vard.shape[vard.get_axis_num('y')]
+                if vp[1] :
+                    y = (np.arange(ny) + 0.5) * np.float64(od['dyy'])
+                    yn = 'y_v'
+                else:
+                    y = np.arange(ny) * np.float64(od['dyy'])
+                    yn = 'y_p'
+
+                vard = vard.rename({'y':yn})
+                vard.coords[yn] = y
+
+            if 'z' in vard.dims and not vp[2]:
+                zn = source_dataset.coords['zn']
+                vard = vard.rename({'z':'zn'})
+                vard.coords['zn'] = zn.data
+
+            if 'zn' in vard.dims and vp[2]:
+                z = source_dataset.coords['z']
+                vard = vard.rename({'zn':'z'})
+                vard.coords['z'] = z.data
+
+            vard.attrs['units'] = var_properties[var_name]['units']
+
+#        print(vard)
         if var_name == 'th' :
-#            dims = find_var(vardim, ['x','y'])
-
             thref = get_thref(ref_dataset, options)
 #            thref = np.expand_dims(thref, axis=dims)
-            vard[...] += thref
+            vard += thref
 
     except :
 
         if var_name == 'th_L' :
 #            rhoref = ref_dataset.variables['rhon'][-1,...]
-            theta, vardim, varp = get_data(source_dataset, ref_dataset, 'th',
+            theta = get_data(source_dataset, ref_dataset, 'th',
                                            options)
             (pref, piref) = get_pref(source_dataset, ref_dataset,  options)
-            q_cl, vd, vp = get_data(source_dataset, ref_dataset,
+            q_cl = get_data(source_dataset, ref_dataset,
                                     'q_cloud_liquid_mass', options)
             vard = theta - L_over_cp * q_cl / piref
 
+
         elif var_name == 'th_v' :
 #            rhoref = ref_dataset.variables['rhon'][-1,...]
-            theta, vardim, varp = get_data(source_dataset, ref_dataset, 'th',
+            theta = get_data(source_dataset, ref_dataset, 'th',
                                            options)
             thref = get_thref(ref_dataset, options)
-            q_v, vardim, varp = get_data(source_dataset, ref_dataset,
+            q_v = get_data(source_dataset, ref_dataset,
                                          'q_vapour', options)
-            q_cl, vd, vp = get_data(source_dataset, ref_dataset,
+            q_cl = get_data(source_dataset, ref_dataset,
                                     'q_cloud_liquid_mass', options)
             vard = theta + thref * (c_virtual * q_v - q_cl)
 
         elif var_name == 'q_total' :
 #            rhoref = ref_dataset.variables['rhon'][-1,...]
-            q_v, vardim, varp = get_data(source_dataset, ref_dataset,
+            q_v = get_data(source_dataset, ref_dataset,
                                          'q_vapour', options)
-            q_cl, vd, vp = get_data(source_dataset, ref_dataset,
+            q_cl = get_data(source_dataset, ref_dataset,
                                     'q_cloud_liquid_mass', options)
             vard = q_v + q_cl
 
         elif var_name == 'buoyancy':
-            th_v, vardim, varp = get_data(source_dataset, ref_dataset, 'th_v',
+            th_v = get_data(source_dataset, ref_dataset, 'th_v',
                                            options)
             # get mean over horizontal axes
-            haxes = find_var(vardim, ['x','y'])
-            mean_thv = np.mean(th_v, axis = haxes)
-            varp = grav * (th_v - mean_thv)/mean_thv
+            # haxes = find_var(vardim, ['x','y'])
+            mean_thv = th_v.mean(dim=('x','y'))
+            vard = grav * (th_v - mean_thv)/mean_thv
 
         else :
 
             sys.exit(f"Data {var_name:s} not in dataset.")
+    print(vard)
 
-
-    return vard, vardim, varp
+    return vard
 
 def get_and_transform(source_dataset, ref_dataset, var_name, options,
                       grid='p'):
 
-    var, vdim, vp = get_data(source_dataset, ref_dataset, var_name,
-                                           options)
-    #    print(np.shape(var), vdim, vp)
+    var = get_data(source_dataset, ref_dataset, var_name, options)
+
+#    print(var)
+
+    vp = ['x_u' in var.dims,
+          'y_v' in var.dims,
+          'z' in var.dims]
+
     if grid=='p' :
         if vp[0] :
             print("Mapping {} from u grid to p grid.".format(var_name))
-            var = field_on_u_to_p(var, xaxis=1)
+            var = do.field_on_u_to_p(var)
         if vp[1] :
             print("Mapping {} from v grid to p grid.".format(var_name))
-            var = field_on_v_to_p(var, xaxis=1)
+            var = do.field_on_v_to_p(var)
         if vp[2] :
             print("Mapping {} from w grid to p grid.".format(var_name))
             z = source_dataset["z"]
             zn = source_dataset["zn"]
-            var = field_on_w_to_p(var,  z, zn)
+            var = do.field_on_w_to_p(var, zn)
 
     elif grid=='u' :
         if not ( vp[0] or vp[1] or vp[2]):
             print("Mapping {} from p grid to u grid.".format(var_name))
-            var = field_on_p_to_u(var, xaxis=1)
+            var = do.field_on_p_to_u(var)
         if vp[1] :
             print("Mapping {} from v grid to u grid.".format(var_name))
-            var = field_on_v_to_p(var, xaxis=1)
-            var = field_on_p_to_u(var, xaxis=1)
+            var = do.field_on_v_to_p(var)
+            var = do.field_on_p_to_u(var)
         if vp[2] :
             print("Mapping {} from w grid to u grid.".format(var_name))
             z = source_dataset["z"]
             zn = source_dataset["zn"]
-            var = field_on_w_to_p(var,  z, zn)
-            var = field_on_p_to_u(var, xaxis=1)
+            var = do.field_on_w_to_p(var, zn)
+            var = do.field_on_p_to_u(var)
 
     elif grid=='v' :
         if not ( vp[0] or vp[1] or vp[2]):
             print("Mapping {} from p grid to v grid.".format(var_name))
-            var = field_on_p_to_v(var, yaxis=2)
+            var = do.field_on_p_to_v(var)
         if vp[0] :
             print("Mapping {} from u grid to v grid.".format(var_name))
-            var = field_on_u_to_p(var, xaxis=1)
-            var = field_on_v_to_p(var, xaxis=1)
+            var = do.field_on_u_to_p(var)
+            var = do.field_on_v_to_p(var)
         if vp[2] :
             print("Mapping {} from w grid to v grid.".format(var_name))
             z = source_dataset["z"]
             zn = source_dataset["zn"]
-            var = field_on_w_to_p(var,  z, zn)
-            var = field_on_p_to_v(var, xaxis=1)
+            var = do.field_on_w_to_p(var, zn)
+            var = do.field_on_p_to_v(var)
 
     elif grid=='w' :
         z = source_dataset["z"]
         zn = source_dataset["zn"]
         if not ( vp[0] or vp[1] or vp[2]):
             print("Mapping {} from p grid to w grid.".format(var_name))
-            var = field_on_p_to_w(var, z, zn)
+            var = do.field_on_p_to_w(var, z)
         if vp[0] :
             print("Mapping {} from u grid to w grid.".format(var_name))
-            var = field_on_u_to_p(var, xaxis=1)
-            var = field_on_p_to_w(var, z, zn)
+            var = do.field_on_u_to_p(var)
+            var = do.field_on_p_to_w(var, z)
         if vp[1] :
             print("Mapping {} from v grid to w grid.".format(var_name))
-            var = field_on_v_to_p(var, xaxis=1)
-            var = field_on_p_to_w(var,  z, zn)
+            var = do.field_on_v_to_p(var)
+            var = do.field_on_p_to_w(var, z)
 
-        iz = find_var(vdim, ['z'])[0]
-        if iz < len(vdim):
-            vdim = list(vdim)
-            vdim[iz] = 'z'
-            vdim=tuple(vdim)
     else:
         print("Illegal grid ",grid)
+    # print(var)
 
-    op_var = {'name' : var_name,
-              'data' : var,
-              'dims' : vdim,
-              'grid_prop' : vp
-              }
+#    print(zvar)
+    var = re_chunk(var)
+#    print(var)
 
-    return op_var
+    return var
 
 def get_data_on_grid(source_dataset, ref_dataset, derived_dataset, var_name,
                      options, grid='p') :
@@ -822,7 +896,7 @@ def get_data_on_grid(source_dataset, ref_dataset, derived_dataset, var_name,
     ongrid = '_on_'+grid
     vp = grid_properties[grid]
 
-    var = None
+    var_found = False
     # Logic here:
     # If var_name already qualified with '_on_x', where x is a grid
     # then if x matches required output grid, see in derived_dataset
@@ -844,34 +918,26 @@ def get_data_on_grid(source_dataset, ref_dataset, derived_dataset, var_name,
 
     if options['save_all'].lower() == 'yes':
 
-        if op_var_name in derived_dataset.variables:
-            var = derived_dataset[op_var_name]
+        if op_var_name in derived_dataset['ds'].variables:
+
+            op_var = derived_dataset['ds'][op_var_name]
             print(f'Retrieved {op_var_name:s} from derived dataset.')
-            op_var['data'] = var[...]
-            op_var['dims'] = var.dimensions
-            op_var['grid_prop'] = vp
+            var_found = True
 
 
-    if var is None:
+    if not var_found:
         op_var = get_and_transform(source_dataset, ref_dataset,
                                    var_name, options, grid=grid)
-        op_var['name'] = op_var_name
+        op_var.name = op_var_name
 
         if options['save_all'].lower() == 'yes':
-
-            if grid=='w' : zvar = "z"
-            else : zvar = "zn"
-
-            ncvar = derived_dataset.createVariable(op_var_name,"f8",
-                                                   op_var['dims'])
-
-            ncvar[...] = op_var['data']
-            print(f"Saved {op_var_name:s} to derived data file.")
-            print(ncvar)
+            op_var = save_field(derived_dataset, op_var)
+            # print(op_var)
 
     return op_var
 
-def deformation(source_dataset, dx, dy, grid='w') :
+def deformation(source_dataset, ref_dataset, derived_dataset,
+                options, grid='w') :
     """
     Read in 3D data from NetCDF file and, where necessary, interpolate to p grid.
 
@@ -879,6 +945,10 @@ def deformation(source_dataset, dx, dy, grid='w') :
 
     Args:
         source_dataset  : NetCDF dataset
+        ref_dataset     : NetCDF dataset for input containing reference
+                          profiles. Can be None
+        derived_dataset : NetCDF dataset for derived data.
+        options         : General options e.g. FFT method used.
         var_name        : Name of variable
 
     Returns:
@@ -887,46 +957,123 @@ def deformation(source_dataset, dx, dy, grid='w') :
     @author: Peter Clark
     """
 
+    if 'deformation' in derived_dataset['ds']:
+        deformation = derived_dataset['ds']['deformation']
+        return deformation
 
-    u = source_dataset["u"]
-    v = source_dataset["v"]
-    w = source_dataset["w"]
-    z = last_dim(source_dataset["z"])
-    zn = last_dim(source_dataset["zn"])
+    u = get_data(source_dataset, ref_dataset, "u", options)
+    [iix, iiy, iiz] = find_var(u.dims, ['x', 'y', 'z'])
 
-    vdims = u.dimensions
-    xaxis = find_var(vdims, ['x'])[0]
-#    print("u", np.shape(u),u.dimensions)
-#    print("v", np.shape(v),v.dimensions)
-#    print("w", np.shape(w),w.dimensions)
+    sh = np.shape(u)
 
-    ux = d_by_dx_field_on_u(u, dx, z, zn, xaxis=xaxis, grid = grid )
-    uy = d_by_dy_field_on_u(u, dy, z, zn, xaxis=xaxis, grid = grid )
-    uz = d_by_dz_field_on_u(u, z, zn, xaxis=xaxis, grid = grid )
+    max_ch = subfilter_setup['chunk_size']
 
-    vx = d_by_dx_field_on_v(v, dx, z, zn, xaxis=xaxis, grid = grid )
-    vy = d_by_dy_field_on_v(v, dy, z, zn, xaxis=xaxis, grid = grid )
-    vz = d_by_dz_field_on_v(v, z, zn, xaxis=xaxis, grid = grid )
+    nch = int(sh[iix]/(2**int(np.log(sh[iix]*sh[iiy]*sh[iiz]/max_ch)/np.log(2)/2)))
+
+    print(f'nch={nch}')
+#    nch = 32
+
+    u = re_chunk(u, xch=nch, ych=nch, zch = 'all')
+    # print(u)
+    v = get_data(source_dataset, ref_dataset, "v", options)
+    v = re_chunk(v, xch=nch, ych=nch, zch = 'all')
+    # print(v)
+    w = get_data(source_dataset, ref_dataset, "w", options)
+    w = re_chunk(w, xch=nch, ych=nch, zch = 'all')
+
+    z = source_dataset["z"]
+    zn = source_dataset["zn"]
+
+    ux = do.d_by_dx_field_on_u(u, z, grid = grid )
+    # print(ux)
+    # ux = save_field(derived_dataset, ux)
+    print(ux)
+
+    uy = do.d_by_dy_field_on_u(u, z, grid = grid )
+    # print(uy)
+    # uy = save_field(derived_dataset, uy)
+    print(uy)
+
+    uz = do.d_by_dz_field_on_u(u, z, grid = grid )
+    # print(uz)
+    # uz = save_field(derived_dataset, uz)
+    print(uz)
+
+    vx = do.d_by_dx_field_on_v(v, z, grid = grid )
+    # print(vx)
+    # vx = save_field(derived_dataset, vx)
+    print(vx)
+
+    vy = do.d_by_dy_field_on_v(v, z, grid = grid )
+    # print(vy)
+    # vy = save_field(derived_dataset, vy)
+    print(vy)
+
+    vz = do.d_by_dz_field_on_v(v, z, grid = grid )
+    # print(vz)
+    # vz = save_field(derived_dataset, vz)
+    print(vz)
+
+    wx = do.d_by_dx_field_on_w(w, zn, grid = grid )
+    # print(wx)
+    # wx = save_field(derived_dataset, wx)
+    print(wx)
+
+    wy = do.d_by_dy_field_on_w(w, zn, grid = grid )
+    # print(wy)
+    # wy = save_field(derived_dataset, wx)
+    print(wy)
+
+    wz = do.d_by_dz_field_on_w(w, zn, grid = grid )
+    # print(wz)
+    # wz = save_field(derived_dataset, wx)
+    print(wz)
+
+    if subfilter_setup['use_concat']:
+
+        print('Concatenating derivatives')
+
+        t0 = xr.concat([ux, uy, uz], dim='j', coords='minimal', compat='override')
+        print(t0)
+        t1 = xr.concat([vx, vy, vz], dim='j', coords='minimal', compat='override')
+        print(t1)
+        t2 = xr.concat([wx, wy, wz], dim='j', coords='minimal', compat='override')
+        print(t2)
+
+        defm = xr.concat([t0, t1, t2], dim='i')
+
+        defm.name = 'deformation'
+        defm.attrs={'units':'s-1'}
+
+        print(defm)
+
+#        defm = re_chunk(defm, zch = 1)
+
+        if options['save_all'].lower() == 'yes':
+            defm = save_field(derived_dataset, defm)
+
+    else:
+
+        t = [[ux, uy, uz],
+             [vx, vy, vz],
+             [wx, wy, wz],]
+        defm = {}
+        for i, t_i in enumerate(t):
+            for j, u_ij in enumerate(t_i):
+        #        u_ij = u_ij.expand_dims({'i':[i], 'j':[j]})
+                u_ij.name = f'deformation_{i:1d}{j:1d}'
+                if options['save_all'].lower() == 'yes':
+                    u_ij = save_field(derived_dataset, u_ij)
+                defm[f'{i:1d}_{j:1d}']=u_ij
 
 
-    wx = d_by_dx_field_on_w(w, dx, z, zn, xaxis=xaxis, grid = grid )
-    wy = d_by_dy_field_on_w(w, dy, z, zn, xaxis=xaxis, grid = grid )
-    wz = d_by_dz_field_on_w(w, z, zn, xaxis=xaxis, grid = grid )
+    # print(derived_dataset)
 
-    u_i = [ux, uy, uz]
-    v_i = [vx, vy, vz]
-    w_i = [wx, wy, wz]
-
-    t = [u_i, v_i, w_i]
-
-    op_var = {'name' : 'deformation',
-              'dims' : vdims,
-              'data' : t}
-    return op_var
+    return defm
 
 
 def filter_field(var, filtered_dataset, options, filter_def,
-                 grid='p', sync=False) :
+                 grid='p') :
     """
     Create filtered versions of input variable on required grid, stored in filtered_dataset.
 
@@ -945,60 +1092,40 @@ def filter_field(var, filtered_dataset, options, filter_def,
     @author: Peter Clark
 
     """
-    vname = var['name']
-    vard = var['data']
-    vdims = var['dims']
+    vname = var.name
+    vname_r = vname+'_r'
+    vname_s = vname+'_s'
 
-    if grid=='w' : zvar = "z"
-    else : zvar = "zn"
+    if vname_r in filtered_dataset['ds'] and vname_r in filtered_dataset['ds']:
 
-    itime = find_var(vdims, ['time'])
-    dims = find_var(vdims, ['x','y'])
+        print("Reading ", vname_r, vname_s)
+        var_r = filtered_dataset['ds'][vname_r]
+        var_s = filtered_dataset['ds'][vname_s]
 
-    print(f"Filtering {vname:s}")
-
-    (var_r, var_s) = filtered_field_calc(var, options, filter_def)
-
-
-    if vname+"_r" in filtered_dataset.variables:
-        ncvar_r = filtered_dataset[vname+"_r"]
     else:
-        if filter_def.attributes['filter_type'] == 'domain' :
-            edims = np.setdiff1d(np.arange(len(np.shape(vard))), dims)
-            odims = [ ]
-            for i in edims:
-                odims.append(vdims[i])
-            ncvar_r = filtered_dataset.createVariable(vname+"_r", "f8",
-                                                      tuple(odims))
-        else :
-            ncvar_r = filtered_dataset.createVariable(vname+"_r", "f8", vdims)
 
-        ncvar_r[...] = var_r['data']
+        print(f"Filtering {vname:s}")
 
-    print(f"Saved {ncvar_r.name:s}")
-    print(ncvar_r)
+        # Calculate resolved and unresolved parts of var
 
-    if vname+"_s" in filtered_dataset.variables:
-        ncvar_s = filtered_dataset[vname+"_s"]
-    else:
-        ncvar_s = filtered_dataset.createVariable(vname+"_s", "f8", vdims)
-        ncvar_s[...] = var_s['data']
+        (var_r, var_s) = filtered_field_calc(var, options, filter_def)
 
-    print(f"Saved {ncvar_s.name:s}")
-    print(ncvar_s)
+        var_r = save_field(filtered_dataset, var_r)
+        var_s = save_field(filtered_dataset, var_s)
 
-    if sync : filtered_dataset.sync()
+    return (var_r, var_s)
 
-    return (ncvar_r, ncvar_s)
-
-def filtered_deformation(source_dataset, derived_dataset, filtered_dataset,
+def filtered_deformation(source_dataset, ref_dataset, derived_dataset,
+                         filtered_dataset,
                          options, filter_def,
-                         dx, dy, grid='p') :
+                         grid='p'):
     """
     Create filtered versions of deformation field.
 
     Args:
         source_dataset  : NetCDF input dataset
+        ref_dataset     : NetCDF dataset for input containing reference
+                          profiles. Can be None
         derived_dataset : NetCDF dataset for derived data.
         filtered_dataset: NetCDF dataset for derived data
         options         : General options e.g. FFT method used.
@@ -1015,58 +1142,70 @@ def filtered_deformation(source_dataset, derived_dataset, filtered_dataset,
 
 #:math:`\frac{\partial u_i}{\partial{x_j}`
 
-    d_var = deformation(source_dataset, dx, dy, grid=grid)
-    d = d_var['data']
-    vname = d_var['name']
-    vdims = d_var['dims']
-    d_ij_r = list()
-    d_ij_s = list()
-    for i in range(3) :
-        d_j_r = list()
-        d_j_s = list()
-        for j in range(3) :
-            var_in ={ 'name' : f"{vname}_{i:1d}_{j:1d}",
-                      'data' : d[i][j],
-                      'dims' : vdims}
-            def_r, def_s = filter_field(var_in, filtered_dataset,
-                                options, filter_def, grid=grid,
-                                sync=False)
-            d_j_r.append(def_r)
-            d_j_s.append(def_s)
-        d_ij_r.append(d_j_r)
-        d_ij_s.append(d_j_s)
+    d_var = deformation(source_dataset, ref_dataset, derived_dataset,
+                        options, grid=grid)
 
-    filtered_dataset.sync()
+    d_var = re_chunk(d_var)
 
-    return d_ij_r, d_ij_s
+    (d_var_r, d_var_s) = filter_field(d_var, filtered_dataset,
+                                      options, filter_def, grid=grid)
+
+
+    return (d_var_r, d_var_s)
 
 def shear(d, no_trace=True) :
     trace = 0
+    vname = ''
     if no_trace :
-        for i in range(3) :
-            trace = trace + d[i][i][...]
+        for k in range(3) :
+            trace = trace + d.isel(i=k, j=k)
         trace = (2.0/3.0) * trace
-    S = {}
+        vname = 'n'
+
     mod_S = 0
-    for i in range(3) :
-        for j in range(i,3) :
-            S_ij = d[i][j][...]+d[j][i][...]
-            if i == j :
-                S_ij = S_ij - trace
-                mod_S += 0.5 * S_ij * S_ij
+
+    S = []
+    i_j = []
+    for k in range(3) :
+        for l in range(k,3) :
+
+            S_kl = d.isel(i=k, j=l) + d.isel(i=l, j=k)
+
+            if k == l :
+                S_kl = S_kl - trace
+                mod_S += 0.5 * S_kl * S_kl
             else :
-                mod_S +=  S_ij * S_ij
-            S[f"{i:1d}_{j:1d}"] = (S_ij)
+                mod_S +=  S_kl * S_kl
+
+            S.append(S_kl)
+            i_j.append(f'{k:d}_{l:d}')
+
+    S = xr.concat(S, dim='i_j', coords='minimal', compat='override')
+    S.coords['i_j'] = i_j
+    S.name = 'shear' + vname
+    S.attrs={'units':'s-1'}
+    S = re_chunk(S)
+
+    mod_S.name = 'mod_S' + vname
+    mod_S.attrs={'units':'s-2'}
+    S = re_chunk(S)
+
     return S, mod_S
 
-def vorticity(d) :
+def vorticity(d):
 
-    V_0 = d[2][1][...]-d[1][2][...]
-    V_1 = d[0][3][...]-d[3][0][...]
-    V_2 = d[1][0][...]-d[0][1][...]
-    V = [V_0, V_1, V_2]
+    v_i = []
+    for i in range(3) :
+        j=(i+1)%3
+        k=(i+2)%3
+        v_i.append(d.isel(i=k, j=j) - d.isel(i=j, j=k))
 
-    return V
+    v = xr.concat(v_i, dim='i')
+    v.name='vorticity'
+    v.attrs={'units':'s-1'}
+    v = re_chunk(v)
+
+    return v
 
 def quadratic_subfilter(source_dataset,  ref_dataset, derived_dataset,
                         filtered_dataset, options, filter_def,
@@ -1077,6 +1216,8 @@ def quadratic_subfilter(source_dataset,  ref_dataset, derived_dataset,
 
     Args:
         source_dataset  : NetCDF dataset for input
+        ref_dataset     : NetCDF dataset for input containing reference
+                          profiles. Can be None
         derived_dataset : NetCDF dataset for derived data
         filtered_dataset: NetCDF dataset for derived data
         options         : General options e.g. FFT method used.
@@ -1097,41 +1238,39 @@ def quadratic_subfilter(source_dataset,  ref_dataset, derived_dataset,
                           derived_dataset, v1_name, options,
                           grid=grid)
 
-    v1_name = v1['name']
-    print("Reading ", v1_name+"_r")
-    var1_r = filtered_dataset[v1_name+"_r"]
-
-    vdims = var1_r.dimensions
-
-#    print(np.shape(var1_r))
-
-    v2 = get_data_on_grid(source_dataset,  ref_dataset,
-                                       derived_dataset, v2_name, options,
-                                       grid=grid)
-    v2_name = v2['name']
-    print("Reading ", v2_name+"_r")
-    var2_r = filtered_dataset[v2_name+"_r"]
-#    print(np.shape(var2_r))
+    (var1_r, var1_s) = filter_field(v1, filtered_dataset, options,
+                                    filter_def, grid=grid)
 
 
-    var1var2 = v1.copy()
-    var1var2['name'] = v1['name'] + v2['name']
+    v2 = get_data_on_grid(source_dataset, ref_dataset,
+                          derived_dataset, v2_name, options,
+                          grid=grid)
 
-    var1var2['data'] = v1['data'] * v2['data']
+    (var2_r, var2_s) = filter_field(v2, filtered_dataset, options,
+                                    filter_def, grid=grid)
+
+
+    var1var2 = v1 * v2
+    var1var2.name = v1.name + '.' + v2.name
 
     print(f"Filtering {v1_name:s}*{v2_name:s}")
-    var1var2_r, var1var2_s = filtered_field_calc(var1var2, options,
+    (var1var2_r, var1var2_s) = filtered_field_calc(var1var2, options,
                                                  filter_def )
 
-    var1var2 = var1var2_r['data'] - var1_r[...] * var2_r[...]
+    s_var1var2 = var1var2_r - var1_r * var2_r
 
-    return var1var2, vdims
+    s_var1var2.name = f"s({v1_name:s},{v2_name:s})_on_{grid:s}"
+
+    return (s_var1var2, var1var2, var1var2_r, var1var2_s)
 
 def bytarr_to_dict(d):
+
+    # Converted for xarray use
     res = {}
-    for i in range(np.size(d[0])):
-        opt = bytearray(d[i,0,:].compressed()).decode('utf-8')
-        val = bytearray(d[i,1,:].compressed()).decode('utf-8')
+    for i in range(np.shape(d)[0]):
+        opt = d[i,0].decode('utf-8')
+        val = d[i,1].decode('utf-8')
+
         res[opt] = val
     return res
 
@@ -1150,9 +1289,11 @@ def options_database(source_dataset):
 
     '''
 
+    # Converted to xarray
+
     if 'options_database' in source_dataset.variables:
         options_database = bytarr_to_dict(
-            source_dataset.variables['options_database'][...])
+            source_dataset['options_database'].values)
     else:
         options_database = None
     return options_database
@@ -1220,16 +1361,35 @@ def get_thref(ref_dataset, options):
         thref = options['th_ref']
     else:
         thref = ref_dataset['thref']
+        [itime] = find_var(thref.dims, ['time'])
+        if itime is not None:
+            tdim = thref.dims[itime]
+            thref = thref[{tdim:[0]}]
         while len(np.shape(thref)) > 1:
-            thref = thref[0,...]
+            thref = thref.data[0,...]
 
     return thref
 
 def find_var(vdims, var):
+    '''
+    Find dimensions containing strings.
+
+    Parameters
+    ----------
+    vdims : xarray dimensions
+    var : list of strings
+
+    Returns
+    -------
+    tuple matching var with either index in vdims or None
+    '''
+
     index_list = []
     for v in var :
+        ind = None
         for i, vdim in enumerate(vdims):
             if v in vdim:
-                index_list.append(i)
+                ind = i
                 break
+        index_list.append(ind)
     return tuple(index_list)

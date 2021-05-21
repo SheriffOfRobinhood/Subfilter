@@ -75,6 +75,9 @@ target/
 # pyenv
 .python-version
 
+# dask
+source/dask-worker-space/
+
 # celery beat schedule file
 celerybeat-schedule
 
