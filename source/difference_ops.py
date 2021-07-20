@@ -69,7 +69,7 @@ def field_on_u_to_p(field) :
         field on p points
     @author: Peter Clark
     """
-
+    print("u_to_p")
     d = field.data
     x = field.coords['x_u'].data
     xaxis = field.get_axis_num('x_u')
@@ -77,7 +77,8 @@ def field_on_u_to_p(field) :
     depths[xaxis] = 1
     newfield = field.rename({'x_u':'x_p'})
     xmn = lambda arr:(0.5 * (arr + np.roll(arr,-1,axis=xaxis)))
-    newfield.data = d.map_overlap(xmn, depth=tuple(depths), boundary={xaxis:'periodic'})
+    newfield.data = d.map_overlap(xmn, depth=tuple(depths),
+                                  boundary={xaxis:'periodic'})
     newfield.coords['x_p'] = x - x[0]
     return newfield
 

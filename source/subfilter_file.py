@@ -23,7 +23,7 @@ import dask
 
 from dask.distributed import Client
 
-test_case = 0
+test_case = 1
 
 if test_case == 0:
     options = {
@@ -267,11 +267,10 @@ def main():
 #   Non-global variables that are set once
     sigma_list = [500.0, 220.0]
 #    sigma_list = [200.0]
-    width = -1
-    filter_name = 'gaussian'
+#    filter_name = 'gaussian'
 #    width = 20
 #    filter_name = 'running_mean'
-#    filter_name = 'wave_cutoff'
+    filter_name = 'wave_cutoff'
 
 #    dataset = Dataset(dir+file, 'r') # Dataset is the class behavior to open the file
                                  # and create an instance of the ncCDF4 class
@@ -292,6 +291,7 @@ def main():
 
     print(f'nch={nch}')
 
+    width = dataset.dims[xvar]
 
     dataset.close()
 
@@ -384,8 +384,6 @@ def main():
         if exists :
             print('Filtered data file exists' )
         else :
-#            with Profiler() as prof, ResourceProfiler(dt=0.25) as rprof, \
-#                CacheProfiler() as cprof:
             field_list =sf.filter_variable_list(dataset, ref_dataset,
                                                 derived_data, filtered_data,
                                                 options,
@@ -393,52 +391,50 @@ def main():
                                                 grid = opgrid)
 
 
-            quad_field_list =sf.filter_variable_pair_list(dataset, ref_dataset,
-                                                derived_data, filtered_data,
-                                                options,
-                                                twod_filter, var_list=None,
-                                                grid = opgrid)
+            # quad_field_list =sf.filter_variable_pair_list(dataset, ref_dataset,
+            #                                     derived_data, filtered_data,
+            #                                     options,
+            #                                     twod_filter, var_list=None,
+            #                                     grid = opgrid)
 
-#            print(prof.results[0])
-#            print(rprof.results[0])
-#            print(cprof.results[0])
-            deformation_r, deformation_s = sf.filtered_deformation(dataset,
-                                                ref_dataset,
-                                                derived_data,
-                                                filtered_data, options,
-                                                twod_filter, grid='w')
 
-            Sn_ij_r, mod_Sn_r = sf.shear(deformation_r)
-            Sn_ij_r.name = Sn_ij_r.name + '_r'
-            Sn_ij_r = sf.save_field(filtered_data, Sn_ij_r)
-            mod_Sn_r.name = mod_Sn_r.name + '_r'
-            mod_Sn_r = sf.save_field(filtered_data, mod_Sn_r)
+            # deformation_r, deformation_s = sf.filtered_deformation(dataset,
+            #                                     ref_dataset,
+            #                                     derived_data,
+            #                                     filtered_data, options,
+            #                                     twod_filter, grid='w')
 
-            Sn_ij_s, mod_Sn_s = sf.shear(deformation_s)
-            Sn_ij_s.name = Sn_ij_s.name + '_s'
-            Sn_ij_s = sf.save_field(filtered_data, Sn_ij_s)
-            mod_Sn_s.name = mod_Sn_s.name + '_s'
-            mod_Sn_s = sf.save_field(filtered_data, mod_Sn_s)
+            # Sn_ij_r, mod_Sn_r = sf.shear(deformation_r)
+            # Sn_ij_r.name = Sn_ij_r.name + '_r'
+            # Sn_ij_r = sf.save_field(filtered_data, Sn_ij_r)
+            # mod_Sn_r.name = mod_Sn_r.name + '_r'
+            # mod_Sn_r = sf.save_field(filtered_data, mod_Sn_r)
 
-            S_ij_r, mod_S_r = sf.shear(deformation_r, no_trace = False)
-            S_ij_r.name = S_ij_r.name + '_r'
-            S_ij_r = sf.save_field(filtered_data, S_ij_r)
-            mod_S_r.name = mod_S_r.name + '_r'
-            mod_S_r = sf.save_field(filtered_data, mod_S_r)
+            # Sn_ij_s, mod_Sn_s = sf.shear(deformation_s)
+            # Sn_ij_s.name = Sn_ij_s.name + '_s'
+            # Sn_ij_s = sf.save_field(filtered_data, Sn_ij_s)
+            # mod_Sn_s.name = mod_Sn_s.name + '_s'
+            # mod_Sn_s = sf.save_field(filtered_data, mod_Sn_s)
 
-            S_ij_s, mod_S_s = sf.shear(deformation_s, no_trace = False)
-            S_ij_s.name = S_ij_s.name + '_s'
-            S_ij_s = sf.save_field(filtered_data, S_ij_s)
-            mod_S_s.name = mod_S_s.name + '_s'
-            mod_S_s = sf.save_field(filtered_data, mod_S_s)
+            # S_ij_r, mod_S_r = sf.shear(deformation_r, no_trace = False)
+            # S_ij_r.name = S_ij_r.name + '_r'
+            # S_ij_r = sf.save_field(filtered_data, S_ij_r)
+            # mod_S_r.name = mod_S_r.name + '_r'
+            # mod_S_r = sf.save_field(filtered_data, mod_S_r)
 
-            print(S_ij_r)
+            # S_ij_s, mod_S_s = sf.shear(deformation_s, no_trace = False)
+            # S_ij_s.name = S_ij_s.name + '_s'
+            # S_ij_s = sf.save_field(filtered_data, S_ij_s)
+            # mod_S_s.name = mod_S_s.name + '_s'
+            # mod_S_s = sf.save_field(filtered_data, mod_S_s)
 
-            v_r = sf.vorticity(deformation_r)
-            v_r.name = v_r.name + '_r'
-            v_r = sf.save_field(filtered_data, v_r)
+            # print(S_ij_r)
 
-            print(v_r)
+            # v_r = sf.vorticity(deformation_r)
+            # v_r.name = v_r.name + '_r'
+            # v_r = sf.save_field(filtered_data, v_r)
+
+            # print(v_r)
 
             print('--------------------------------------')
 
@@ -477,18 +473,18 @@ def main():
             plot_field(field, filtered_data, twod_filter, ilev, iy,
                         grid=opgrid)
 
-        for field in quad_field_list :
-            print(f"Plotting {field}")
-            plot_quad_field(field, filtered_data, twod_filter, ilev, iy,
-                            grid=opgrid)
+        # for field in quad_field_list :
+        #     print(f"Plotting {field}")
+        #     plot_quad_field(field, filtered_data, twod_filter, ilev, iy,
+        #                     grid=opgrid)
 
 
-        print("Plotting mod_Sn")
-        plot_shear(mod_Sn_r, mod_Sn_s, z, twod_filter, ilev, iy,
-                    no_trace = True)
-        print("Plotting mod_S")
-        plot_shear(mod_S_r, mod_S_s, z, twod_filter, ilev, iy,
-                    no_trace = False)
+        # print("Plotting mod_Sn")
+        # plot_shear(mod_Sn_r, mod_Sn_s, z, twod_filter, ilev, iy,
+        #             no_trace = True)
+        # print("Plotting mod_S")
+        # plot_shear(mod_S_r, mod_S_s, z, twod_filter, ilev, iy,
+        #             no_trace = False)
 
         filtered_data['ds'].close()
     derived_data['ds'].close()
