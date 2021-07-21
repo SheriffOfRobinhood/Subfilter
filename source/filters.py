@@ -2,7 +2,7 @@
 
   filters.py
 
-    - This module contains the code to generate a selection of 2-dimensional filters. 
+    - This module contains the code to generate a selection of 2-dimensional filters.
 
 """
 
@@ -19,7 +19,7 @@ eps = float_info.min # smallest possible float
 class Filter :
     '''
     Class defining a filter function.
-	
+
     Args:
         filter_name (str): Name of filter used. Either Gaussian, wave-cutoff or
                          running-mean.
@@ -38,16 +38,16 @@ class Filter :
                         been coded yet!)
         sigma (float): If a Gaussian filter is used, this is the lengthscale of
                      the filter.
-        ndim (int): Number of dimensions (default=2)               
+        ndim (int): Number of dimensions (default=2)
 
     @author: Peter Clark
-                     
+
     '''
-    
+
     def __init__(self, filter_id, filter_name, wavenumber=-1, \
-                         delta_x=1000.0, width=-1,cutoff=0.0001, \
+                         delta_x=1000.0, width=-1,cutoff=0.000001, \
                          high_pass=0, sigma=-1, ndim=2, use_ave=False):
-        
+
         if use_ave:
             print('use_ave is no longer supported.')
 
@@ -58,11 +58,7 @@ class Filter :
             if (sigma == -1):
                 data = self.filter_error(filter_name, 'sigma')
             else:
-                if use_ave :
-                    data = gaussian_filter_ave(sigma, delta_x, cutoff, width,
-                                               ndim=ndim)
-                else:
-                    data = gaussian_filter(sigma, delta_x, cutoff, width,
+                data = gaussian_filter(sigma, delta_x, cutoff, width,
                                                ndim=ndim)
         elif (filter_name == 'running_mean'):
             if (width == -1):
@@ -74,12 +70,7 @@ class Filter :
             if (wavenumber == -1):
                 data = self.filter_error(filter_name, 'wavenumber')
             else:
-                if use_ave :
-                    data = wave_cutoff_filter_ave(wavenumber, delta_x,
-                                             width, cutoff, high_pass,
-                                             ndim=ndim)
-                else:
-                    data = wave_cutoff_filter(wavenumber, delta_x, width,
+                data = wave_cutoff_filter(wavenumber, delta_x, width,
                                              cutoff, high_pass,
                                              ndim=ndim)
         else:
@@ -92,13 +83,13 @@ class Filter :
             self.data = data
 
             self.id = filter_id
-            self.attributes = {'filter_type' : filter_name, 
+            self.attributes = {'filter_type' : filter_name,
                   'ndim' : ndim,
-                  'wavenumber' : wavenumber, 
-                  'delta_x' : delta_x, 
-                  'width' : width, 
-                  'cutoff' : cutoff, 
-                  'high_pass' : high_pass, 
+                  'wavenumber' : wavenumber,
+                  'delta_x' : delta_x,
+                  'width' : width,
+                  'cutoff' : cutoff,
+                  'high_pass' : high_pass,
                   'sigma' : sigma}
 
     def __str__(self):
@@ -137,10 +128,10 @@ def running_mean_filter(width, ndim=2):
 
     Args:
         width (int): width of the filter
-        ndim (int): Number of dimensions (default=2)               
+        ndim (int): Number of dimensions (default=2)
 
     Returns:
-        ndarray: ndim dimensional array of size width in each dimension. 
+        ndarray: ndim dimensional array of size width in each dimension.
           Every element equals 1.0/(width**ndim)
     '''
     width = int(width)
@@ -157,7 +148,7 @@ def is_npi(x, tol=0.000001):
     r = np.abs(np.pi*np.round(x/np.pi )- x) <= tol
     return r
 
-def wave_cutoff_filter(wavenumber, delta_x=1000.0, width=-1, cutoff=0.0001,
+def wave_cutoff_filter(wavenumber, delta_x=1000.0, width=-1, cutoff=0.000001,
                        high_pass=0, ndim=2):
     '''
     Calculates a 2D wave-cutoff filter caculated using the given wavenumber.
@@ -178,7 +169,7 @@ def wave_cutoff_filter(wavenumber, delta_x=1000.0, width=-1, cutoff=0.0001,
                                       smallest value of the filter is less than
                                       the cutoff value.
       high_pass (bool, default=0): If true a high pass filter is calculated
-      ndim (int): Number of dimensions (default=2)               
+      ndim (int): Number of dimensions (default=2)
 
     Returns:
       ndarray: 2D array of filter values
@@ -203,7 +194,7 @@ def wave_cutoff_filter(wavenumber, delta_x=1000.0, width=-1, cutoff=0.0001,
                 L = half_width * delta_x
                 x = np.linspace(-L, L, 2*half_width+1)
                 x[x == 0] = eps
-                result = np.sin(wavenumber*x) / x 
+                result = np.sin(wavenumber*x) / x
                 result /= np.sum(result)
                 rmin = np.abs(result[~is_npi(wavenumber*x)]).min()
             width = 2 * half_width+1
@@ -220,7 +211,7 @@ def wave_cutoff_filter(wavenumber, delta_x=1000.0, width=-1, cutoff=0.0001,
                 result = np.sin(wavenumber*x) / x * np.sin(wavenumber*y) / y
                 result /= np.sum(result)
                 rmin = np.abs(result[np.logical_and(
-                                        ~is_npi(wavenumber*x), 
+                                        ~is_npi(wavenumber*x),
                                         ~is_npi(wavenumber*y))]).min()
             width = 2 * half_width+1
     else:
@@ -241,7 +232,7 @@ def wave_cutoff_filter(wavenumber, delta_x=1000.0, width=-1, cutoff=0.0001,
     return result
 
 
-def gaussian_filter(sigma, delta_x=1000.0, cutoff=0.0001, width=-1, 
+def gaussian_filter(sigma, delta_x=1000.0, cutoff=0.000001, width=-1,
                        ndim=2):
     '''
     Calculates a 1 or 2D Gaussian filter calculated with the given lengthscale (sigma)
@@ -260,7 +251,7 @@ def gaussian_filter(sigma, delta_x=1000.0, cutoff=0.0001, width=-1,
                                       dynamically, and increased until the
                                       smallest value of the filter is less than
                                       the cutoff value.
-      ndim (int): Number of dimensions (default=2)               
+      ndim (int): Number of dimensions (default=2)
 
     Returns:
       ndarray: 2D array of filter values

@@ -23,7 +23,7 @@ import difference_ops as do
 
 from thermodynamics_constants import *
 
-test_level = 0
+test_level = 1
 
 subfilter_version = '0.4.0'
 
@@ -86,8 +86,9 @@ def filter_variable_list(source_dataset, ref_dataset, derived_dataset,
                          filtered_dataset, options, filter_def,
                          var_list=None, grid='p') :
     """
-    Create filtered versions of input variables on required grid,
-    stored in derived_dataset.
+    Create filtered versions of input variables.
+
+    Filtered variables created on required grid,stored in derived_dataset.
 
     Args:
         source_dataset  : NetCDF dataset for input
@@ -101,13 +102,13 @@ def filter_variable_list(source_dataset, ref_dataset, derived_dataset,
         default provided by get_default_variable_list()
         grid='p'        : Grid - 'u','v','w' or 'p'
 
-    Returns:
+    Returns
+    -------
         list : list of strings representing variable names.
 
     @author: Peter Clark
 
     """
-
     if (var_list==None):
         var_list = get_default_variable_list()
         print("Default list:\n",var_list)
@@ -134,7 +135,9 @@ def filter_variable_pair_list(source_dataset, ref_dataset, derived_dataset,
                               filtered_dataset, options, filter_def,
                               var_list=None, grid='p') :
     """
-    Create filtered versions of pairs input variables on A grid,
+    Create filtered versions of pairs input variables.
+
+    Filtered variable pairs created on required grid,
     stored in derived_dataset.
 
     Args:
@@ -148,13 +151,13 @@ def filter_variable_pair_list(source_dataset, ref_dataset, derived_dataset,
         var_list=None   : List of variable names.
         default provided by get_default_variable_pair_list()
 
-    Returns:
+    Returns
+    -------
         list : list of lists of pairs strings representing variable names.
 
     @author: Peter Clark
 
     """
-
     if (var_list==None):
         var_list = get_default_variable_pair_list()
         print("Default list:\n",var_list)
@@ -1320,12 +1323,11 @@ def get_pref(source_dataset, ref_dataset,  options):
     '''
 
     if ref_dataset is None:
-        if 'options_database' in source_dataset.variables:
-            options_database = bytarr_to_dict(
-                source_dataset.variables['options_database'][...])
-            p_surf = float(options_database['surface_pressure'])
-        else:
+        od = options_database(source_dataset)
+        if od is None:
             p_surf = 1.0E5
+        else:
+            p_surf = float(od['surface_pressure'])
 
         thref = options['th_ref']
 
