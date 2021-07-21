@@ -86,9 +86,8 @@ def filter_variable_list(source_dataset, ref_dataset, derived_dataset,
                          filtered_dataset, options, filter_def,
                          var_list=None, grid='p') :
     """
-    Create filtered versions of input variables.
-
-    Filtered variables created on required grid,stored in derived_dataset.
+    Create filtered versions of input variables on required grid,
+    stored in derived_dataset.
 
     Args:
         source_dataset  : NetCDF dataset for input
@@ -102,13 +101,13 @@ def filter_variable_list(source_dataset, ref_dataset, derived_dataset,
         default provided by get_default_variable_list()
         grid='p'        : Grid - 'u','v','w' or 'p'
 
-    Returns
-    -------
+    Returns:
         list : list of strings representing variable names.
 
     @author: Peter Clark
 
     """
+
     if (var_list==None):
         var_list = get_default_variable_list()
         print("Default list:\n",var_list)
@@ -135,9 +134,7 @@ def filter_variable_pair_list(source_dataset, ref_dataset, derived_dataset,
                               filtered_dataset, options, filter_def,
                               var_list=None, grid='p') :
     """
-    Create filtered versions of pairs input variables.
-
-    Filtered variable pairs created on required grid,
+    Create filtered versions of pairs input variables on A grid,
     stored in derived_dataset.
 
     Args:
@@ -151,13 +148,13 @@ def filter_variable_pair_list(source_dataset, ref_dataset, derived_dataset,
         var_list=None   : List of variable names.
         default provided by get_default_variable_pair_list()
 
-    Returns
-    -------
+    Returns:
         list : list of lists of pairs strings representing variable names.
 
     @author: Peter Clark
 
     """
+
     if (var_list==None):
         var_list = get_default_variable_pair_list()
         print("Default list:\n",var_list)
@@ -211,6 +208,7 @@ def get_default_variable_list() :
 # For testing
         var_list = [
             "u",
+            "v",
             "w",
             "th",
             ]
@@ -635,13 +633,13 @@ def setup_filtered_data_file(source_file, destdir, fname,
         + "_" + filter_def.id + ".nc"
     filtered_dataset, exists = setup_data_file(source_file,
                     filtered_dataset_name, override=override)
-
-    filtered_dataset = filtered_dataset.assign_attrs(
-        {'filter_def_id' : filter_def.id})
-    filtered_dataset = filtered_dataset.assign_attrs(filter_def.attributes)
-    filtered_dataset = filtered_dataset.assign_attrs(options)
-
-    filtered_dataset.to_netcdf(filtered_dataset_name, mode='a')
+    if not exists :
+        filtered_dataset = filtered_dataset.assign_attrs(
+            {'filter_def_id' : filter_def.id})
+        filtered_dataset = filtered_dataset.assign_attrs(filter_def.attributes)
+        filtered_dataset = filtered_dataset.assign_attrs(options)
+    
+        filtered_dataset.to_netcdf(filtered_dataset_name, mode='a')
 
     dataset = {'file':filtered_dataset_name, 'ds':filtered_dataset}
 
@@ -738,6 +736,24 @@ def get_data(source_dataset, ref_dataset, var_name, options) :
                 vard.coords['z'] = z.data
 
             vard.attrs['units'] = var_properties[var_name]['units']
+            
+        else: 
+ 
+            if 'x' in vard.dims:
+                nx = vard.shape[vard.get_axis_num('x')]
+                x = np.arange(nx) * np.float64(od['dxx'])
+                xn = 'x_p'
+                vard = vard.rename({'x':xn})
+                vard.coords[xn] = x
+
+            if 'y' in vard.dims:
+                ny = vard.shape[vard.get_axis_num('y')]
+                y = np.arange(ny) * np.float64(od['dyy'])
+                yn = 'y_p'
+                vard = vard.rename({'y':yn})
+                vard.coords[yn] = y
+            
+            
 
 #        print(vard)
         if var_name == 'th' :
@@ -787,7 +803,7 @@ def get_data(source_dataset, ref_dataset, var_name, options) :
         else :
 
             sys.exit(f"Data {var_name:s} not in dataset.")
-    print(vard)
+#    print(vard)
 
     return vard
 
@@ -837,7 +853,7 @@ def get_and_transform(source_dataset, ref_dataset, var_name, options,
         if vp[0] :
             print("Mapping {} from u grid to v grid.".format(var_name))
             var = do.field_on_u_to_p(var)
-            var = do.field_on_v_to_p(var)
+            var = do.field_on_p_to_v(var)
         if vp[2] :
             print("Mapping {} from w grid to v grid.".format(var_name))
             z = source_dataset["z"]
@@ -902,7 +918,7 @@ def get_data_on_grid(source_dataset, ref_dataset, derived_dataset, var_name,
     var_found = False
     # Logic here:
     # If var_name already qualified with '_on_x', where x is a grid
-    # then if x matches required output grid, see in derived_dataset
+    # then if x matches required output grid, see if in derived_dataset
     # already, and use if it is.
     # otherwise strip '_on_x' and go back to source data as per default.
 
@@ -1323,11 +1339,12 @@ def get_pref(source_dataset, ref_dataset,  options):
     '''
 
     if ref_dataset is None:
-        od = options_database(source_dataset)
-        if od is None:
-            p_surf = 1.0E5
+        if 'options_database' in source_dataset.variables:
+            options_database = bytarr_to_dict(
+                source_dataset.variables['options_database'][...])
+            p_surf = float(options_database['surface_pressure'])
         else:
-            p_surf = float(od['surface_pressure'])
+            p_surf = 1.0E5
 
         thref = options['th_ref']
 
