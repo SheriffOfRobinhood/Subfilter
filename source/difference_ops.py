@@ -69,15 +69,14 @@ def field_on_u_to_p(field) :
         field on p points
     @author: Peter Clark
     """
+
     print("u_to_p")
     d = field.data
     x = field.coords['x_u'].data
     xaxis = field.get_axis_num('x_u')
-    depths = np.zeros(len(field.dims))
-    depths[xaxis] = 1
-    newfield = field.rename({'x_u':'x_p'})
     xmn = lambda arr:(0.5 * (arr + np.roll(arr,-1,axis=xaxis)))
-    newfield.data = d.map_overlap(xmn, depth=tuple(depths),
+    newfield = field.rename({'x_u':'x_p'})
+    newfield.data = d.map_overlap(xmn, depth={'x_p':(1)}, 
                                   boundary={xaxis:'periodic'})
     newfield.coords['x_p'] = x - x[0]
     return newfield
@@ -94,14 +93,14 @@ def field_on_p_to_u(field) :
     @author: Peter Clark
     """
 
+    print("p_to_u")
     d = field.data
     x = field.coords['x_p'].data
     xaxis = field.get_axis_num('x_p')
-    depths = np.zeros(len(field.dims))
-    depths[xaxis] = 1
-    newfield = field.rename({'x_p':'x_u'})
     xmn = lambda arr:(0.5 * (arr + np.roll(arr,+1,axis=xaxis)))
-    newfield.data = d.map_overlap(xmn, depth=tuple(depths), boundary={xaxis:'periodic'})
+    newfield = field.rename({'x_p':'x_u'})
+    newfield.data = d.map_overlap(xmn, depth={'x_u':(1)}, 
+                                  boundary={xaxis:'periodic'})
     newfield.coords['x_u'] = x + (x[1] - x[0]) / 2.0
     return newfield
 
@@ -117,14 +116,14 @@ def field_on_v_to_p(field) :
     @author: Peter Clark
     """
 
+    print("v_to_p")
     d = field.data
     y = field.coords['y_v'].data
     yaxis = field.get_axis_num('y_v')
-    depths = np.zeros(len(field.dims))
-    depths[yaxis] = 1
-    newfield = field.rename({'y_v':'y_p'})
     ymn = lambda arr:(0.5 * (arr + np.roll(arr,-1,axis=yaxis)))
-    newfield.data = d.map_overlap(ymn, depth=tuple(depths), boundary={yaxis:'periodic'})
+    newfield = field.rename({'y_v':'y_p'})
+    newfield.data = d.map_overlap(ymn, depth={'y_p':(1)}, 
+                                  boundary={yaxis:'periodic'})
     newfield.coords['y_p'] = y - y[0]
     return newfield
 
@@ -139,16 +138,14 @@ def field_on_p_to_v(field) :
         field on p points
     @author: Peter Clark
     """
-
+    print("p_to_v")
     d = field.data
     y = field.coords['y_p'].data
     yaxis = field.get_axis_num('y_p')
-    depths = np.zeros(len(field.dims))
-    depths[yaxis] = 1
-
-    newfield = field.rename({'y_p':'y_v'})
     ymn = lambda arr:(0.5 * (arr + np.roll(arr,1,axis=yaxis)))
-    newfield.data = d.map_overlap(ymn, depth=tuple(depths), boundary={yaxis:'periodic'})
+    newfield = field.rename({'y_p':'y_v'})
+    newfield.data = d.map_overlap(ymn, depth={'y_v':(1)}, 
+                                  boundary={yaxis:'periodic'})
     newfield.coords['y_v'] = y + (y[1] - y[0]) / 2.0
     return newfield
 
@@ -164,12 +161,9 @@ def d_by_dz_field_on_zn(field):
     @author: Peter Clark
     """
     print("d_by_dz_field_on_zn ")
-
     zn = field.coords['zn']
     new = field.diff('zn')/field.coords['zn'].diff('zn')
     new = new.pad(pad_width={'zn':(0,1)}, mode = 'edge')
-#    new[{'zn':-1}] = 2 * new[{'zn':-2}] - new[{'zn':-3}]
-
     new = new.rename({'zn':'zi'})
     zi = 0.5 * (zn.data + np.roll(zn.data, -1))
     zi[-1] = 2 * zn.data[-2] - zn.data[-3]
@@ -193,8 +187,6 @@ def d_by_dz_field_on_z(field):
     z = field.coords['z']
     new = field.diff('z')/field.coords['z'].diff('z')
     new = new.pad(pad_width={'z':(1,0)}, mode = 'edge')
-#    new[{'z':0}] = 2 * new[{'z':1}] - new[{'z':2}]
-
     new = new.rename({'z':'zn'})
     zi = 0.5 * (z.data + np.roll(z.data, 1))
     zi[0] = 2 * z.data[2] - z.data[3]
@@ -220,14 +212,11 @@ def d_by_dx_field_on_u(field, z, grid = 'p' ) :
     d = field.data
     x = field.coords['x_u'].data
     dx = x[1] - x[0]
-#    dx = 50.0
     xaxis = field.get_axis_num('x_u')
-    depths = np.zeros(len(field.dims))
-    depths[xaxis] = 1
-    newfield = field.rename({'x_u':'x_p'})
     xdrv = lambda arr:((arr - np.roll(arr,1,axis=xaxis)) / dx)
-    newfield.data = d.map_overlap(xdrv, depth=tuple(depths), boundary={xaxis:'periodic'})
     newfield = field.rename({'x_u':'x_p'})
+    newfield.data = d.map_overlap(xdrv, depth={'x_p':(1)}, 
+                                  boundary={xaxis:'periodic'})
     newfield.coords['x_p'] = x - dx / 2.0
 
     # Derivative on p
@@ -261,11 +250,10 @@ def d_by_dy_field_on_u(field, z, grid = 'p' ) :
     y = field.coords['y_p'].data
     dy = y[1] - y[0]
     yaxis = field.get_axis_num('y_p')
-    depths = np.zeros(len(field.dims))
-    depths[yaxis] = 1
-    newfield = field.rename({'y_p':'y_v'})
     ydrv = lambda arr:((np.roll(arr,-1,axis=yaxis) - arr) / dy)
-    newfield.data = d.map_overlap(ydrv, depth=tuple(depths), boundary={yaxis:'periodic'})
+    newfield = field.rename({'y_p':'y_v'})
+    newfield.data = d.map_overlap(ydrv, depth={'y_v':(1)}, 
+                                  boundary={yaxis:'periodic'})
     newfield.coords['y_v'] = y + dy / 2.0
 
     # Derivative on u,v
@@ -341,11 +329,10 @@ def d_by_dx_field_on_v(field, z, grid = 'p' ) :
     x = field.coords['x_p'].data
     dx = x[1] - x[0]
     xaxis = field.get_axis_num('x_p')
-    depths = np.zeros(len(field.dims))
-    depths[xaxis] = 1
-    newfield = field.rename({'x_p':'x_u'})
     xdrv = lambda arr:((np.roll(arr,-1,axis=xaxis) - arr)/dx)
-    newfield.data = d.map_overlap(xdrv, depth=tuple(depths), boundary={xaxis:'periodic'})
+    newfield = field.rename({'x_p':'x_u'})
+    newfield.data = d.map_overlap(xdrv, depth={'x_u':(1)}, 
+                                  boundary={xaxis:'periodic'})
     newfield.coords['x_u'] = x - dx / 2.0
 
     # Derivative on u,v
@@ -384,11 +371,10 @@ def d_by_dy_field_on_v(field, z, grid = 'p' ) :
     y = field.coords['y_v'].data
     dy = y[1] - y[0]
     yaxis = field.get_axis_num('y_v')
-    depths = np.zeros(len(field.dims))
-    depths[yaxis] = 1
-    newfield = field.rename({'y_v':'y_p'})
     ydrv = lambda arr:((arr - np.roll(arr,1,axis=yaxis)) / dy)
-    newfield.data = d.map_overlap(ydrv, depth=tuple(depths), boundary={yaxis:'periodic'})
+    newfield = field.rename({'y_v':'y_p'})
+    newfield.data = d.map_overlap(ydrv, depth={'y_p':(1)}, 
+                                  boundary={yaxis:'periodic'})
     newfield.coords['y_p'] = y - dy / 2.0
 
     # Derivative on p
@@ -455,15 +441,15 @@ def d_by_dx_field_on_p(field, z, grid = 'p' ) :
         field on required grid
     @author: Peter Clark
     """
-
     print("d_by_dx_field_on_p ",grid)
     d = field.data
     x = field.coords['x_p'].data
     dx = x[1] - x[0]
     xaxis = field.get_axis_num('x_p')
-
+    xdrv = lambda arr:((np.roll(arr,-1,axis=xaxis) - arr) / dx)
     newfield = field.rename({'x_p':'x_u'})
-    newfield.data = (np.roll(d,-1,axis=xaxis)- d ) / dx
+    newfield.data = d.map_overlap(xdrv, depth={'x_u':(1)}, 
+                                  boundary={xaxis:'periodic'})
     newfield.coords['x_u'] = x + dx / 2.0
 
     # Derivative on u
@@ -493,15 +479,15 @@ def d_by_dy_field_on_p(field, z, grid = 'p' ) :
         field on required grid
     @author: Peter Clark
     """
-
     print("d_by_dy_field_on_p ",grid)
     d = field.data
     y = field.coords['y_p'].data
     dy = y[1] - y[0]
     yaxis = field.get_axis_num('y_p')
-
+    ydrv = lambda arr:((np.roll(arr,-1,axis=yaxis) - arr) / dy)
     newfield = field.rename({'y_p':'y_v'})
-    newfield.data = (np.roll(d,-1,axis=yaxis) - d) / dy
+    newfield.data = d.map_overlap(ydrv, depth={'y_v':(1)}, 
+                                  boundary={yaxis:'periodic'})
     newfield.coords['y_v'] = y + dy / 2.0
 
     # Derivative on v
@@ -577,7 +563,8 @@ def d_by_dx_field_on_w(field, zn, grid = 'p' ) :
     depths[xaxis] = 1
     newfield = field.rename({'x_p':'x_u'})
     xdrv = lambda arr:((np.roll(arr,-1,axis=xaxis) - arr) / dx)
-    newfield.data = d.map_overlap(xdrv, depth=tuple(depths), boundary={xaxis:'periodic'})
+    newfield.data = d.map_overlap(xdrv, depth={'x_u':(1)}, 
+                                  boundary={xaxis:'periodic'})
     newfield.coords['x_u'] = x + dx / 2.0
 
     # Derivative on u,w
@@ -620,7 +607,8 @@ def d_by_dy_field_on_w(field, zn, grid = 'p' ) :
     depths[yaxis] = 1
     newfield = field.rename({'y_p':'y_v'})
     ydrv = lambda arr:((np.roll(arr,-1,axis=yaxis) - arr) / dy)
-    newfield.data = d.map_overlap(ydrv, depth=tuple(depths), boundary={yaxis:'periodic'})
+    newfield.data = d.map_overlap(ydrv, depth={'y_v':(1)} ,
+                                  boundary={yaxis:'periodic'})
     newfield.coords['y_v'] = y + dy / 2.0
 
     # Derivative on v,w
@@ -691,13 +679,11 @@ def padleft(f, zt, axis=0) :
 
     s = list(np.shape(f))
     s[axis] += 1
-#    print(zt)
     newfield = np.zeros(s)
     newfield[...,1:]=f
     newz = np.zeros(np.size(zt)+1)
     newz[1:] = zt
     newz[0] = 2*zt[0]-zt[1]
-#    print(newz)
     return newfield, newz
 
 def padright(f, zt, axis=0) :
@@ -716,12 +702,10 @@ def padright(f, zt, axis=0) :
 
     s = list(np.shape(f))
     s[axis] += 1
-#    print(zt)
     newfield = np.zeros(s)
     newfield[...,:-1] = f
     newz = np.zeros(np.size(zt)+1)
     newz[:-1] = zt
     newz[-1] = 2*zt[-1]-zt[-2]
-#    print(newz)
     return newfield, newz
 
