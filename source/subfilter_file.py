@@ -37,7 +37,7 @@ if test_case == 0:
               }
     dir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
     odir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
-    odir = odir + 'test_dask_' + options['FFT_type']+'/'
+    odir = odir + 'test_cw_' + options['FFT_type']+'/'
     file = 'diagnostics_3d_ts_21600.nc'
     ref_file = 'diagnostics_ts_21600.nc'
 elif test_case == 1:
@@ -52,7 +52,7 @@ elif test_case == 1:
               }
     dir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/CBL/'
     odir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/CBL/'
-    odir = odir + 'test_dask_' + options['FFT_type']+'/'
+    odir = odir + 'test_cw_' + options['FFT_type']+'/'
     file = 'diagnostics_3d_ts_13200.nc'
     ref_file = None
 
@@ -270,7 +270,8 @@ def main():
 #    filter_name = 'gaussian'
 #    width = 20
 #    filter_name = 'running_mean'
-    filter_name = 'wave_cutoff'
+#    filter_name = 'wave_cutoff'
+    filter_name = 'circular_wave_cutoff'
 
 #    dataset = Dataset(dir+file, 'r') # Dataset is the class behavior to open the file
                                  # and create an instance of the ncCDF4 class
@@ -291,7 +292,7 @@ def main():
 
     print(f'nch={nch}')
 
-    width = dataset.dims[xvar]
+    npoints = dataset.dims[xvar]
 
     dataset.close()
 
@@ -339,19 +340,29 @@ def main():
             filter_id = 'filter_ga{:02d}'.format(i)
             twod_filter = filt.Filter(filter_id,
                                       filter_name,
-                                      sigma=sigma, width=width,
+                                      npoints=npoints,
+                                      sigma=sigma,
                                       delta_x=dx)
         elif filter_name == 'wave_cutoff':
             filter_id = 'filter_wc{:02d}'.format(i)
             twod_filter = filt.Filter(filter_id,
-                                      filter_name, wavenumber=np.pi/(2*sigma),
-                                      width=width,
+                                      filter_name,
+                                      npoints=npoints,
+                                      wavenumber=np.pi/(2*sigma),
+                                      delta_x=dx)
+        elif filter_name == 'circular_wave_cutoff':
+            filter_id = 'filter_cwc{:02d}'.format(i)
+            twod_filter = filt.Filter(filter_id,
+                                      filter_name,
+                                      npoints=npoints,
+                                      wavenumber=np.pi/(2*sigma),
                                       delta_x=dx)
         elif filter_name == 'running_mean':
             filter_id = 'filter_rm{:02d}'.format(i)
             width = int(np.round( sigma/dx * np.pi * 2.0 / 3.0)+1)
             twod_filter = filt.Filter(filter_id,
                                       filter_name,
+                                      npoints=npoints,
                                       width=width,
                                       delta_x=dx)
 
@@ -378,8 +389,8 @@ def main():
         filtered_data, exists = \
             sf.setup_filtered_data_file( dir+file, odir, fname,
                                        options, twod_filter, override=True)
-#        print("Variables in filtered dataset.")
-#        print(filtered_data['ds'].variables)
+        print("Variables in filtered dataset.")
+        print(filtered_data['ds'].variables)
 
         if exists :
             print('Filtered data file exists' )
@@ -436,17 +447,17 @@ def main():
 
             # print(v_r)
 
-            print('--------------------------------------')
+            # print('--------------------------------------')
 
-            print(derived_data)
+            # print(derived_data)
 
-            print('--------------------------------------')
+            # print('--------------------------------------')
 
-            print(filtered_data)
+            # print(filtered_data)
 
-            print('--------------------------------------')
+            # print('--------------------------------------')
 
-            filtered_data['ds'].close()
+            # filtered_data['ds'].close()
 
 
 
