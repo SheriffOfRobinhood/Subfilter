@@ -23,9 +23,9 @@ import difference_ops as do
 
 from thermodynamics_constants import *
 
-test_level = 1
+test_level = 0
 
-subfilter_version = '0.4.0'
+subfilter_version = '0.5.0'
 
 subfilter_setup = {'write_sleeptime':3,
                    'use_concat':True,
@@ -214,7 +214,7 @@ def get_default_variable_list() :
             ]
     elif test_level == 2:
 # For testing
-        var_list = ["u","w","th", "th_v", "th_L", "q_total"]
+#        var_list = ["u","w","th", "th_v", "th_L", "q_total"]
         var_list = [
             "u",
             "w",
@@ -510,7 +510,7 @@ def filtered_field_calc(var, options, filter_def):
                     # This shift of the filter is necessary to get the phase
                     # information right.
                     padfilt = np.fft.ifftshift(padfilt)#????? Test
-                    filter_def.fft = np.fft.fft(padfilt)
+                    filter_def.rfft = np.fft.rfft(padfilt)
 
             else:
 
@@ -638,7 +638,7 @@ def setup_filtered_data_file(source_file, destdir, fname,
             {'filter_def_id' : filter_def.id})
         filtered_dataset = filtered_dataset.assign_attrs(filter_def.attributes)
         filtered_dataset = filtered_dataset.assign_attrs(options)
-    
+
         filtered_dataset.to_netcdf(filtered_dataset_name, mode='a')
 
     dataset = {'file':filtered_dataset_name, 'ds':filtered_dataset}
@@ -736,9 +736,9 @@ def get_data(source_dataset, ref_dataset, var_name, options) :
                 vard.coords['z'] = z.data
 
             vard.attrs['units'] = var_properties[var_name]['units']
-            
-        else: 
- 
+
+        else:
+
             if 'x' in vard.dims:
                 nx = vard.shape[vard.get_axis_num('x')]
                 x = np.arange(nx) * np.float64(od['dxx'])
@@ -752,19 +752,15 @@ def get_data(source_dataset, ref_dataset, var_name, options) :
                 yn = 'y_p'
                 vard = vard.rename({'y':yn})
                 vard.coords[yn] = y
-            
-            
 
 #        print(vard)
         if var_name == 'th' :
             thref = get_thref(ref_dataset, options)
-#            thref = np.expand_dims(thref, axis=dims)
             vard += thref
 
     except :
 
         if var_name == 'th_L' :
-#            rhoref = ref_dataset.variables['rhon'][-1,...]
             theta = get_data(source_dataset, ref_dataset, 'th',
                                            options)
             (pref, piref) = get_pref(source_dataset, ref_dataset,  options)
@@ -774,7 +770,6 @@ def get_data(source_dataset, ref_dataset, var_name, options) :
 
 
         elif var_name == 'th_v' :
-#            rhoref = ref_dataset.variables['rhon'][-1,...]
             theta = get_data(source_dataset, ref_dataset, 'th',
                                            options)
             thref = get_thref(ref_dataset, options)
@@ -785,7 +780,6 @@ def get_data(source_dataset, ref_dataset, var_name, options) :
             vard = theta + thref * (c_virtual * q_v - q_cl)
 
         elif var_name == 'q_total' :
-#            rhoref = ref_dataset.variables['rhon'][-1,...]
             q_v = get_data(source_dataset, ref_dataset,
                                          'q_vapour', options)
             q_cl = get_data(source_dataset, ref_dataset,
@@ -796,7 +790,6 @@ def get_data(source_dataset, ref_dataset, var_name, options) :
             th_v = get_data(source_dataset, ref_dataset, 'th_v',
                                            options)
             # get mean over horizontal axes
-            # haxes = find_var(vardim, ['x','y'])
             mean_thv = th_v.mean(dim=('x','y'))
             vard = grav * (th_v - mean_thv)/mean_thv
 
