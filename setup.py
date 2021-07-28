@@ -8,7 +8,7 @@ setup(
     author_email='p.clark@reading.ac.uk',
     contributors='Todd Jones',
     # Needed to actually package something
-    packages=['subfilter', 'filters/filters'],
+    packages=['subfilter', 'filters\filters'],
     # Needed for dependencies
     install_requires=['numpy', 'scipy', 'dask', 'xarray'],
     # *strongly* suggested for sharing
