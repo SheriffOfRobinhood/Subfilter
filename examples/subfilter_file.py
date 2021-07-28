@@ -265,13 +265,11 @@ def main():
 #    client
 #    dask.config.set(scheduler='threads')
 #   Non-global variables that are set once
-    sigma_list = [500.0, 220.0]
-#    sigma_list = [200.0]
+    sigma_list = [500.0, 220.0, 50.0]
 #    filter_name = 'gaussian'
-#    width = 20
-#    filter_name = 'running_mean'
+    filter_name = 'running_mean'
 #    filter_name = 'wave_cutoff'
-    filter_name = 'circular_wave_cutoff'
+#    filter_name = 'circular_wave_cutoff'
 
 #    dataset = Dataset(dir+file, 'r') # Dataset is the class behavior to open the file
                                  # and create an instance of the ncCDF4 class
@@ -358,8 +356,12 @@ def main():
                                       wavenumber=np.pi/(2*sigma),
                                       delta_x=dx)
         elif filter_name == 'running_mean':
-            filter_id = 'filter_rm{:02d}'.format(i)
-            width = int(np.round( sigma/dx * np.pi * 2.0 / 3.0)+1)
+#            filter_id = 'filter_rm{:02d}'.format(i)
+#            filter_id = 'filter_rm{:02d}n'.format(i)
+            filter_id = 'filter_rm{:02d}v3'.format(i)
+#            width = int(np.round( sigma/dx * np.pi * 2.0 / 3.0)+1)
+#            width = int(np.round( sigma/dx * 2.0 * np.sqrt(3.0))+1)
+            width = int(np.round( sigma/dx *  np.sqrt(2.0 *np.pi))+1)
             twod_filter = filt.Filter(filter_id,
                                       filter_name,
                                       npoints=npoints,

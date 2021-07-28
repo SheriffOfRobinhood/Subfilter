@@ -19,13 +19,11 @@ from dask.diagnostics import ProgressBar
 import time
 
 from scipy.signal import fftconvolve
-import difference_ops as do
 
-from thermodynamics_constants import *
+import ..utils.difference_ops as do
+import ..thermodynamics.thermodynamics_constants as thc
 
 test_level = 0
-
-subfilter_version = '0.5.0'
 
 subfilter_setup = {'write_sleeptime':3,
                    'use_concat':True,
@@ -207,9 +205,9 @@ def get_default_variable_list() :
     if test_level == 1:
 # For testing
         var_list = [
-            "u",
-            "v",
-            "w",
+            # "u",
+            # "v",
+            # "w",
             "th",
             ]
     elif test_level == 2:
@@ -766,7 +764,7 @@ def get_data(source_dataset, ref_dataset, var_name, options) :
             (pref, piref) = get_pref(source_dataset, ref_dataset,  options)
             q_cl = get_data(source_dataset, ref_dataset,
                                     'q_cloud_liquid_mass', options)
-            vard = theta - L_over_cp * q_cl / piref
+            vard = theta - thc.L_over_cp * q_cl / piref
 
 
         elif var_name == 'th_v' :
@@ -777,7 +775,7 @@ def get_data(source_dataset, ref_dataset, var_name, options) :
                                          'q_vapour', options)
             q_cl = get_data(source_dataset, ref_dataset,
                                     'q_cloud_liquid_mass', options)
-            vard = theta + thref * (c_virtual * q_v - q_cl)
+            vard = theta + thref * (thc.c_virtual * q_v - q_cl)
 
         elif var_name == 'q_total' :
             q_v = get_data(source_dataset, ref_dataset,
@@ -791,7 +789,7 @@ def get_data(source_dataset, ref_dataset, var_name, options) :
                                            options)
             # get mean over horizontal axes
             mean_thv = th_v.mean(dim=('x','y'))
-            vard = grav * (th_v - mean_thv)/mean_thv
+            vard = thc.grav * (th_v - mean_thv)/mean_thv
 
         else :
 
