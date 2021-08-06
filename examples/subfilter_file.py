@@ -12,70 +12,36 @@ import numpy as np
 import xarray as xr
 import matplotlib
 import matplotlib.pyplot as plt
-
-import subfilter as sf
-import filters as filt
-#import difference_ops as do
 import dask
+#from dask.distributed import Client
 
 #from dask.diagnostics import Profiler, ResourceProfiler, CacheProfiler
-#from dask.diagnostics import ProgressBar
 
-from dask.distributed import Client
+import subfilter.subfilter as sf
+import subfilter.filters as filt
+import subfilter.utils.deformation as defm
 
-test_case = 1
+from subfilter.utils.string_utils import get_string_index
+from subfilter.io.dataout import save_field
+from subfilter.io.MONC_utils import options_database
 
-if test_case == 0:
-    options = {
-    #        'FFT_type': 'FFTconvolve',
-    #        'FFT_type': 'FFT',
-            'FFT_type': 'RFFT',
-            'save_all': 'Yes',
-            'th_ref': 300.0,
-            'dx': 50.0,
-            'dy': 50.0,
-              }
-    dir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
-    odir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
-    odir = odir + 'test_cw_' + options['FFT_type']+'/'
-    file = 'diagnostics_3d_ts_21600.nc'
-    ref_file = 'diagnostics_ts_21600.nc'
-elif test_case == 1:
-    options = {
-    #        'FFT_type': 'FFTconvolve',
-    #        'FFT_type': 'FFT',
-            'FFT_type': 'RFFT',
-            'save_all': 'Yes',
-            'th_ref': 300.0,
-            'dx': 5.0,
-            'dy': 5.0,
-              }
-    dir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/CBL/'
-    odir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/CBL/'
-    odir = odir + 'test_cw_' + options['FFT_type']+'/'
-    file = 'diagnostics_3d_ts_13200.nc'
-    ref_file = None
+test_case = 0
+run_quad_fields = True
+run_deformation_fields = True
+override = True
 
-#dir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
-#odir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
 
-os.makedirs(odir, exist_ok = True)
-
-#file = 'diagnostics_ts_18000.0.nc'
-#ref_file = 'diagnostics_ts_18000.0.nc'
-
-plot_dir = odir + 'plots/'
-os.makedirs(plot_dir, exist_ok = True)
 
 plot_type = '.png'
 figshow = True
 
-def plot_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
+def plot_field(var_name, filtered_data, twod_filter, plot_dir,
+               ilev, iy, grid='p'):
 
-    var_r = filtered_data['ds'][f"{var_name}_on_{grid}_r"]
-    var_s = filtered_data['ds'][f"{var_name}_on_{grid}_s"]
+    var_r = filtered_data['ds'][f"f({var_name}_on_{grid})_r"]
+    var_s = filtered_data['ds'][f"f({var_name}_on_{grid})_s"]
 
-    [iix, iiy, iiz] = sf.find_var(var_s.dims, ['x', 'y', 'z'])
+    [iix, iiy, iiz] =  get_string_index(var_s.dims, ['x', 'y', 'z'])
     xvar = var_s.dims[iix]
     yvar = var_s.dims[iiy]
     zvar = var_s.dims[iiz]
@@ -85,9 +51,6 @@ def plot_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
         print(f'it:{it}')
 
         if twod_filter.attributes['filter_type']=='domain' :
-
-#            zcoord = sf.last_dim(filtered_data['ds'][var_r.dimensions[1]])
- #           pltdat = (var_r[it,:])
 
             fig1, axa = plt.subplots(1,1,figsize=(5,5))
 
@@ -133,19 +96,20 @@ def plot_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
 
     return
 
-def plot_quad_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
+def plot_quad_field(var_name, filtered_data, twod_filter, plot_dir,
+                    ilev, iy, grid='p'):
 
     v1 = var_name[0]
     v2 = var_name[1]
 
-    v1_r = filtered_data['ds'][f"{v1}_on_{grid}_r"]
-    v2_r = filtered_data['ds'][f"{v2}_on_{grid}_r"]
+    v1_r = filtered_data['ds'][f"f({v1}_on_{grid})_r"]
+    v2_r = filtered_data['ds'][f"f({v2}_on_{grid})_r"]
 
 #    print(v1,v2)
     s_v1v2 = filtered_data['ds'][f"s({v1},{v2})_on_{grid}"]
 #    print(s_v1v2)
 
-    [iix, iiy, iiz] = sf.find_var(s_v1v2.dims, ['x', 'y', 'z'])
+    [iix, iiy, iiz] = get_string_index(s_v1v2.dims, ['x', 'y', 'z'])
     if iix is not None:
         xvar = s_v1v2.dims[iix]
         yvar = s_v1v2.dims[iiy]
@@ -175,7 +139,7 @@ def plot_quad_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
 
             pltdat = (var_r - var_r.mean(dim=(xvar, yvar)))
 
-            pltdat.name = v1+'_r.'+v2+'_r'
+            pltdat.name = 'f('+v1+')_r.'+'f('+v2+')_r'
 
             nlevels = 40
             plt.clf
@@ -205,11 +169,11 @@ def plot_quad_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
 
     return
 
-def plot_shear(var_r, var_s, zcoord,  twod_filter, ilev, iy, no_trace = True):
+def plot_shear(var_r, var_s, zcoord,  twod_filter, plot_dir, ilev, iy, no_trace = True):
     var_name = var_r.name
     if no_trace : var_name = var_name+'n'
 
-    [iix, iiy, iiz] = sf.find_var(var_s.dims, ['x', 'y', 'z'])
+    [iix, iiy, iiz] = get_string_index(var_s.dims, ['x', 'y', 'z'])
     xvar = var_s.dims[iix]
     yvar = var_s.dims[iiy]
     zvar = var_s.dims[iiz]
@@ -261,46 +225,54 @@ def main():
     Top level code, a bit of a mess.
     '''
 
+    if test_case == 0:
+        config_file = 'config_test_case_0.yaml'
+        dir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
+        odir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
+        file = 'diagnostics_3d_ts_21600.nc'
+        ref_file = 'diagnostics_ts_21600.nc'
+    elif test_case == 1:
+        config_file = 'config_test_case_1.yaml'
+        dir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/CBL/'
+        odir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/CBL/'
+        file = 'diagnostics_3d_ts_13200.nc'
+        ref_file = None
+
+#dir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
+#odir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
+
+
+#file = 'diagnostics_ts_18000.0.nc'
+#ref_file = 'diagnostics_ts_18000.0.nc'
+
+    options, update_config = sf.subfilter_options(config_file)
+
+    odir = odir + 'test_dask_' + options['FFT_type']+'/'
+    os.makedirs(odir, exist_ok = True)
+
+    plot_dir = odir + 'plots/'
+    os.makedirs(plot_dir, exist_ok = True)
+
 #    client = Client()
 #    client
 #    dask.config.set(scheduler='threads')
 #   Non-global variables that are set once
-    sigma_list = [500.0, 220.0, 50.0]
-#    filter_name = 'gaussian'
-    filter_name = 'running_mean'
-#    filter_name = 'wave_cutoff'
-#    filter_name = 'circular_wave_cutoff'
 
-#    dataset = Dataset(dir+file, 'r') # Dataset is the class behavior to open the file
-                                 # and create an instance of the ncCDF4 class
     dask.config.set({"array.slicing.split_large_chunks": True})
-    dataset = xr.open_dataset(dir+file)
-    [itime, iix, iiy, iiz] = sf.find_var(dataset.dims, ['time', 'x', 'y', 'z'])
-    timevar = list(dataset.dims)[itime]
-    xvar = list(dataset.dims)[iix]
-    yvar = list(dataset.dims)[iiy]
-    zvar = list(dataset.dims)[iiz]
-    max_ch = sf.subfilter_setup['chunk_size']
+    # dataset = xr.open_dataset(dir+file)
 
-    nch = np.min([int(dataset.dims[xvar]/(2**int(np.log(dataset.dims[xvar]
-                                                *dataset.dims[yvar]
-                                                *dataset.dims[zvar]
-                                                /max_ch)/np.log(2)/2))),
-                  dataset.dims[xvar]])
+    # print(f'nch={nch}')
 
-    print(f'nch={nch}')
+    # npoints = dataset.dims[xvar]
 
-    npoints = dataset.dims[xvar]
-
-    dataset.close()
+    # dataset.close()
 
     defn = 1
-#    dataset = xr.open_dataset(dir+file, chunks={timevar: defn,
-#                                                'z':'auto', 'zn':'auto'})
+    dataset = xr.open_dataset(dir+file, chunks={'z':'auto', 'zn':'auto'})
 
-    dataset = xr.open_dataset(dir+file, chunks={timevar: defn,
-                                                xvar:nch, yvar:nch,
-                                                'z':'auto', 'zn':'auto'})
+    # dataset = xr.open_dataset(dir+file, chunks={timevar: defn,
+    #                                             xvar:nch, yvar:nch,
+    #                                             'z':'auto', 'zn':'auto'})
     print(dataset)
 #    ref_dataset = Dataset(dir+ref_file, 'r')
     if ref_file is not None:
@@ -308,7 +280,7 @@ def main():
     else:
         ref_dataset = None
 
-    od = sf.options_database(dataset)
+    od = options_database(dataset)
     if od is None:
         dx = options['dx']
         dy = options['dy']
@@ -316,21 +288,32 @@ def main():
         dx = float(od['dxx'])
         dy = float(od['dyy'])
 
+    [itime, iix, iiy, iiz] = get_string_index(dataset.dims, ['time', 'x', 'y', 'z'])
+    timevar = list(dataset.dims)[itime]
+    xvar = list(dataset.dims)[iix]
+    yvar = list(dataset.dims)[iiy]
+    zvar = list(dataset.dims)[iiz]
+    npoints = dataset.dims[xvar]
+
 # For plotting
     ilev = 15
     iy = 40
 
     opgrid = 'w'
-    fname = 'test_dask'
+    fname = 'test_rewrite'
 
     derived_data, exists = \
         sf.setup_derived_data_file( dir+file, odir, fname,
-                                   options, override=True)
-    # print("Variables in derived dataset.")
-    # print(derived_data['ds'].variables)
+                                   options, override=override)
+    if exists :
+        print('Derived data file exists' )
+        print("Variables in derived dataset.")
+        print(derived_data['ds'].variables)
 
 # Now create list of filter definitions.
 
+    filter_name = update_config['filters']['filter_name']
+    sigma_list = update_config['filters']['sigma_list']
     filter_list = list([])
 
     for i,sigma in enumerate(sigma_list):
@@ -391,11 +374,11 @@ def main():
         filtered_data, exists = \
             sf.setup_filtered_data_file( dir+file, odir, fname,
                                        options, twod_filter, override=True)
-        print("Variables in filtered dataset.")
-        print(filtered_data['ds'].variables)
 
         if exists :
             print('Filtered data file exists' )
+            print("Variables in filtered dataset.")
+            print(filtered_data['ds'].variables)
         else :
             field_list =sf.filter_variable_list(dataset, ref_dataset,
                                                 derived_data, filtered_data,
@@ -403,64 +386,61 @@ def main():
                                                 twod_filter, var_list=None,
                                                 grid = opgrid)
 
+            if run_quad_fields:
+                quad_field_list =sf.filter_variable_pair_list(dataset,
+                                                ref_dataset,
+                                                derived_data, filtered_data,
+                                                options,
+                                                twod_filter, var_list=None,
+                                                grid = opgrid)
 
-            # quad_field_list =sf.filter_variable_pair_list(dataset, ref_dataset,
-            #                                     derived_data, filtered_data,
-            #                                     options,
-            #                                     twod_filter, var_list=None,
-            #                                     grid = opgrid)
+            if run_deformation_fields:
+                deformation_r, deformation_s = sf.filtered_deformation(
+                                                dataset,
+                                                ref_dataset,
+                                                derived_data,
+                                                filtered_data, options,
+                                                twod_filter, grid='w')
 
+                Sn_ij_r, mod_Sn_r = defm.shear(deformation_r)
+                Sn_ij_r.name = 'f('+Sn_ij_r.name + ')_r'
+                Sn_ij_r = sf.save_field(filtered_data, Sn_ij_r)
+                mod_Sn_r.name = 'f('+mod_Sn_r.name + ')_r'
+                mod_Sn_r = sf.save_field(filtered_data, mod_Sn_r)
 
-            # deformation_r, deformation_s = sf.filtered_deformation(dataset,
-            #                                     ref_dataset,
-            #                                     derived_data,
-            #                                     filtered_data, options,
-            #                                     twod_filter, grid='w')
+                Sn_ij_s, mod_Sn_s = defm.shear(deformation_s)
+                Sn_ij_s.name = 'f('+Sn_ij_s.name + ')_s'
+                Sn_ij_s = sf.save_field(filtered_data, Sn_ij_s)
+                mod_Sn_s.name = 'f('+mod_Sn_s.name + ')_s'
+                mod_Sn_s = sf.save_field(filtered_data, mod_Sn_s)
 
-            # Sn_ij_r, mod_Sn_r = sf.shear(deformation_r)
-            # Sn_ij_r.name = Sn_ij_r.name + '_r'
-            # Sn_ij_r = sf.save_field(filtered_data, Sn_ij_r)
-            # mod_Sn_r.name = mod_Sn_r.name + '_r'
-            # mod_Sn_r = sf.save_field(filtered_data, mod_Sn_r)
+                S_ij_r, mod_S_r = defm.shear(deformation_r, no_trace = False)
+                S_ij_r.name = 'f('+S_ij_r.name + ')_r'
+                S_ij_r = sf.save_field(filtered_data, S_ij_r)
+                mod_S_r.name = 'f('+mod_S_r.name + ')_r'
+                mod_S_r = sf.save_field(filtered_data, mod_S_r)
 
-            # Sn_ij_s, mod_Sn_s = sf.shear(deformation_s)
-            # Sn_ij_s.name = Sn_ij_s.name + '_s'
-            # Sn_ij_s = sf.save_field(filtered_data, Sn_ij_s)
-            # mod_Sn_s.name = mod_Sn_s.name + '_s'
-            # mod_Sn_s = sf.save_field(filtered_data, mod_Sn_s)
+                S_ij_s, mod_S_s = defm.shear(deformation_s, no_trace = False)
+                S_ij_s.name = 'f('+S_ij_s.name + ')_s'
+                S_ij_s = sf.save_field(filtered_data, S_ij_s)
+                mod_S_s.name = 'f('+mod_S_s.name + ')_s'
+                mod_S_s = sf.save_field(filtered_data, mod_S_s)
 
-            # S_ij_r, mod_S_r = sf.shear(deformation_r, no_trace = False)
-            # S_ij_r.name = S_ij_r.name + '_r'
-            # S_ij_r = sf.save_field(filtered_data, S_ij_r)
-            # mod_S_r.name = mod_S_r.name + '_r'
-            # mod_S_r = sf.save_field(filtered_data, mod_S_r)
+                print(S_ij_r)
 
-            # S_ij_s, mod_S_s = sf.shear(deformation_s, no_trace = False)
-            # S_ij_s.name = S_ij_s.name + '_s'
-            # S_ij_s = sf.save_field(filtered_data, S_ij_s)
-            # mod_S_s.name = mod_S_s.name + '_s'
-            # mod_S_s = sf.save_field(filtered_data, mod_S_s)
+                v_r = defm.vorticity(deformation_r)
+                v_r.name = 'f('+v_r.name + ')_r'
+                v_r = sf.save_field(filtered_data, v_r)
 
-            # print(S_ij_r)
+                print(v_r)
 
-            # v_r = sf.vorticity(deformation_r)
-            # v_r.name = v_r.name + '_r'
-            # v_r = sf.save_field(filtered_data, v_r)
+            print('--------------------------------------')
 
-            # print(v_r)
+            print(filtered_data)
 
-            # print('--------------------------------------')
+            print('--------------------------------------')
 
-            # print(derived_data)
-
-            # print('--------------------------------------')
-
-            # print(filtered_data)
-
-            # print('--------------------------------------')
-
-            # filtered_data['ds'].close()
-
+        filtered_data['ds'].close()
 
 
         z = dataset["z"]
@@ -483,23 +463,32 @@ def main():
 
         for field in field_list:
             print(f"Plotting {field}")
-            plot_field(field, filtered_data, twod_filter, ilev, iy,
-                        grid=opgrid)
+            plot_field(field, filtered_data, twod_filter, plot_dir,
+                       ilev, iy,
+                       grid=opgrid)
 
-        # for field in quad_field_list :
-        #     print(f"Plotting {field}")
-        #     plot_quad_field(field, filtered_data, twod_filter, ilev, iy,
-        #                     grid=opgrid)
+        if run_quad_fields:
+            for field in quad_field_list :
+                print(f"Plotting {field}")
+                plot_quad_field(field, filtered_data, twod_filter, plot_dir,
+                                ilev, iy,
+                                grid=opgrid)
 
+        if run_deformation_fields:
 
-        # print("Plotting mod_Sn")
-        # plot_shear(mod_Sn_r, mod_Sn_s, z, twod_filter, ilev, iy,
-        #             no_trace = True)
-        # print("Plotting mod_S")
-        # plot_shear(mod_S_r, mod_S_s, z, twod_filter, ilev, iy,
-        #             no_trace = False)
+            print("Plotting mod_Sn")
+            plot_shear(mod_Sn_r, mod_Sn_s, z, twod_filter, plot_dir, ilev, iy,
+                        no_trace = True)
+            print("Plotting mod_S")
+            plot_shear(mod_S_r, mod_S_s, z, twod_filter, plot_dir, ilev, iy,
+                        no_trace = False)
 
         filtered_data['ds'].close()
+    print('--------------------------------------')
+
+    print(derived_data)
+
+    print('--------------------------------------')
     derived_data['ds'].close()
     dataset.close()
 

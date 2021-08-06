@@ -1,0 +1,561 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>The thermodynamics module. &#8212; Subfilter 0.5.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="The MONC_utils module." href="MONC_utils.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="MONC_utils.html" title="The MONC_utils module."
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Subfilter 0.5.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">The thermodynamics module.</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="the-thermodynamics-module">
+<h1>The thermodynamics module.<a class="headerlink" href="#the-thermodynamics-module" title="Permalink to this headline">¶</a></h1>
+<p>This module implements thermodynamics functions for <code class="xref py py-mod docutils literal notranslate"><span class="pre">subfilter</span></code>.</p>
+<div class="topic">
+<p class="topic-title">New at 0.5</p>
+<ol class="arabic simple">
+<li><p>Relocated to <a class="reference internal" href="#module-subfilter.thermodynamics" title="subfilter.thermodynamics"><code class="xref py py-mod docutils literal notranslate"><span class="pre">subfilter.thermodynamics</span></code></a>.</p></li>
+</ol>
+</div>
+<section id="detailed-module-contents">
+<h2>Detailed Module Contents<a class="headerlink" href="#detailed-module-contents" title="Permalink to this headline">¶</a></h2>
+<p>The entire module is documented below.</p>
+<span class="target" id="module-subfilter.thermodynamics.thermodynamics"></span><dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.esat">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">esat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.esat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saturation Vapour Pressure over Water</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>T</strong> (<em>numpy array</em>) – Temperature (K)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>res</strong> – Vapour pressure over water (Pa)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.esat_ice">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">esat_ice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.esat_ice" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saturation Vapour Pressure over Ice</p>
+<blockquote>
+<div><p>Magnus Teten,
+Murray (1967)</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>T</strong> (<em>numpy array.</em>) – Temperature (K)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>res</strong> – Vapour pressure over ice(Pa)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.inv_esat">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">inv_esat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">es</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.inv_esat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Temperature for given Saturation Vapour Pressure over Water</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>es</strong> (<em>numpy array</em>) – Vapour pressure over water (Pa)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>T</strong> – Temperature (K)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.inv_esat_ice">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">inv_esat_ice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">es</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.inv_esat_ice" title="Permalink to this definition">¶</a></dt>
+<dd><p>Temperature for given Saturation Vapour Pressure over Water</p>
+<blockquote>
+<div><p>Magnus Teten,
+Murray (1967)</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>es</strong> (<em>numpy array</em>) – Vapour pressure over water (Pa)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>T</strong> – Temperature (K)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.esat_over_Tkappa">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">esat_over_Tkappa</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.esat_over_Tkappa" title="Permalink to this definition">¶</a></dt>
+<dd><p>From Bolton 1980.
+Computes <img class="math" src="_images/math/9199b2465b3ecd2612f5d132e794031ef4eb629b.png" alt="e_s/T^{(1/kappa)}"/> (es in Pa)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>T</strong> (<em>numpy array</em>) – Temperature (K)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>res</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.potential_temperature">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">potential_temperature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.potential_temperature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes Potential Temperature</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>numpy array</em>) – Temperature (K).</p></li>
+<li><p><strong>p</strong> (<em>numpy array</em>) – Pressure (Pa).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>theta</strong> – Potential temperature of dry air (K),</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.moist_potential_temperature">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">moist_potential_temperature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.moist_potential_temperature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes Moist Potential Temperature</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>numpy array</em>) – Temperature (K).</p></li>
+<li><p><strong>p</strong> (<em>numpy array</em>) – Pressure (Pa).</p></li>
+<li><p><strong>m</strong> (<em>numpy array</em>) – Mixing ratio(kg/kg).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>theta</strong> – Potential temperature of moist air (K) .</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.q_to_mix">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">q_to_mix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">q</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.q_to_mix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts specific humidity to mixing ratio.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>q</strong> (<em>numpy array</em>) – Specific humidity (kg/kg).</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>m</strong> – Mixing Ratio(kg/kg)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.mix_to_q">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">mix_to_q</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">m</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.mix_to_q" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts mixing ratio to specific humidity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>m</strong> (<em>numpy array</em>) – Mixing Ratio(kg/kg)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>q</strong> – Specific humidity (kg/kg).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.q_p_to_e">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">q_p_to_e</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.q_p_to_e" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts specific humidity and pressure to vapour pressure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>q</strong> (<em>numpy array</em>) – Specific humidity (kg/kg)</p></li>
+<li><p><strong>p</strong> (<em>numpy array</em>) – Total Pressure (Pa)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>e</strong> – Vapour pressure (Pa)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.e_p_to_q">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">e_p_to_q</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.e_p_to_q" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts vapour pressure and total pressure to specific humidity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>e</strong> (<em>numpy array</em>) – Vapour pressure (Pa)</p></li>
+<li><p><strong>p</strong> (<em>numpy array</em>) – Pressure (Pa)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>q</strong> – Specific humidity (kg/kg)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.T_LCL_TD">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">T_LCL_TD</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">TD</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.T_LCL_TD" title="Permalink to this definition">¶</a></dt>
+<dd><p>T at lifting condensation level from Dewpoint.
+From Bolton 1980</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>numpy array</em>) – Temperature (K).</p></li>
+<li><p><strong>TD</strong> (<em>numpy array</em>) – Dew point Temperature (K).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>Tlcl</strong> – temperature at lifting condensation level (K)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.T_LCL_e">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">T_LCL_e</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.T_LCL_e" title="Permalink to this definition">¶</a></dt>
+<dd><p>T at lifting condensation level from vapour presssure.
+From Bolton 1980</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>numpy array</em>) – Temperature (K).</p></li>
+<li><p><strong>e</strong> (<em>numpy array</em>) – Vapour pressure (Pa).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>Tlcl</strong> – temperature at lifting condensation level (K)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.T_LCL_RH">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">T_LCL_RH</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">RH</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.T_LCL_RH" title="Permalink to this definition">¶</a></dt>
+<dd><p>T at lifting condensation level from RH.
+From Bolton 1980</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>numpy array</em>) – Temperature (K).</p></li>
+<li><p><strong>RH</strong> (<em>numpy array</em>) – Relative humidity (%)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>Tlcl</strong> – temperature at lifting condensation level (K)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.latheat">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">latheat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sublim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">focwil_T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.latheat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Latent heat of condensation or sublimation..</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>numpy array</em>) – Temperature (K).</p></li>
+<li><p><strong>sublim</strong> (<em>int</em><em> (</em><em>optional</em><em>)</em>) – = 1 return Latent heat of sublimation</p></li>
+<li><p><strong>Model</strong> (<em>int</em><em> (</em><em>optional</em><em>)</em>) – = 1 use UM fixed values</p></li>
+<li><p><strong>numpy array</strong><strong> (</strong><strong>optional</strong><strong>)</strong> (<em>focwil_T</em>) – nonempty array or single element:
+use linear ramp in ice fraction from
+focwil_T to freezing.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>latheat</strong> – Latent heat of condensation(K)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.dewpoint">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">dewpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.dewpoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dewpoint.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>numpy array</em>) – Temperature.</p></li>
+<li><p><strong>p</strong> (<em>numpy array</em>) – Pressure (Pa).</p></li>
+<li><p><strong>q</strong> (<em>numpy array</em>) – specific humidity (kg/kg)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>TD</strong> – Dew-point temperature (K).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Nnmpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.qsat">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">qsat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.qsat" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>numpy array</em>) – Temperature. (K)</p></li>
+<li><p><strong>p</strong> (<em>numpy array</em>) – Pressure (Pa).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>qs</strong> – Saturation specific humidity (kg/kg) over water.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.dqsatbydT">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">dqsatbydT</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.dqsatbydT" title="Permalink to this definition">¶</a></dt>
+<dd><p><img class="math" src="_images/math/b30f1a75e524a1ea4ab22c1a7ada87f4d67b2cbd.png" alt="{alpha= dq_{s}}/{dT}"/>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>numpy array</em>) – Temperature. (K)</p></li>
+<li><p><strong>p</strong> (<em>numpy array</em>) – Pressure (Pa).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>alpha</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.equiv_potential_temperature">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">equiv_potential_temperature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.equiv_potential_temperature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent potential temperature.
+From Bolton 1980</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>numpy array</em>) – Temperature. (K)</p></li>
+<li><p><strong>p</strong> (<em>numpy array</em>) – Pressure (Pa).</p></li>
+<li><p><strong>q</strong> (<em>numpy array</em>) – specific humidity (kg/kg)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>theta_e</strong> – Fast estimate of equivalent potential temperature (K).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.equiv_potential_temperature_accurate">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">equiv_potential_temperature_accurate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.equiv_potential_temperature_accurate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent potential temperature.
+From Bolton 1980</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>numpy array</em>) – Temperature. (K)</p></li>
+<li><p><strong>p</strong> (<em>numpy array</em>) – Pressure (Pa).</p></li>
+<li><p><strong>q</strong> (<em>numpy array</em>) – specific humidity (kg/kg)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>theta_e</strong> – Accurate estimate of equivalent potential temperature (K).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.wet_bulb_potential_temperature">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">wet_bulb_potential_temperature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.wet_bulb_potential_temperature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wet-bulb potential temperature.
+From Davies-Jones 2007</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>numpy array</em>) – Temperature. (K)</p></li>
+<li><p><strong>p</strong> (<em>numpy array</em>) – Pressure (Pa).</p></li>
+<li><p><strong>q</strong> (<em>numpy array</em>) – specific humidity (kg/kg)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>theta_w</strong> – Wet-bulb potential temperature (K) numpy array</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.thermodynamics.thermodynamics.wet_bulb_temperature">
+<span class="sig-prename descclassname"><span class="pre">subfilter.thermodynamics.thermodynamics.</span></span><span class="sig-name descname"><span class="pre">wet_bulb_temperature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.thermodynamics.thermodynamics.wet_bulb_temperature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wet-bulb temperature.
+From Davies-Jones 2007</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>numpy array</em>) – Temperature. (K)</p></li>
+<li><p><strong>p</strong> (<em>numpy array</em>) – Pressure (Pa).</p></li>
+<li><p><strong>q</strong> (<em>numpy array</em>) – specific humidity (kg/kg)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>theta_w</strong> – Wet-bulb temperature (K) numpy array</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<span class="target" id="module-subfilter.thermodynamics"></span></section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">The thermodynamics module.</a><ul>
+<li><a class="reference internal" href="#detailed-module-contents">Detailed Module Contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="MONC_utils.html"
+                        title="previous chapter">The MONC_utils module.</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/thermodynamics.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="MONC_utils.html" title="The MONC_utils module."
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Subfilter 0.5.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">The thermodynamics module.</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, 2020, 2021 Peter Clark.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.1.
+    </div>
+  </body>
+</html>

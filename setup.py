@@ -8,7 +8,12 @@ setup(
     author_email='p.clark@reading.ac.uk',
     contributors='Todd Jones',
     # Needed to actually package something
-    packages=['subfilter', 'subfilter/filters'],
+    packages=['subfilter', 
+              'subfilter/cli',
+              'subfilter/io',
+              'subfilter/thermodynamics',
+              'subfilter/utils',
+              ],
     # Needed for dependencies
     install_requires=['numpy', 'scipy', 'dask', 'xarray'],
     # *strongly* suggested for sharing

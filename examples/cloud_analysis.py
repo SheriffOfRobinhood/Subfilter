@@ -17,11 +17,16 @@ import matplotlib.pyplot as plt
 import scipy.special as sp
 import math as m
 
-import subfilter as sf
-import filters as filt
-import difference_ops as do
-from thermodynamics_constants import *
-import thermodynamics as th
+import subfilter.thermodynamics_constants as thc
+import subfilter.thermodynamics as th
+
+import subfilter.subfilter as sf
+import subfilter.filters as filt
+
+from subfilter.utils.string_utils import get_string_index
+from subfilter.io.dataout import save_field
+from subfilter.io.MONC_utils import options_database
+
 dir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
 #dir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/r15/'
 destdir = dir
@@ -41,13 +46,6 @@ figshow = True
 
 fname = 'cloud'
 
-options = {
-#        'FFT_type': 'FFTconvolve',
-#        'FFT_type': 'FFT',
-        'FFT_type': 'RFFT',
-        'save_all': 'Yes',
-          }
-
 
 def main():
     '''
@@ -58,15 +56,31 @@ def main():
 #    sigma_list = [2.0] # Sigma used in Gaussian#
     dataset = Dataset(dir+file, 'r') # Dataset is the class behavior to open the file
                                  # and create an instance of the ncCDF4 class
-    ref_dataset=Dataset(dir + ref_file)
-    w = dataset["w"]
-    print(w.dimensions)
+    [itime, iix, iiy, iiz] = get_string_index(dataset.dims, ['time', 'x', 'y', 'z'])
+    timevar = list(dataset.dims)[itime]
+    xvar = list(dataset.dims)[iix]
+    yvar = list(dataset.dims)[iiy]
+    zvar = list(dataset.dims)[iiz]
+    npoints = dataset.dims[xvar]
 
-#    sigma_list = [0.5,0.2]
-    sigma_list = [0.5]
-    width = -1
+    ref_dataset=Dataset(dir + ref_file)
+#    w = dataset["w"]
+#    print(w.dimensions)
+    
+    od = options_database(dataset)
+    if od is None:
     dx = 100.0
     dy = 100.0
+        dx = options['dx']
+        dy = options['dy']
+    else:
+        dx = float(od['dxx'])
+        dy = float(od['dyy'])
+
+
+#    sigma_list = [0.5,0.2]
+    sigma_list = [100.0]
+    width = -1
     filter_name = 'gaussian'
 
 
@@ -96,12 +110,12 @@ def main():
 
     opgrid = 'p'
     #
-    derived_dataset_name, derived_data, exists = \
+    derived_data, exists = \
                                         sf.setup_derived_data_file(
-                                        dir+file, destdir, dir + ref_file,
-                                        fname, options, override = False)
+                                        dir+file, destdir, fname, 
+                                        options, override = False)
 
-    print(derived_dataset_name)
+    print(derived_data['file'])
 
     filter_list = list([])
 
@@ -120,7 +134,7 @@ def main():
         print(twod_filter)
 
         filtered_dataset_name, filtered_data, exists = \
-            sf.setup_filtered_data_file( dir+file, odir, dir+ref_file, fname,
+            sf.setup_filtered_data_file( dir+file, odir, fname,
                                        options, twod_filter, override=True)
 
 
@@ -146,11 +160,6 @@ def main():
         print(times[:])
 
 
-#    derived_dataset_name = os.path.basename(file)
-#    derived_dataset_name = ('.').join(derived_dataset_name.split('.')[:-1])
-#    derived_dataset_name = derived_dataset_name + "_" + \
-#            twod_filter_id + ".nc"
-#    derived_dataset = Dataset(destdir+derived_dataset_name, "r")
         print(derived_data.variables)
         #    derived_data.twod_filter_id = twod_filter.id
         #    derived_data.setncatts(twod_filter.attributes)

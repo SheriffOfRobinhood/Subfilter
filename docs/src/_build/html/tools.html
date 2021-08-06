@@ -1,0 +1,546 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>The difference_ops module. &#8212; Subfilter 0.5.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="The deformation module." href="deformation.html" />
+    <link rel="prev" title="The utils sub-package." href="utils.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="deformation.html" title="The deformation module."
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="utils.html" title="The utils sub-package."
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Subfilter 0.5.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="utils.html" accesskey="U">The utils sub-package.</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">The difference_ops module.</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="the-difference-ops-module">
+<h1>The difference_ops module.<a class="headerlink" href="#the-difference-ops-module" title="Permalink to this headline">¶</a></h1>
+<p>This module implements averaging and differencing functions for data on a C-grid.</p>
+<div class="topic">
+<p class="topic-title">New at 0.5</p>
+<ol class="arabic simple">
+<li><p>Relocated to <a class="reference internal" href="#module-subfilter.utils" title="subfilter.utils"><code class="xref py py-mod docutils literal notranslate"><span class="pre">subfilter.utils</span></code></a>.</p></li>
+</ol>
+</div>
+<div class="topic">
+<p class="topic-title">New at 0.4</p>
+<ol class="arabic simple">
+<li><p>Use of xarray and dask.</p></li>
+</ol>
+</div>
+<section id="detailed-module-contents">
+<h2>Detailed Module Contents<a class="headerlink" href="#detailed-module-contents" title="Permalink to this headline">¶</a></h2>
+<p>The entire module is documented below.</p>
+<span class="target" id="module-subfilter.utils.difference_ops"></span><p>difference_ops.py</p>
+<p>Created on Wed Apr 17 21:03:43 2019</p>
+<p>Difference operators for C-grid data.</p>
+<p>&#64;author: Peter Clark</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.last_dim">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">last_dim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.last_dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove all but last dimension of z.</p>
+<dl class="simple">
+<dt>Parameters</dt><dd><p>z : n-dimensional array.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><p>]</p>
+</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>z[0,0, etc. ,</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.interpolate">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">interpolate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">znew</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.interpolate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interpolate field from z to zn</p>
+<dl class="simple">
+<dt>Parameters</dt><dd><p>field : xarray nD field
+znew  : xarray coordinate new z.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>field on zn levels</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.field_on_w_to_p">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">field_on_w_to_p</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">znew</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.field_on_w_to_p" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.field_on_p_to_w">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">field_on_p_to_w</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">znew</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.field_on_p_to_w" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.field_on_u_to_p">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">field_on_u_to_p</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.field_on_u_to_p" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interpolate field from u to p points in C grid</p>
+<dl class="simple">
+<dt>Parameters</dt><dd><p>field : nD xarray field</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>field on p points</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.field_on_p_to_u">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">field_on_p_to_u</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.field_on_p_to_u" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interpolate field from p to u points in C grid</p>
+<dl class="simple">
+<dt>Parameters</dt><dd><p>field : nD xarray field</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>field on p points</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.field_on_v_to_p">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">field_on_v_to_p</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.field_on_v_to_p" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interpolate field from v to p points in C grid</p>
+<dl class="simple">
+<dt>Parameters</dt><dd><p>field : nD xarray  field</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>field on p points</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.field_on_p_to_v">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">field_on_p_to_v</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.field_on_p_to_v" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interpolate field from p to v points in C grid</p>
+<dl class="simple">
+<dt>Parameters</dt><dd><p>field : nD xarray field</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>field on p points</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.d_by_dz_field_on_zn">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">d_by_dz_field_on_zn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.d_by_dz_field_on_zn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Differentiate field on zn levels in z direction.</p>
+<dl class="simple">
+<dt>Parameters</dt><dd><p>field : xarray nD field</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>field on required grid</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.d_by_dz_field_on_z">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">d_by_dz_field_on_z</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.d_by_dz_field_on_z" title="Permalink to this definition">¶</a></dt>
+<dd><p>Differentiate field on z levels in z direction.</p>
+<dl class="simple">
+<dt>Parameters</dt><dd><p>field : xarray nD field</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>field on required grid</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.d_by_dx_field_on_u">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">d_by_dx_field_on_u</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'p'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.d_by_dx_field_on_u" title="Permalink to this definition">¶</a></dt>
+<dd><p>Differentiate field on u points in x direction then average to req grid</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>field</strong> (<em>xarray</em>) – nD field</p></li>
+<li><p><strong>z</strong> (<em>xarray coordinate</em>) – zcoord - needed if changing vertical grid.</p></li>
+<li><p><strong>grid</strong> (<em>str</em>) – destination grid (Default = ‘p’)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>field on required grid</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.d_by_dy_field_on_u">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">d_by_dy_field_on_u</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'p'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.d_by_dy_field_on_u" title="Permalink to this definition">¶</a></dt>
+<dd><p>Differentiate field on u points in y direction then average to req grid</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>field</strong> (<em>xarray</em>) – nD field</p></li>
+<li><p><strong>z</strong> (<em>xarray coordinate</em>) – zcoord - needed if changing vertical grid.</p></li>
+<li><p><strong>grid</strong> (<em>str</em>) – destination grid (Default = ‘p’)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>field on required grid</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.d_by_dz_field_on_u">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">d_by_dz_field_on_u</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'p'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.d_by_dz_field_on_u" title="Permalink to this definition">¶</a></dt>
+<dd><p>Differentiate field on u points in z direction then average to req grid</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>field</strong> (<em>xarray</em>) – nD field</p></li>
+<li><p><strong>z</strong> (<em>xarray coordinate</em>) – zcoord - needed if changing vertical grid.</p></li>
+<li><p><strong>grid</strong> (<em>str</em>) – destination grid (Default = ‘p’)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>field on required grid</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.d_by_dx_field_on_v">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">d_by_dx_field_on_v</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'p'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.d_by_dx_field_on_v" title="Permalink to this definition">¶</a></dt>
+<dd><p>Differentiate field on u points in y direction then average to req grid</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>field</strong> (<em>xarray</em>) – nD field</p></li>
+<li><p><strong>z</strong> (<em>xarray coordinate</em>) – zcoord - needed if changing vertical grid.</p></li>
+<li><p><strong>grid</strong> (<em>str</em>) – destination grid (Default = ‘p’)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>field on required grid</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.d_by_dy_field_on_v">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">d_by_dy_field_on_v</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'p'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.d_by_dy_field_on_v" title="Permalink to this definition">¶</a></dt>
+<dd><p>Differentiate field on u points in x direction then average to req grid</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>field</strong> (<em>xarray</em>) – nD field</p></li>
+<li><p><strong>z</strong> (<em>xarray coordinate</em>) – zcoord - needed if changing vertical grid.</p></li>
+<li><p><strong>grid</strong> (<em>str</em>) – destination grid (Default = ‘p’)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>field on required grid</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.d_by_dz_field_on_v">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">d_by_dz_field_on_v</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'p'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.d_by_dz_field_on_v" title="Permalink to this definition">¶</a></dt>
+<dd><p>Differentiate field on u points in z direction then average to req grid</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>field</strong> (<em>xarray</em>) – nD field</p></li>
+<li><p><strong>z</strong> (<em>xarray coordinate</em>) – zcoord - needed if changing vertical grid.</p></li>
+<li><p><strong>grid</strong> (<em>str</em>) – destination grid (Default = ‘p’)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>field on required grid</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.d_by_dx_field_on_p">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">d_by_dx_field_on_p</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'p'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.d_by_dx_field_on_p" title="Permalink to this definition">¶</a></dt>
+<dd><p>Differentiate field on u points in x direction then average to req grid</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>field</strong> (<em>xarray</em>) – nD field</p></li>
+<li><p><strong>z</strong> (<em>xarray coordinate</em>) – zcoord - needed if changing vertical grid.</p></li>
+<li><p><strong>grid</strong> (<em>str</em>) – destination grid (Default = ‘p’)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>field on required grid</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.d_by_dy_field_on_p">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">d_by_dy_field_on_p</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'p'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.d_by_dy_field_on_p" title="Permalink to this definition">¶</a></dt>
+<dd><p>Differentiate field on u points in y direction then average to req grid</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>field</strong> (<em>xarray</em>) – nD field</p></li>
+<li><p><strong>z</strong> (<em>xarray coordinate</em>) – zcoord - needed if changing vertical grid.</p></li>
+<li><p><strong>grid</strong> (<em>str</em>) – destination grid (Default = ‘p’)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>field on required grid</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.d_by_dz_field_on_p">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">d_by_dz_field_on_p</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'p'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.d_by_dz_field_on_p" title="Permalink to this definition">¶</a></dt>
+<dd><p>Differentiate field on u points in z direction then average to req grid</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>field</strong> (<em>xarray</em>) – nD field</p></li>
+<li><p><strong>z</strong> (<em>xarray coordinate</em>) – zcoord - needed if changing vertical grid.</p></li>
+<li><p><strong>grid</strong> (<em>str</em>) – destination grid (Default = ‘p’)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>field on required grid</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.d_by_dx_field_on_w">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">d_by_dx_field_on_w</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'p'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.d_by_dx_field_on_w" title="Permalink to this definition">¶</a></dt>
+<dd><p>Differentiate field on u points in x direction then average to req grid</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>field</strong> (<em>xarray</em>) – nD field</p></li>
+<li><p><strong>zn</strong> (<em>xarray coordinate</em>) – zcoord - needed if changing vertical grid.</p></li>
+<li><p><strong>grid</strong> (<em>str</em>) – destination grid (Default = ‘p’)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>field on required grid</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.d_by_dy_field_on_w">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">d_by_dy_field_on_w</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'p'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.d_by_dy_field_on_w" title="Permalink to this definition">¶</a></dt>
+<dd><p>Differentiate field on u points in y direction then average to req grid</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>field</strong> (<em>xarray</em>) – nD field</p></li>
+<li><p><strong>zn</strong> (<em>xarray coordinate</em>) – zcoord - needed if changing vertical grid.</p></li>
+<li><p><strong>grid</strong> (<em>str</em>) – destination grid (Default = ‘p’)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>field on required grid</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.d_by_dz_field_on_w">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">d_by_dz_field_on_w</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'p'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.d_by_dz_field_on_w" title="Permalink to this definition">¶</a></dt>
+<dd><p>Differentiate field on u points in z direction then average to req grid</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>field</strong> (<em>xarray</em>) – nD field</p></li>
+<li><p><strong>zn</strong> (<em>xarray coordinate</em>) – zcoord - needed if changing vertical grid.</p></li>
+<li><p><strong>grid</strong> (<em>str</em>) – destination grid (Default = ‘p’)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>field on required grid</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.padleft">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">padleft</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.padleft" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add dummy field at bottom of nD array</p>
+<dl class="simple">
+<dt>Parameters</dt><dd><p>f : nD field
+zt: 1D zcoordinates
+axis=0: Specify axis to extend</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>extended field, extended coord</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.utils.difference_ops.padright">
+<span class="sig-prename descclassname"><span class="pre">subfilter.utils.difference_ops.</span></span><span class="sig-name descname"><span class="pre">padright</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.difference_ops.padright" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add dummy field at top of nD array</p>
+<dl class="simple">
+<dt>Parameters</dt><dd><p>f : nD field
+zt: 1D zcoordinates
+axis=0: Specify axis to extend</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>extended field, extended coord</p>
+</dd>
+</dl>
+<p>&#64;author: Peter Clark</p>
+</dd></dl>
+
+<span class="target" id="module-subfilter.utils"></span></section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">The difference_ops module.</a><ul>
+<li><a class="reference internal" href="#detailed-module-contents">Detailed Module Contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="utils.html"
+                        title="previous chapter">The utils sub-package.</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="deformation.html"
+                        title="next chapter">The deformation module.</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/tools.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="deformation.html" title="The deformation module."
+             >next</a> |</li>
+        <li class="right" >
+          <a href="utils.html" title="The utils sub-package."
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Subfilter 0.5.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="utils.html" >The utils sub-package.</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">The difference_ops module.</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, 2020, 2021 Peter Clark.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.1.
+    </div>
+  </body>
+</html>

@@ -1,7 +1,8 @@
 # Last updated 29/10/2020 by Peter Clark
 from numpy import pi
+_MONC_ = True
 
-MONC = True
+
 avogadro          =              6.02214076e23
 k_boltzmann       =              1.380649e-23
 planck            =              6.62607015e-34
@@ -10,7 +11,7 @@ sigma_stephan     =              5.67000e-08
 solar_const       =           1365.00
 radius_earth      =              6.37123e06
 perf_gas_const    = k_boltzmann*avogadro
-if MONC : 
+if _MONC_ :
     g             =              9.81
     cvap_water    =              2.501E6
     mol_wt_water  =             18.0153
@@ -18,7 +19,7 @@ if MONC :
     epsilon       =          1.0/1.608
     gas_const_air =            287.05
     gas_const_water = gas_const_air / epsilon
-else :    
+else :
     g             =              9.80665
     cvap_water    =              2.48890e+06
     mol_wt_water  =             18.0150
@@ -39,6 +40,7 @@ boil_pt           =            373.150
 gas_vol           =              0.0224100
 p_ref             =         101325.0
 p_ref_um          =         100000.0
+p_ref_theta       =         100000.0
 cp_air            =           1005.00
 cv_air            =            718.000
 cp_by_cv          =              1.40000

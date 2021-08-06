@@ -1,0 +1,8 @@
+options:
+    spec_1D: False
+    dx: 50.0
+    dy: 50.0
+
+
+
+

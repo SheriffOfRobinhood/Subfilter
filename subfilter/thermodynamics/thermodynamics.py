@@ -2,14 +2,22 @@
 # Last updated 29/10/2020 by Peter Clark
 #
 import numpy as np
-import thermodynamics_constants as tc
+import subfilter.thermodynamics.thermodynamics_constants as tc
 
 def esat(T):
-    '''
-     Input  : Temperature (K)
-     Output : Vapour pressure over water (Pa)
-    '''
+    """
+    Saturation Vapour Pressure over Water
 
+    Parameters
+    ----------
+        T: numpy array
+            Temperature (K)
+
+    Returns
+    -------
+        res: numpy array
+            Vapour pressure over water (Pa)
+    """
     T_ref=tc.freeze_pt
     T_ref2=243.04-T_ref # Bolton uses 243.5
     es_Tref=610.94      # Bolton uses 611.2
@@ -18,13 +26,22 @@ def esat(T):
     return res
 
 def esat_ice(T):
-    '''
-    Magnus Teten
-    Murray (1967)
-     Input  : Temperature (K)
-     Output : Vapour pressure over ice (Pa)
-    '''
+    """
+    Saturation Vapour Pressure over Ice
 
+        Magnus Teten,
+        Murray (1967)
+
+    Parameters
+    ----------
+        T: numpy array.
+            Temperature (K)
+
+    Returns
+    -------
+        res: numpy array
+            Vapour pressure over ice(Pa)
+    """
     T_ref=tc.triple_pt
     T_ref2= -7.66
     es_Tref=610.87
@@ -33,10 +50,19 @@ def esat_ice(T):
     return res
 
 def inv_esat(es):
-    '''
-     Input  : Vapour pressure over water (Pa)
-     Output : Temperature (K)
-    '''
+    """
+    Temperature for given Saturation Vapour Pressure over Water
+
+    Parameters
+    ----------
+         es: numpy array
+             Vapour pressure over water (Pa)
+
+    Returns
+    -------
+        T: numpy array
+            Temperature (K)
+    """
     T_ref=tc.freeze_pt
     T_ref2=243.04-T_ref
 #
@@ -55,12 +81,22 @@ def inv_esat(es):
     return T
 
 def inv_esat_ice(es):
-    '''
-    Magnus Teten
-    Murray (1967)
-     Input  : vapour pressure over ice (Pa)
-     Output : Temperature (K)
-    '''
+    """
+    Temperature for given Saturation Vapour Pressure over Water
+
+        Magnus Teten,
+        Murray (1967)
+
+    Parameters
+    ----------
+         es: numpy array
+             Vapour pressure over water (Pa)
+
+    Returns
+    -------
+        T: numpy array
+            Temperature (K)
+    """
     T_ref=tc.tc.triple_pt
     T_ref2=-7.66
 #
@@ -80,10 +116,20 @@ def inv_esat_ice(es):
     return T
 
 def esat_over_Tkappa(T):
-    '''
-    From Bolton 1980
-    Computes es/T^(1/kappa) (es in Pa)
-    '''
+    """
+    From Bolton 1980.
+    Computes :math:`e_s/T^{(1/kappa)}` (es in Pa)
+
+    Parameters
+    ----------
+        T: numpy array
+            Temperature (K)
+
+    Returns
+    -------
+        res: numpy array
+
+    """
     T_ref = tc.freeze_pt
     T_ref2=217.8-T_ref
     es_over_Tkappa_Tref = 1.7743E-6
@@ -92,80 +138,161 @@ def esat_over_Tkappa(T):
     return res
 
 def potential_temperature(T, p):
-    '''
-    Input:   Temperature (K) numpy array
-             Pressure (Pa) numpy array
-    Output : Potential temperature of dry air (K) numpy array
-    '''
-    theta=T*(tc.p_ref_um/p)**tc.kappa
+    """
+    Computes Potential Temperature
+
+    Parameters
+    ----------
+        T: numpy array
+            Temperature (K).
+        p: numpy array
+            Pressure (Pa).
+
+    Returns
+    -------
+        theta: numpy array
+            Potential temperature of dry air (K),
+    """
+    theta=T*(tc.p_ref_theta/p)**tc.kappa
     return theta
 
 def moist_potential_temperature(T, p, m):
-    '''
-     Input:   Temperature (K) numpy array
-              pressure (Pa) numpy array
-              m mixing ratio(kg/kg) numpy array
-     Output : Potential temperature of moist air (K) numpy array
-    '''
-    theta=T*(tc.p_ref_um/p)**(tc.kappa*(1-tc.kappa_v * m))
+    """
+    Computes Moist Potential Temperature
+
+    Parameters
+    ----------
+        T: numpy array
+            Temperature (K).
+        p: numpy array
+            Pressure (Pa).
+        m: numpy array
+            Mixing ratio(kg/kg).
+
+    Returns
+    -------
+        theta: numpy array
+            Potential temperature of moist air (K) .
+
+    """
+    theta=T*(tc.p_ref_theta/p)**(tc.kappa*(1-tc.kappa_v * m))
     return theta
 
 def q_to_mix(q):
-    '''
-     Input  : Specific humidity (kg/kg)
-     Output : Mixing Ratio(kg/kg)
-    '''
+    """
+    Converts specific humidity to mixing ratio.
+
+    Parameters
+    ----------
+        q: numpy array
+            Specific humidity (kg/kg).
+
+    Returns
+    -------
+        m: numpy array
+            Mixing Ratio(kg/kg)
+    """
     qc=np.clip(q,0,0.999)
     m = qc / (1-qc)
     return m
 
 def mix_to_q(m):
-    '''
-     Input  : Mixing Ratio(kg/kg)
-     Output : Specific humidity (kg/kg)
-    '''
+    """
+    Converts mixing ratio to specific humidity.
+
+    Parameters
+    ----------
+        m: numpy array
+            Mixing Ratio(kg/kg)
+
+    Returns
+    -------
+        q: numpy array
+            Specific humidity (kg/kg).
+    """
     q = m / (1+m)
     return q
 
 def q_p_to_e(q, p):
-    '''
-     Input  : Specific humidity (kg/kg)
-            : pressure (Pa)
-     Output : Vapour pressure (Pa)
-    '''
+    """
+    Converts specific humidity and pressure to vapour pressure.
+
+    Parameters
+    ----------
+        q: numpy array
+            Specific humidity (kg/kg)
+        p: numpy array
+            Total Pressure (Pa)
+
+    Returns
+    -------
+        e: numpy array
+            Vapour pressure (Pa)
+    """
     e = q * p / (q * (1-tc.epsilon) + tc.epsilon )
     return e
 
 def e_p_to_q(e, p):
-    '''
-     Input  : Vapour pressure (Pa)
-            : Pressure (Pa)
-     Output : Specific humidity (kg/kg)
-    '''
+    """
+    Converts vapour pressure and total pressure to specific humidity.
+
+    Parameters
+    ----------
+        e: numpy array
+            Vapour pressure (Pa)
+        p: numpy array
+            Pressure (Pa)
+
+    Returns
+    -------
+        q: numpy array
+            Specific humidity (kg/kg)
+     """
     q = tc.epsilon * e / (p - (1-tc.epsilon) * e)
     np.clip(q,0,0.999,out = q)
     return q
 
 def T_LCL_TD(T, TD):
-    '''
+    """
+    T at lifting condensation level from Dewpoint.
     From Bolton 1980
-     Input :  Temperature (K) numpy array
-              Dew point (K) numpy array
-     Output : temperature at lifting condensation level (K)
 
-    '''
+    Parameters
+    ----------
+        T: numpy array
+            Temperature (K).
+        TD: numpy array
+            Dew point Temperature (K).
+
+    Returns
+    -------
+        Tlcl : numpy array
+            temperature at lifting condensation level (K)
+
+    """
     T_ref = 56.0
     const = 800.0
-    res = 1 / (1 / (TD-T_ref)+np.log(T/TD) / const) + T_ref
-    return res
+    tlcl = 1 / (1 / (TD-T_ref)+np.log(T/TD) / const) + T_ref
+    return tlcl
 
 def T_LCL_e(T, e):
-    '''
+    """
+    T at lifting condensation level from vapour presssure.
     From Bolton 1980
-     Input :  Temperature (K) numpy array
-              Vapour pressure (Pa) numpy array
-     Output : temperature at lifting condensation level (K)
-    '''
+
+    Parameters
+    ----------
+        T: numpy array
+            Temperature (K).
+        e: numpy array
+            Vapour pressure (Pa).
+
+    Returns
+    -------
+        Tlcl : numpy array
+            temperature at lifting condensation level (K)
+
+    """
     T_ref = 55.0
     const = 2840.0
     C2 = -0.199829814012
@@ -174,28 +301,50 @@ def T_LCL_e(T, e):
     return res
 
 def T_LCL_RH(T, RH):
-    '''
+    """
+    T at lifting condensation level from RH.
     From Bolton 1980
-     Input :  Temperature (K) numpy array
-              Relative humidity (%)
-     Output : temperature at lifting condensation level (K)
-    '''
+
+    Parameters
+    ----------
+        T: numpy array
+            Temperature (K).
+        RH: numpy array
+            Relative humidity (%)
+
+    Returns
+    -------
+        Tlcl : numpy array
+            temperature at lifting condensation level (K)
+
+    """
     T_ref = 55.0
     const = 2840.0
     res = 1 / (1 / (T-T_ref) - np.log(RH/100) / const) + T_ref
     return res
 
 def latheat(T, sublim=0, Model=0, focwil_T=[]) :
-    '''
-     Input :  Temperature (K) numpy array
-     Output : Latent heat of condensation(K) numpy array
-     Options :sublim = 1 return Latent heat of sublimation
-              Model = 1 use UM fixed values
-              focwil_T = nonempty array or single element
-                         use linear ramp in ice fraction from
-                         focwil_T to freezing.
-    '''
+    """
+    Latent heat of condensation or sublimation..
 
+
+    Parameters
+    ----------
+        T: numpy array
+            Temperature (K).
+        sublim: int (optional)
+            = 1 return Latent heat of sublimation
+        Model: int (optional)
+            = 1 use UM fixed values
+        focwil_T numpy array (optional)
+            nonempty array or single element:
+            use linear ramp in ice fraction from
+            focwil_T to freezing.
+    Returns
+    -------
+        latheat: numpy array
+            Latent heat of condensation(K)
+    """
 #    T=np.array(T)
     if Model == 1 :
         el0 = tc.cvap_water
@@ -240,12 +389,23 @@ def latheat(T, sublim=0, Model=0, focwil_T=[]) :
     return el
 
 def dewpoint(T, p, q) :
-    '''
-     Input:   Temperature (K) numpy array
-              pressure (Pa) numpy array
-              q specific humidity (kg/kg) numpy array
-     Output : Dew-point temperature (K) numpy array
-    '''
+    """
+    Dewpoint.
+
+    Parameters
+    ----------
+        T: numpy array
+            Temperature.
+        p: numpy array
+            Pressure (Pa).
+        q: numpy array
+            specific humidity (kg/kg)
+
+    Returns
+    -------
+        TD: Nnmpy array
+            Dew-point temperature (K).
+    """
 #    T=np.array(T)
 #    q=np.array(q)
 #    p=np.array(p)
@@ -268,11 +428,19 @@ def dewpoint(T, p, q) :
     return TD
 
 def qsat(T, p) :
-    '''
-     Input:   Temperature (K) numpy array
-              pressure (Pa) numpy array
-     Output : saturation specific humidity (kg/kg) over water numpy array
-    '''
+    """
+    Parameters
+    ----------
+    T : numpy array
+        Temperature. (K)
+    p : numpy array
+        Pressure (Pa).
+
+    Returns
+    -------
+    qs : numpy array
+        Saturation specific humidity (kg/kg) over water.
+    """
     es = esat(T)
     fsubw = 1.0 + 1.0E-8 * p * (4.5 + 6.0E-4 * (T - tc.freeze_pt) * (T - tc.freeze_pt) )
     es = es * fsubw
@@ -280,19 +448,45 @@ def qsat(T, p) :
     return qs
 
 def dqsatbydT(T, p) :
+    """
+    :math:`{alpha= dq_{s}}/{dT}`.
+
+    Parameters
+    ----------
+    T : numpy array
+        Temperature. (K)
+    p : numpy array
+        Pressure (Pa).
+
+    Returns
+    -------
+    alpha : numpy array
+
+    """
     alpha = tc.epsilon * tc.cvap_water * qsat(T, p) / \
             (tc.gas_const_air * T * T)
     return alpha
 
 def equiv_potential_temperature(T, p, q):
-    '''
+    """
+    Equivalent potential temperature.
     From Bolton 1980
-     Input:   Temperature (K) numpy array
-              pressure (Pa) numpy array
-              q specific humidity (kg/kg) numpy array
-     Output : Fast estimate of equivalent potential temperature (K) numpy array
 
-    '''
+    Parameters
+    ----------
+    T : numpy array
+        Temperature. (K)
+    p : numpy array
+        Pressure (Pa).
+    q: numpy array
+        specific humidity (kg/kg)
+
+    Returns
+    -------
+    theta_e: numpy array
+        Fast estimate of equivalent potential temperature (K).
+
+    """
     C1 = 3.376E3
     C2 = 2.54
     C3 = 0.81
@@ -306,21 +500,32 @@ def equiv_potential_temperature(T, p, q):
     return theta_e
 
 def equiv_potential_temperature_accurate(T, p, q) :
-    '''
+    """
+    Equivalent potential temperature.
     From Bolton 1980
-     Input:   Temperature (K) numpy array
-              pressure (Pa) numpy array
-              q specific humidity (kg/kg) numpy array
-     Output : Accurate equivalent potential temperature (K) numpy array
 
-    '''
+    Parameters
+    ----------
+    T : numpy array
+        Temperature. (K)
+    p : numpy array
+        Pressure (Pa).
+    q: numpy array
+        specific humidity (kg/kg)
+
+    Returns
+    -------
+    theta_e: numpy array
+        Accurate estimate of equivalent potential temperature (K).
+
+    """
     C1 = 3.036E3
     C2 = 1.78
     C3 = 0.448
     e = q_p_to_e(q, p)
     m = q_to_mix(q)
     T_LCL = T_LCL_e(T, e)
-    theta_DL = T * ( tc.p_ref_um/(p - e) )**tc.kappa * (T / T_LCL)**(tc.kappa_v*m)
+    theta_DL = T * ( tc.p_ref_theta/(p - e) )**tc.kappa * (T / T_LCL)**(tc.kappa_v*m)
 
     theta_e = theta_DL * \
       np.exp((C1/T_LCL-C2) * m * (1 + C3 * m) )
@@ -328,13 +533,24 @@ def equiv_potential_temperature_accurate(T, p, q) :
     return theta_e
 
 def wet_bulb_potential_temperature(T, p, q):
-    '''
-     From Davies-Jones 2007
-     Input:   Temperature (K) numpy array
-              pressure (Pa) numpy array
-              q specific humidity (kg/kg) numpy array
-     Output : Wet-bulb potential temperature (K) numpy array
-    '''
+    """
+    Wet-bulb potential temperature.
+    From Davies-Jones 2007
+
+    Parameters
+    ----------
+    T : numpy array
+        Temperature. (K)
+    p : numpy array
+        Pressure (Pa).
+    q: numpy array
+        specific humidity (kg/kg)
+
+    Returns
+    -------
+    theta_w: numpy array
+        Wet-bulb potential temperature (K) numpy array
+    """
     A = 2675.0
     T_ref=tc.freeze_pt
     b = 243.04
@@ -370,23 +586,34 @@ def wet_bulb_potential_temperature(T, p, q):
     return th_W
 
 def wet_bulb_temperature(T, p, q):
-    '''
-     From Davies-Jones 2007
-     Input:   Temperature (K) numpy array
-              pressure (Pa) numpy array
-              q specific humidity (kg/kg) numpy array
-     Output : Wet-bulb temperature (K) numpy array
-    '''
+    """
+    Wet-bulb temperature.
+    From Davies-Jones 2007
+
+    Parameters
+    ----------
+    T : numpy array
+        Temperature. (K)
+    p : numpy array
+        Pressure (Pa).
+    q: numpy array
+        specific humidity (kg/kg)
+
+    Returns
+    -------
+    theta_w: numpy array
+        Wet-bulb temperature (K) numpy array
+    """
     T_ref=tc.freeze_pt
     A = 2675.0
     const = 17.625        # Bolton uses 17.67
     b = 243.04
     T_ref2 = b-T_ref # Bolton uses 243.5
-    pi = (p/tc.p_ref_um)**tc.kappa
+    pi = (p/tc.p_ref_theta)**tc.kappa
 
     pi2 = pi * pi
 
-    D_pi=1/(0.1859 * (p/tc.p_ref_um)+0.6512)
+    D_pi=1/(0.1859 * (p/tc.p_ref_theta)+0.6512)
 
     k1_pi = 137.81 * pi -38.5 * pi2 - 53.737
 

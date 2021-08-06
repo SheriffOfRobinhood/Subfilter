@@ -1,0 +1,287 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>The spectra module. &#8212; Subfilter 0.5.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="The utils sub-package." href="utils.html" />
+    <link rel="prev" title="The filters module." href="filters.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="utils.html" title="The utils sub-package."
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="filters.html" title="The filters module."
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Subfilter 0.5.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">The spectra module.</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="the-spectra-module">
+<h1>The spectra module.<a class="headerlink" href="#the-spectra-module" title="Permalink to this headline">¶</a></h1>
+<p>This module implements computation of 1D spectra from 2D fields.
+It is a new addition at 0.5.0.</p>
+<p>The main functions are:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#subfilter.spectra.spectrum_ave_1D" title="subfilter.spectra.spectrum_ave_1D"><code class="xref py py-func docutils literal notranslate"><span class="pre">subfilter.spectra.spectrum_ave_1D()</span></code></a>.</p></li>
+<li><p><a class="reference internal" href="#subfilter.spectra.spectrum_ave_1D_radial" title="subfilter.spectra.spectrum_ave_1D_radial"><code class="xref py py-func docutils literal notranslate"><span class="pre">subfilter.spectra.spectrum_ave_1D_radial()</span></code></a>.</p></li>
+</ul>
+<p>#.. topic:: New at 0.5</p>
+<section id="detailed-module-contents">
+<h2>Detailed Module Contents<a class="headerlink" href="#detailed-module-contents" title="Permalink to this headline">¶</a></h2>
+<p>The entire module is documented below.</p>
+<span class="target" id="module-subfilter.spectra"></span><p>This program evaluates MONC fields with 4 dimensions (vertical, x, y, time) to produce
+horizontal power spectra at each time and vertical level written to new netcdf files.</p>
+<p>BY DEFAULT, each variable contained in the input file’s xarray.Dataset “Data variables”
+has its horizontal power spectra evaluated.  These are all placed in the same
+output file.</p>
+<p>They can alternatively be placed in a list in the user settings section.</p>
+<p>Several options can influence the form of the final result.</p>
+<p>Assumes the horizontal grid dimensions are the same for each variable being analysed.
+Assumes the horizontal dimensions are named ‘x’ and ‘y’.
+Assumes the vertical dimension is the only dimension with a ‘z’ in its name, but it can be
+either ‘z’ or ‘zn’.
+The time dimension name is identified by a user-supplied string, currently: ‘time’.</p>
+<p>“Durran” calculation based on Durran et al. (2017): <a class="reference external" href="https://doi.org/10.1175/MWR-D-17-0056.1">https://doi.org/10.1175/MWR-D-17-0056.1</a></p>
+<p>User must supply:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">dir</span><span class="p">:</span>    <span class="nb">input</span> <span class="n">directory</span> <span class="p">(</span><span class="n">slash</span><span class="o">-</span><span class="n">agnostic</span><span class="p">)</span>
+<span class="n">file</span><span class="p">:</span>   <span class="nb">input</span> <span class="n">file</span>
+          <span class="n">Suggest</span> <span class="n">switching</span> <span class="n">to</span> <span class="n">argument</span> <span class="nb">input</span> <span class="p">(</span><span class="n">see</span> <span class="n">below</span><span class="p">)</span>
+<span class="n">outtag</span><span class="p">:</span> <span class="n">output</span> <span class="n">file</span> <span class="n">tag</span> <span class="p">(</span><span class="n">appended</span> <span class="n">to</span> <span class="nb">input</span> <span class="n">file</span> <span class="n">name</span><span class="p">)</span>
+          <span class="n">Creates</span> <span class="s1">&#39;spectra/&#39;</span> <span class="n">directory</span> <span class="n">within</span> <span class="n">the</span> <span class="n">given</span> <span class="nb">dir</span>
+<span class="n">dx</span><span class="p">:</span>     <span class="n">x</span><span class="o">-</span><span class="n">direction</span> <span class="n">grid</span> <span class="n">spacing</span> <span class="p">[</span><span class="n">m</span><span class="p">]</span>
+<span class="n">dy</span><span class="p">:</span>     <span class="n">y</span><span class="o">-</span><span class="n">direction</span> <span class="n">grid</span> <span class="n">spacing</span> <span class="p">[</span><span class="n">m</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>&#64;author: Todd Jones
+&#64;modified: Peter Clark</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.spectra.spectra_options">
+<span class="sig-prename descclassname"><span class="pre">subfilter.spectra.</span></span><span class="sig-name descname"><span class="pre">spectra_options</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.spectra.spectra_options" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.spectra.forward">
+<span class="sig-prename descclassname"><span class="pre">subfilter.spectra.</span></span><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.spectra.forward" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.spectra.inverse">
+<span class="sig-prename descclassname"><span class="pre">subfilter.spectra.</span></span><span class="sig-name descname"><span class="pre">inverse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">l</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.spectra.inverse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.spectra.spectra_variable_list">
+<span class="sig-prename descclassname"><span class="pre">subfilter.spectra.</span></span><span class="sig-name descname"><span class="pre">spectra_variable_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">derived_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.spectra.spectra_variable_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and store 1D forms of 2D power spectra.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ds</strong> (<em>xarray dataset</em>) – Input data</p></li>
+<li><p><strong>derived_dataset</strong> (<em>dict</em>) – Output data.    ‘ds’:xarray dataset ‘file’: Path to output file.</p></li>
+<li><p><strong>options</strong> (<em>dict</em>) – options for spectral calculations</p></li>
+<li><p><strong>var_list</strong> (<em>list</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – List of variable names in ds to derive spectra for. The default is None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>dso</strong> (<em>xarray dataset</em>) – Output data.</p></li>
+<li><p><strong>outfile</strong> (<em>str</em>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.spectra.spectrum_ave_1D">
+<span class="sig-prename descclassname"><span class="pre">subfilter.spectra.</span></span><span class="sig-name descname"><span class="pre">spectrum_ave_1D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dso</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outfile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dy</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.spectra.spectrum_ave_1D" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute averaged 1D spectra in x and y directions separately.
+Use real fft of anomalies, Durran et al. (2017), Eq. 13,
+and average over y results over x direction (and vice versa),
+handling Nyquist (Kr_delta).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ds</strong> (<em>xarray Dataset</em>) – Input data.</p></li>
+<li><p><strong>dso</strong> (<em>xarray Dataset</em>) – Output data.</p></li>
+<li><p><strong>vname</strong> (<em>str</em>) – Variable name (in ds).</p></li>
+<li><p><strong>outfile</strong> (<em>str</em>) – Path to output file.</p></li>
+<li><p><strong>options</strong> (<em>dict</em>) – Options controlling spectrum calculations.</p></li>
+<li><p><strong>dx</strong> (<em>float</em>) – x grid spacing.</p></li>
+<li><p><strong>dy</strong> (<em>float</em>) – y grid spacing.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.spectra.GetPSD1D">
+<span class="sig-prename descclassname"><span class="pre">subfilter.spectra.</span></span><span class="sig-name descname"><span class="pre">GetPSD1D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psd2D</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.spectra.GetPSD1D" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get PSD 1D (total radial power spectrum)
+For use with option spec_method: ndimage</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>psd2D</strong> – 2D numpy array containing 2D spectra values</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>1D numpy array containing 1D spectra ordered from</dt><dd><p>wavenumber 0 to highest wavenumber of shortest
+dimension</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>psd1D</p>
+</dd>
+</dl>
+<p>&#64;author:  <a class="reference external" href="https://gist.github.com/TangibitStudios/47beaf24690329ac7fecddde70835ce9">https://gist.github.com/TangibitStudios/47beaf24690329ac7fecddde70835ce9</a></p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.spectra.prepare_map">
+<span class="sig-prename descclassname"><span class="pre">subfilter.spectra.</span></span><span class="sig-name descname"><span class="pre">prepare_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fkx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fky</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dkh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Nmax</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.spectra.prepare_map" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.spectra.rad_ave_with_comp">
+<span class="sig-prename descclassname"><span class="pre">subfilter.spectra.</span></span><span class="sig-name descname"><span class="pre">rad_ave_with_comp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Ek</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rlab</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comp</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.spectra.rad_ave_with_comp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.spectra.rad_ave_without_comp">
+<span class="sig-prename descclassname"><span class="pre">subfilter.spectra.</span></span><span class="sig-name descname"><span class="pre">rad_ave_without_comp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Ek</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rlab</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.spectra.rad_ave_without_comp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.spectra.spectrum_ave_1D_radial">
+<span class="sig-prename descclassname"><span class="pre">subfilter.spectra.</span></span><span class="sig-name descname"><span class="pre">spectrum_ave_1D_radial</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dso</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outfile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dy</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.spectra.spectrum_ave_1D_radial" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute averaged 2D spectra averaged to 1D.
+Use real fft of anomalies, Durran et al. (2017), Eq. 13,
+and average over y results over x direction (and vice versa),
+handling Nyquist (Kr_delta).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ds</strong> (<em>xarray Dataset</em>) – Input data.</p></li>
+<li><p><strong>dso</strong> (<em>xarray Dataset</em>) – Output data.</p></li>
+<li><p><strong>vname</strong> (<em>str</em>) – Variable name (in ds).</p></li>
+<li><p><strong>outfile</strong> (<em>str</em>) – Path to output file.</p></li>
+<li><p><strong>options</strong> (<em>dict</em>) – Options controlling spectrum calculations.</p></li>
+<li><p><strong>dx</strong> (<em>float</em>) – x grid spacing.</p></li>
+<li><p><strong>dy</strong> (<em>float</em>) – y grid spacing.</p></li>
+<li><p><strong>kmap</strong> (<em>dict</em><em>, </em><em>optional</em>) – Previously computed mapping from radial k to 2D grid. The default is None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>kmap</strong> – Previously computed mapping from radial k to 2D grid.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">The spectra module.</a><ul>
+<li><a class="reference internal" href="#detailed-module-contents">Detailed Module Contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="filters.html"
+                        title="previous chapter">The filters module.</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="utils.html"
+                        title="next chapter">The utils sub-package.</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/spectra.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="utils.html" title="The utils sub-package."
+             >next</a> |</li>
+        <li class="right" >
+          <a href="filters.html" title="The filters module."
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Subfilter 0.5.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">The spectra module.</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, 2020, 2021 Peter Clark.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.1.
+    </div>
+  </body>
+</html>
