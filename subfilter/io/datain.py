@@ -4,6 +4,7 @@ Created on Mon Aug  2 11:01:11 2021
 
 @author: paclk
 """
+import sys
 import numpy as np
 from .MONC_utils import options_database
 from ..utils.string_utils import get_string_index
@@ -16,7 +17,12 @@ import subfilter.thermodynamics.thermodynamics_constants as thc
 
 def get_data(source_dataset, ref_dataset, var_name, options) :
     """
-    Extract data from source NetCDF dataset or derived data.
+    Extract data or derived data field from source NetCDF dataset.
+
+    Currently written for MONC data, enforcing C-grid. Returned coords are
+    ''x_p', 'x_u',, y_p', 'y_v', 'z', 'zn'. Coordinate x- and -y values are
+    retrieved from the MONC options_database in source_dataset
+    or from 'dx' and 'dy' in options otherwise
 
     Currently supported derived data are::
 
@@ -25,8 +31,21 @@ def get_data(source_dataset, ref_dataset, var_name, options) :
         'q_total'  : Total water.
         'buoyancy' : (g/mean_th_v)*(th_v-mean_th_v), where the mean is the domain mean.
 
-    Returns:
-        variable, variable_dimensions, variable_grid_properties
+    Parameters
+    ----------
+    source_dataset : xarray Dataset
+        Input (at least 2D) data.
+    ref_dataset :  xarray Dataset
+        Contains reference profiles. Can be None.
+    var_name : str
+        Name of variable to retrieve.
+    options : dict
+        Options Options possibly used are 'dx' and 'dy'.
+
+    Returns
+    -------
+        vard: xarray
+            Output data field.
 
     @author: Peter Clark
 
@@ -171,7 +190,33 @@ def get_data(source_dataset, ref_dataset, var_name, options) :
 
 def get_and_transform(source_dataset, ref_dataset, var_name, options,
                       grid='p'):
+    """
+    Extract data or derived data from source NetCDF dataset and transform
+    to alternative grid.
 
+    See get_data for derived variables.
+
+    Parameters
+    ----------
+    source_dataset : xarray Dataset
+        Input (at least 2D) data.
+    ref_dataset : xarray Dataset
+        Contains reference profiles. Can be None.
+    var_name : str
+        Name of variable to retrieve.
+    options : dict
+        Options. Options possibly used are 'dx' and 'dy'.
+    grid : str, optional
+        Destination grid 'u', 'v', 'w' or 'p'. Default is 'p'.
+
+    Returns
+    -------
+        var: xarray
+            Output data field.
+
+    @author: Peter Clark
+
+    """
     var = get_data(source_dataset, ref_dataset, var_name, options)
 
 #    print(var)
@@ -251,20 +296,33 @@ def get_and_transform(source_dataset, ref_dataset, var_name, options,
 def get_data_on_grid(source_dataset, ref_dataset, derived_dataset, var_name,
                      options, grid='p') :
     """
-    Read in 3D data from NetCDF file and, where necessary, interpolate to p grid.
+    Find data from source_dataset remapped to destination grid.
+    Uses data from derived_dataset if present, otherwise uses
+    get_and_transform to input from source_dataset and remap grid.
+    In this case, if options['save_all']=='yes', save teh remapped data to
+    derived_dataset.
 
-    Assumes first dimension is time.
+    See get_data for derived variables.
 
-    Args:
-        source_dataset  : NetCDF dataset
-        ref_dataset     : NetCDF dataset containing reference profiles.
-        derived_dataset : NetCDF dataset for derived data
-        var_name        : Name of variable
-        options         : General options e.g. FFT method used.
-		grid='p'        : Destination grid. 'u', 'v', 'w' or 'p'.
+    Parameters
+    ----------
+    source_dataset : xarray Dataset
+        Input (at least 2D) data.
+    ref_dataset : xarray Dataset
+        Contains reference profiles. Can be None.
+    derived_dataset : dict
+        'ds' points to xarray Dataset, 'file' to output file path.
+    var_name : str
+        Name of variable to retrieve.
+    options : dict
+        Options. Options possibly used are 'dx' and 'dy'.
+    grid : str, optional
+        Destination grid 'u', 'v', 'w' or 'p'. Default is 'p'.
 
-    Returns:
-        variable_dimensions, variable_grid_properties.
+    Returns
+    -------
+        var: xarray
+            Output data field.
 
     @author: Peter Clark
     """
@@ -329,8 +387,9 @@ def get_pref(source_dataset, ref_dataset,  options):
     source_dataset :  netCDF4 file
         MONC output file.
     ref_dataset :  netCDF4 file or None
-        MONC output file containing pref
+        MONC output file containing 1D variable prefn.
     options : dict
+        Options. Options possibly used are th_ref.
 
     Returns
     -------
@@ -366,7 +425,7 @@ def get_thref(ref_dataset, options):
     ref_dataset : TnetCDF4 file or None
         MONC output file containing pref
     options : dict
-
+        Options. Options possibly used are th_ref.
 
     Returns
     -------

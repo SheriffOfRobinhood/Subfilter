@@ -67,8 +67,8 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="subfilter.utils.deformation.deformation">
 <span class="sig-prename descclassname"><span class="pre">subfilter.utils.deformation.</span></span><span class="sig-name descname"><span class="pre">deformation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">derived_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'w'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.deformation.deformation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute deformation tensor,
-<img class="math" src="_images/math/13ff41593e99a6684ad4d3fddba452bf5a85991f.png" alt="{\partial u_{i}}/{\partial {x_j}}."/></p>
+<dd><p>Compute deformation tensor.</p>
+<p>Deformation tensor is defined as <img class="math" src="_images/math/b5ebb297b2a3b9599e1525b370a0f0fb29c2dcaa.png" alt="{\partial u_{i}}/{\partial {x_j}}"/>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -94,9 +94,10 @@ Saves to derived_dataset if options[‘save_all’].lower() == ‘yes’.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="subfilter.utils.deformation.shear">
 <span class="sig-prename descclassname"><span class="pre">subfilter.utils.deformation.</span></span><span class="sig-name descname"><span class="pre">shear</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">no_trace</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.deformation.shear" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute shear tensor
-<img class="math" src="_images/math/c8352a4d5ef1d7acbb87345c6c5c0976fb57ece2.png" alt="S_{ij}={\partial u_{i}}/{\partial {x_j}}+{\partial u_{j}}/{\partial {x_i}}"/>
-from deformation tensor.</p>
+<dd><p>Compute shear tensor from deformation tensor.</p>
+<p>Shear tensor is defined by
+<img class="math" src="_images/math/5ca68e885fc4d6ad9917ebbbc09a96ed74a30e1e.png" alt="S_{ij}={\partial u_{i}}/{\partial {x_j}}
++{\partial u_{j}}/{\partial {x_i}}"/>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -107,7 +108,7 @@ from deformation tensor.</p>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p><strong>S</strong> (<em>xarray</em>) – Shear with new dimension ‘i_j’.</p></li>
-<li><p><strong>mod_S_sq</strong> (<em>xarray</em>) – Modulus of shear squared. <img class="math" src="_images/math/d493e2c5e65e7fb62907060e115914afdebcd6a0.png" alt="1/2 S_{ij}S{ij}"/></p></li>
+<li><p><strong>mod_S_sq</strong> (<em>xarray</em>) – Modulus of shear squared. <img class="math" src="_images/math/562ed184d01cfbee83dbdc7ffa65522d55ea7588.png" alt="1/2 S_{ij}S_{ij}"/></p></li>
 </ul>
 </p>
 </dd>
@@ -117,9 +118,11 @@ from deformation tensor.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="subfilter.utils.deformation.vorticity">
 <span class="sig-prename descclassname"><span class="pre">subfilter.utils.deformation.</span></span><span class="sig-name descname"><span class="pre">vorticity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.utils.deformation.vorticity" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute vorticity vector
-<img class="math" src="_images/math/7a64e848a8a7d410c699581d72eb3d94cfd7e1ef.png" alt="\omega_{k}=\epsilon_{ijk}({\partial u_{i}}/{\partial {x_j}}-{\partial u_{j}}/{\partial {x_i}})"/>
-from deformation tensor.</p>
+<dd><p>Compute vorticity vector from deformation tensor.</p>
+<p>vorticity vector is defined as
+<img class="math" src="_images/math/46542a62e70bae039bde64ec9ed461786d571264.png" alt="\omega_{k}=({\partial u_{i}}/{\partial {x_j}}
+-{\partial u_{j}}/{\partial {x_i}})"/>
+with <img class="math" src="_images/math/bc41ce7420b85b5a386d8e604895fa9ffcb489d1.png" alt="kij"/> defined cyclically (i.e. 123, 231, 312).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>d</strong> (<em>xarray</em>) – Deformation tensor with dimensions ‘i’ and ‘j’.</p>
@@ -168,7 +171,7 @@ from deformation tensor.</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -200,7 +203,7 @@ from deformation tensor.</p>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2019, 2020, 2021 Peter Clark.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.1.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.1.2.
     </div>
   </body>
 </html>

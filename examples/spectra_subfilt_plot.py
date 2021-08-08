@@ -8,7 +8,9 @@ import os
 
 import numpy as np
 import xarray as xr
+import dask
 
+import scipy as sp
 import matplotlib.pyplot as plt
 
 def inv(k):
@@ -114,8 +116,9 @@ idl_filt = kE_kp_ref / kE_kp_idl
 idl_filt.plot(xscale='log', yscale='log', ax=axa[1], label='Ref 5 m')
 
 for filt in range(nfilt):
-    filt_file = dir+fileroot+fname+f'_filter_ga{filt:02d}'+outtag+'.nc'
-    dso = xr.open_dataset(filt_file)
+    filt_files = dir+fileroot+fname+f'_filter_ga{filt:02d}'+outtag+'.nc'
+#    dso = xr.open_dataset(filt_file)
+    dso = xr.open_mfdataset(filt_files)
 
     print(dso)
     k = dso['hfreq']
@@ -135,22 +138,22 @@ G_5 =np.exp(-(2*np.pi*sigma_5*k_ref.values)**alpha)
 axa[1].plot(k_ref.values, G_5, label=r'$\alpha$=2, $\sigma$= 3.0 m ')#10/$\pi$
 
 alpha = 2.0
-sigma_5 = 2.3
+sigma_5 = 2.5
 
 G_5 =np.exp(-(2*np.pi*sigma_5*k_ref.values)**alpha)
-axa[1].plot(k_ref.values, G_5, label=r'$\alpha$=2, $\sigma$=2.3 m ')
+axa[1].plot(k_ref.values, G_5, label=r'$\alpha$=2, $\sigma$=2.5 m ')
 
 alpha = 2.4
 sigma_5 = 2.8 #5*2/np.pi*0.8
 G_5 =np.exp(-(2*np.pi*sigma_5*k_ref.values)**alpha)
-axa[1].plot(k_ref.values, G_5, label=r'$\alpha$=2.4, $\sigma$=2.5 m')
+axa[1].plot(k_ref.values, G_5, label=r'$\alpha$=2.4, $\sigma$=2.8 m')
 
 secax = axa[1].secondary_xaxis('top', functions=(inv, inv))
 secax.set_xlabel('wavelength (m)')
 
 axa[1].legend()
 axa[1].set_ylim([0.1,1.1])
-axa[0].set_ylabel(r'$G(k)\times G(k)^*$')
+axa[1].set_ylabel(r'$G(k)\times G(k)^*$')
 
 plt.tight_layout()
 plt.savefig(dir+'Gaussian_filter.png')

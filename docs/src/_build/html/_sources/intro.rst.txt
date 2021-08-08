@@ -23,8 +23,8 @@ The code also produces 'subfilter' fluxes, variances and covariances: for any pa
 =============
 Power Spectra
 =============
-The Power Spectra computed are conventional 2D power spectra averaged either in x- or -y direction, or radial spectra averaged around the azimuthal direction.
-Care has been taken to normalise in using standard and corrections can be applied to the radial spectra. See Durran et al. (2017) for details.
+The Power Spectra computed are conventional 2D power spectra averaged either in x- or y-direction, or radial spectra averaged around the azimuthal direction.
+Care has been taken to normalise in using standard and corrections can be applied to the radial spectra. See `Durran et al. (2017) <https://doi.org/10.1175/MWR-D-17-0056.1>`_ for details.
 
 ============
 Output Files
@@ -46,7 +46,7 @@ A number of filters have been implemented, currently
     #. Spectral wave cutoff.
     #. Spectral cylindrical wave cutoff.
     #. Running mean (or 'top-hat').    
-    #. or completeness, a 'whole domain' filter in which the resolved field is the horizontal domain average. In this case the resolved field has no horizontal dimensions.
+    #. For completeness, a 'whole domain' filter in which the resolved field is the horizontal domain average. In this case the resolved field has no horizontal dimensions.
     
 ================
 Input Transforms
@@ -67,7 +67,8 @@ A number of derived variables have been implemented that are calculated provided
 |           |where the mean is the domain mean.                             |
 +-----------+---------------------------------------------------------------+
 
-While a variety of basic functions have been written, the intention is to use :py:func:`subfilter.filter_variable_list` to automatically filter a list of NetCDF variables and write the output to a new NetCDF file, and :py:func:`subfilter.filter_variable_pair_list` to do the same with products of fields. 
+While a variety of basic functions have been written, the intention is to use :py:func:`subfilter.subfilter.filter_variable_list` to automatically filter a list of NetCDF variables and write the output to a new NetCDF file, 
+and :py:func:`subfilter.subfilter.filter_variable_pair_list` to do the same with products of fields. 
 Each has a default list - this can easily be changed.
 
 .. todo:: Code to calculate the deformation field and hence shear and vorticiy has also been implemented but needs full integration.

@@ -36,6 +36,7 @@ import numpy as np
 import xarray as xr
 import dask
 
+
 import subfilter as sf
 import subfilter.spectra as sp
 from subfilter.utils.string_utils import get_string_index

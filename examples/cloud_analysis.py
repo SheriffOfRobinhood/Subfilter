@@ -9,15 +9,16 @@ Created on Wed May 15 09:46:31 2019
 
 """
 import os
-import netCDF4
-from netCDF4 import Dataset
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import scipy.special as sp
 import math as m
 
-import subfilter.thermodynamics_constants as thc
+import xarray as xr
+import dask
+
+import subfilter.thermodynamics.thermodynamics_constants as thc
 import subfilter.thermodynamics as th
 
 import subfilter.subfilter as sf
@@ -27,18 +28,23 @@ from subfilter.utils.string_utils import get_string_index
 from subfilter.io.dataout import save_field
 from subfilter.io.MONC_utils import options_database
 
-dir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
-#dir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/r15/'
-destdir = dir
-odir = destdir
-file = 'diagnostics_3d_ts_7200.0.nc'
-ref_file = 'diagnostics_ts_7200.0.nc'
+indir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
+indir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
+#indir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/r15/'
 
+destdir = indir+'cloud/'
+odir = destdir
+
+#file = 'diagnostics_3d_ts_7200.0.nc'
+file = 'diagnostics_3d_ts_21600.nc'
+#file = 'diagnostics_3d_ts_7200.0.nc'
+#ref_file = 'diagnostics_ts_7200.0.nc'
+ref_file = 'diagnostics_ts_21600.nc'
 #w = dataset.variables['w']
 #var_tvar = w.dimensions[0]
 #var_time = dataset.variables[var_tvar]
 
-plot_dir = dir+'plots/'
+plot_dir = destdir+'plots/'
 
 plot_type = '.png'
 data_dir = '' # Directory containing data
@@ -51,11 +57,14 @@ def main():
     '''
     Top level code, a bit of a mess.
     '''
+    os.makedirs(odir, exist_ok = True)
+    os.makedirs(plot_dir, exist_ok = True)
+
 #   Non-global variables that are set once
 #    sigma_list = [0.2,0.25,0.3,0.4,0.8,1.0,1.5,2.0] # Sigma used in Gaussian filter function
 #    sigma_list = [2.0] # Sigma used in Gaussian#
-    dataset = Dataset(dir+file, 'r') # Dataset is the class behavior to open the file
-                                 # and create an instance of the ncCDF4 class
+    dataset = xr.open_dataset(indir+file, chunks={'z':'auto', 'zn':'auto'})
+
     [itime, iix, iiy, iiz] = get_string_index(dataset.dims, ['time', 'x', 'y', 'z'])
     timevar = list(dataset.dims)[itime]
     xvar = list(dataset.dims)[iix]
@@ -63,16 +72,17 @@ def main():
     zvar = list(dataset.dims)[iiz]
     npoints = dataset.dims[xvar]
 
-    ref_dataset=Dataset(dir + ref_file)
+    ref_dataset=xr.open_dataset(indir+ref_file, chunks={'z':'auto', 'zn':'auto'})
 #    w = dataset["w"]
 #    print(w.dimensions)
-    
+
+    options, update = sf.subfilter_options(None)
+
+
     od = options_database(dataset)
     if od is None:
-    dx = 100.0
-    dy = 100.0
-        dx = options['dx']
-        dy = options['dy']
+        dx = 100.0
+        dy = 100.0
     else:
         dx = float(od['dxx'])
         dy = float(od['dyy'])
@@ -110,9 +120,8 @@ def main():
 
     opgrid = 'p'
     #
-    derived_data, exists = \
-                                        sf.setup_derived_data_file(
-                                        dir+file, destdir, fname, 
+    derived_data, exists = sf.setup_derived_data_file(
+                                        indir+file, destdir, fname,
                                         options, override = False)
 
     print(derived_data['file'])
@@ -123,6 +132,7 @@ def main():
         filter_id = 'filter_ga{:02d}'.format(i)
         twod_filter = filt.Filter(filter_id,\
                                        filter_name, \
+                                       npoints=npoints,
                                        sigma=sigma, width=width, \
                                        delta_x=dx)
 
@@ -133,13 +143,14 @@ def main():
 
         print(twod_filter)
 
-        filtered_dataset_name, filtered_data, exists = \
-            sf.setup_filtered_data_file( dir+file, odir, fname,
-                                       options, twod_filter, override=True)
+        filtered_data, exists = \
+            sf.setup_filtered_data_file( indir+file, odir, fname,
+                                       options, twod_filter, override=False)
 
 
         if exists :
             print('File exists - opened for reading.')
+            print(filtered_data['ds'])
         else :
             print('Creating derived data file.')
             field_list =sf.filter_variable_list(dataset, ref_dataset,
@@ -154,24 +165,24 @@ def main():
                                                 options, twod_filter,
                                                 var_list=var_pair_list,
                                                 grid = opgrid)
-        times = derived_data[w.dimensions[0]]
-        print(derived_data.variables)
+        times = derived_data['ds']
+        print(derived_data['ds'])
         print(times)
         print(times[:])
 
 
-        print(derived_data.variables)
+        print(derived_data['ds'])
         #    derived_data.twod_filter_id = twod_filter.id
         #    derived_data.setncatts(twod_filter.attributes)
-        th_L_th_L=derived_data.variables["th_L_th_L_onp"][...]
-        th_L_qt=derived_data.variables["th_L_q_total_onp"][...]
-        qt_qt=derived_data.variables["q_total_q_total_onp"][...]
-        th_L_r = derived_data.variables["th_L_r_onp"][...]
-        th_L_s = derived_data.variables["th_L_s_onp"][...]
-        q_t_r = derived_data.variables["q_total_r_onp"][...]
-        q_t_s = derived_data.variables["q_total_s_onp"][...]
-        q_cl_r = derived_data.variables["q_cloud_liquid_mass_r_onp"][...]
-        q_cl_s = derived_data.variables["q_cloud_liquid_mass_s_onp"][...]
+        th_L_th_L=derived_data['ds']["th_L_th_L_onp"][...]
+        th_L_qt=derived_data['ds']["th_L_q_total_onp"][...]
+        qt_qt=derived_data['ds']["q_total_q_total_onp"][...]
+        th_L_r = derived_data['ds']["th_L_r_onp"][...]
+        th_L_s = derived_data['ds']["th_L_s_onp"][...]
+        q_t_r = derived_data['ds']["q_total_r_onp"][...]
+        q_t_s = derived_data['ds']["q_total_s_onp"][...]
+        q_cl_r = derived_data['ds']["q_cloud_liquid_mass_r_onp"][...]
+        q_cl_s = derived_data['ds']["q_cloud_liquid_mass_s_onp"][...]
         pref = ref_dataset.variables['prefn'][-1,...]
         piref = (pref[:]/1.0E5)**kappa
         z = ref_dataset["z"][...]

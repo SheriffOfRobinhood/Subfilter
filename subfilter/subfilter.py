@@ -88,8 +88,6 @@ def filter_variable_list(source_dataset, ref_dataset, derived_dataset,
     -------
         list : list of strings representing variable names.
 
-    @author: Peter Clark
-
     """
     if (var_list==None):
         var_list = get_default_variable_list()
@@ -138,8 +136,6 @@ def filter_variable_pair_list(source_dataset, ref_dataset, derived_dataset,
     -------
         list : list of lists of pairs strings representing variable names.
 
-    @author: Peter Clark
-
     """
     if (var_list==None):
         var_list = get_default_variable_pair_list()
@@ -179,8 +175,6 @@ def convolve(field, options, filter_def, dims):
     Returns
     -------
         ndarray : field convolved with filter_def
-
-    @author: Peter Clark
 
     """
     if len(np.shape(field)) > len(np.shape(filter_def)):
@@ -237,23 +231,23 @@ def convolve(field, options, filter_def, dims):
 
     return result
 
-def pad_to_len2D(field, newlen, mode='constant'):
+def pad_to_len(field, newlen, mode='constant'):
     """
-    Pad 2D array to required size.
+    Pad array to required size on each dimension.
 
     Parameters
     ----------
     field : numpy array
-        DESCRIPTION.
+        Input field.
     newlen : int
-        DESCRIPTION.
-    mode : TYPE, optional
-        DESCRIPTION. The default is 'constant'.
+        Length of each dimension.
+    mode : str or function, optional
+        Detrmines values to pad with. See numpy.pad. The default is 'constant'.
 
     Returns
     -------
-    padfield : TYPE
-        DESCRIPTION.
+    padfield : numpy array
+        Input field padded as required..
 
     """
     sf = np.shape(field)
@@ -279,8 +273,6 @@ def filtered_field_calc(var, options, filter_def):
     Returns
     -------
         dicts cantaining variable info : [var_r, var_s]
-
-    @author: Peter Clark
 
     """
     vname = var.name
@@ -333,7 +325,7 @@ def filtered_field_calc(var, options, filter_def):
                 if 'fft' not in filter_def.__dict__:
                     sf = np.shape(filter_def.data)
                     if sh[axis[0]] != sf[0]:
-                        padfilt = pad_to_len2D(filter_def.data, sh[axis[0]])
+                        padfilt = pad_to_len(filter_def.data, sh[axis[0]])
                     else:
                         padfilt = filter_def.data.copy()
                     # This shift of the filter is necessary to get the phase
@@ -346,7 +338,7 @@ def filtered_field_calc(var, options, filter_def):
                 if 'fft' not in filter_def.__dict__:
                     sf = np.shape(filter_def.data)
                     if sh[axis[0]] != sf[0] or sh[axis[1]] != sf[1]:
-                        padfilt = pad_to_len2D(filter_def.data, sh[axis[0]])
+                        padfilt = pad_to_len(filter_def.data, sh[axis[0]])
                     else:
                         padfilt = filter_def.data.copy()
                     # This shift of the filter is necessary to get the phase
@@ -363,7 +355,7 @@ def filtered_field_calc(var, options, filter_def):
                 if 'rfft' not in filter_def.__dict__:
                     sf = np.shape(filter_def.data)
                     if sh[axis[0]] != sf[0]:
-                        padfilt = pad_to_len2D(filter_def.data, sh[axis[0]])
+                        padfilt = pad_to_len(filter_def.data, sh[axis[0]])
                     else:
                         padfilt = filter_def.data.copy()
                     # This shift of the filter is necessary to get the phase
@@ -376,7 +368,7 @@ def filtered_field_calc(var, options, filter_def):
                 if 'rfft' not in filter_def.__dict__:
                     sf = np.shape(filter_def.data)
                     if sh[axis[0]] != sf[0] or sh[axis[1]] != sf[1]:
-                        padfilt = pad_to_len2D(filter_def.data, sh[axis[0]])
+                        padfilt = pad_to_len(filter_def.data, sh[axis[0]])
                     else:
                         padfilt = filter_def.data.copy()
                     # This shift of the filter is necessary to get the phase
@@ -418,7 +410,6 @@ def setup_derived_data_file(source_file, destdir, fname,
     -------
         derived_dataset_name, derived_dataset
 
-    @author: Peter Clark
     """
     derived_dataset, exists = setup_child_file(source_file, destdir, fname,
                             options, override=override)
@@ -446,7 +437,6 @@ def setup_filtered_data_file(source_file, destdir, fname,
 
     @author: Peter Clark
     """
-
     outtag = fname + "_" + filter_def.id
     attrs = {**{'filter_def_id' : filter_def.id},
              **filter_def.attributes, **options}
@@ -474,8 +464,6 @@ def filter_field(var, filtered_dataset, options, filter_def,
     -------
         ncvar_r, ncvar_s: Resolved and subfilter fields as netcf variables in
                           filtered_dataset.
-
-    @author: Peter Clark
 
     """
     vname = var.name
@@ -523,8 +511,6 @@ def filtered_deformation(source_dataset, ref_dataset, derived_dataset,
         ncvar_r, ncvar_s: Resolved and subfilter fields as netcf variables
         in filtered_dataset.
 
-    @author: Peter Clark
-
     """
 #:math:`\frac{\partial u_i}{\partial{x_j}`
 
@@ -543,7 +529,7 @@ def filtered_deformation(source_dataset, ref_dataset, derived_dataset,
 def quadratic_subfilter(source_dataset,  ref_dataset, derived_dataset,
                         filtered_dataset, options, filter_def,
                         v1_name, v2_name, grid='p') :
-    """
+    r"""
     Create filtered versions of pair of input variables on required grid.
 
     Stored in derived_dataset.
@@ -564,9 +550,6 @@ def quadratic_subfilter(source_dataset,  ref_dataset, derived_dataset,
     -------
         s(var1,var2) data array.
         vdims dimensions of var1
-
-
-    @author: Peter Clark
 
     """
     v1 = get_data_on_grid(source_dataset,  ref_dataset,
@@ -598,28 +581,3 @@ def quadratic_subfilter(source_dataset,  ref_dataset, derived_dataset,
 
     return (s_var1var2, var1var2, var1var2_r, var1var2_s)
 
-
-
-# def find_var(vdims, var):
-#     """
-#     Find dimensions containing strings.
-
-#     Parameters
-#     ----------
-#     vdims : xarray dimensions
-#     var : list of strings
-
-#     Returns
-#     -------
-#     tuple matching var with either index in vdims or None
-#     """
-
-#     index_list = []
-#     for v in var :
-#         ind = None
-#         for i, vdim in enumerate(vdims):
-#             if v in vdim:
-#                 ind = i
-#                 break
-#         index_list.append(ind)
-#     return tuple(index_list)

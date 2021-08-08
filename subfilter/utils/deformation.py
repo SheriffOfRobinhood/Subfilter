@@ -8,7 +8,6 @@ import numpy as np
 import xarray as xr
 
 import subfilter.utils.difference_ops as do
-import subfilter.utils.deformation as defm
 
 from .string_utils import get_string_index
 from ..io.datain import get_data
@@ -19,9 +18,10 @@ from ..io.dataout import save_field, setup_child_file
 
 def deformation(source_dataset, ref_dataset, derived_dataset,
                 options, grid='w') :
-    """
-    Compute deformation tensor,
-    :math:`{\partial u_{i}}/{\partial {x_j}}.`
+    r"""
+    Compute deformation tensor.
+
+    Deformation tensor is defined as :math:`{\partial u_{i}}/{\partial {x_j}}`.
 
     Parameters
     ----------
@@ -142,10 +142,12 @@ def deformation(source_dataset, ref_dataset, derived_dataset,
     return defm
 
 def shear(d, no_trace:bool=True) :
-    """
-    Compute shear tensor
-    :math:`S_{ij}={\partial u_{i}}/{\partial {x_j}}+{\partial u_{j}}/{\partial {x_i}}`
-    from deformation tensor.
+    r"""
+    Compute shear tensor from deformation tensor.
+
+    Shear tensor is defined by
+    :math:`S_{ij}={\partial u_{i}}/{\partial {x_j}}
+    +{\partial u_{j}}/{\partial {x_i}}`.
 
     Parameters
     ----------
@@ -159,7 +161,8 @@ def shear(d, no_trace:bool=True) :
     S : xarray
         Shear with new dimension 'i_j'.
     mod_S_sq : xarray
-        Modulus of shear squared. :math:`1/2 S_{ij}S{ij}`
+
+        Modulus of shear squared. :math:`1/2 S_{ij}S_{ij}`
 
     """
     trace = 0
@@ -207,10 +210,13 @@ def shear(d, no_trace:bool=True) :
     return S, mod_S_sq
 
 def vorticity(d):
-    """
-    Compute vorticity vector
-    :math:`\omega_{k}=\epsilon_{ijk}({\partial u_{i}}/{\partial {x_j}}-{\partial u_{j}}/{\partial {x_i}})`
-    from deformation tensor.
+    r"""
+    Compute vorticity vector from deformation tensor.
+
+    vorticity vector is defined as
+    :math:`\omega_{k}=({\partial u_{i}}/{\partial {x_j}}
+    -{\partial u_{j}}/{\partial {x_i}})`
+    with :math:`kij` defined cyclically (i.e. 123, 231, 312).
 
     Parameters
     ----------

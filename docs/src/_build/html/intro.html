@@ -59,8 +59,8 @@
 </div></section>
 <section id="power-spectra">
 <h1>Power Spectra<a class="headerlink" href="#power-spectra" title="Permalink to this headline">¶</a></h1>
-<p>The Power Spectra computed are conventional 2D power spectra averaged either in x- or -y direction, or radial spectra averaged around the azimuthal direction.
-Care has been taken to normalise in using standard and corrections can be applied to the radial spectra. See Durran et al. (2017) for details.</p>
+<p>The Power Spectra computed are conventional 2D power spectra averaged either in x- or y-direction, or radial spectra averaged around the azimuthal direction.
+Care has been taken to normalise in using standard and corrections can be applied to the radial spectra. See <a class="reference external" href="https://doi.org/10.1175/MWR-D-17-0056.1">Durran et al. (2017)</a> for details.</p>
 </section>
 <section id="output-files">
 <h1>Output Files<a class="headerlink" href="#output-files" title="Permalink to this headline">¶</a></h1>
@@ -82,7 +82,7 @@ The file name is created from arguments destdir, source_file, fname and filter_d
 <li><p>Spectral wave cutoff.</p></li>
 <li><p>Spectral cylindrical wave cutoff.</p></li>
 <li><p>Running mean (or ‘top-hat’).</p></li>
-<li><p>or completeness, a ‘whole domain’ filter in which the resolved field is the horizontal domain average. In this case the resolved field has no horizontal dimensions.</p></li>
+<li><p>For completeness, a ‘whole domain’ filter in which the resolved field is the horizontal domain average. In this case the resolved field has no horizontal dimensions.</p></li>
 </ol>
 </dd>
 </dl>
@@ -112,7 +112,8 @@ where the mean is the domain mean.</p></td>
 </tr>
 </tbody>
 </table>
-<p>While a variety of basic functions have been written, the intention is to use <code class="xref py py-func docutils literal notranslate"><span class="pre">subfilter.filter_variable_list()</span></code> to automatically filter a list of NetCDF variables and write the output to a new NetCDF file, and <code class="xref py py-func docutils literal notranslate"><span class="pre">subfilter.filter_variable_pair_list()</span></code> to do the same with products of fields.
+<p>While a variety of basic functions have been written, the intention is to use <a class="reference internal" href="subfilter.html#subfilter.subfilter.filter_variable_list" title="subfilter.subfilter.filter_variable_list"><code class="xref py py-func docutils literal notranslate"><span class="pre">subfilter.subfilter.filter_variable_list()</span></code></a> to automatically filter a list of NetCDF variables and write the output to a new NetCDF file,
+and <a class="reference internal" href="subfilter.html#subfilter.subfilter.filter_variable_pair_list" title="subfilter.subfilter.filter_variable_pair_list"><code class="xref py py-func docutils literal notranslate"><span class="pre">subfilter.subfilter.filter_variable_pair_list()</span></code></a> to do the same with products of fields.
 Each has a default list - this can easily be changed.</p>
 <div class="admonition-todo admonition" id="id1">
 <p class="admonition-title">Todo</p>
@@ -213,7 +214,7 @@ The user must tell the code to use it by setting <cite>options[‘save_all’] =
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -244,7 +245,7 @@ The user must tell the code to use it by setting <cite>options[‘save_all’] =
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2019, 2020, 2021 Peter Clark.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.1.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.1.2.
     </div>
   </body>
 </html>
