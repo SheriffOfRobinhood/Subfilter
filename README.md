@@ -6,7 +6,7 @@ Currently only the testing branch is pip installable.
 
 Users should pip install to a suitable environment using
 
-    pip install https://github.com/ReadingClouds/Subfilter.git@testing
+    pip install  git+https://github.com/ReadingClouds/Subfilter.git@testing
 
 This will install into the standard library.
 
