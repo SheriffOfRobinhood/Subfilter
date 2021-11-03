@@ -72,10 +72,10 @@ def main():
 
     sigma_list = [5.0, 10.0, 20.0, 40.0, 80.0, 160.0, 320.0]
 #    sigma_list = [10.0, 20.0]
-    filter_name = 'gaussian'
+#    filter_name = 'gaussian'
 #    filter_name = 'running_mean'
 #    filter_name = 'wave_cutoff'
-#    filter_name = 'circular_wave_cutoff'
+    filter_name = 'circular_wave_cutoff'
 
 #    dataset = Dataset(indir+file, 'r') # Dataset is the class behavior to open the file
                                  # and create an instance of the ncCDF4 class

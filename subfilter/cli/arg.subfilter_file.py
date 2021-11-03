@@ -27,7 +27,6 @@ from pathlib import Path
 
 import subfilter as sf
 import filters as filt
-import difference_ops as do
 
 import pdb
   # pdb.set_trace()
@@ -62,6 +61,8 @@ plot_dir = odir + 'plots/'
 os.makedirs(plot_dir, exist_ok = True)
 
 plot_type = '.png'
+
+figshow = True
 
 def plot_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
 
@@ -352,8 +353,8 @@ def main():
 # Set filter attributes:
     filter_name = 'gaussian'  # Can be: gaussian, running_mean, wave_cutoff, or domain
     sigma_list = [800.0, 500.0, 220.0] # [m]
-    sigma_list = [500.0, 100.0]  
-    width = -1     # If set, controls the width of the filter. 
+    sigma_list = [500.0, 100.0]
+    width = -1     # If set, controls the width of the filter.
                    # Must be set for running-mean filter:
                    #   filtername = 'running_mean'
                    #   width = 20  #
@@ -374,7 +375,7 @@ def main():
     ilev = 15
     iy = 40
 
-# Set the output grid type from [u,v,w,p]    
+# Set the output grid type from [u,v,w,p]
     opgrid = 'w'
 
 # Set append file label for output data files.
@@ -390,7 +391,7 @@ def main():
     print("Variables in derived dataset.")
     print(derived_data.variables)
 
-# Construct list of 2D filters to be applied    
+# Construct list of 2D filters to be applied
 # WATCH naming conventions
     filter_list = list([])
     for i,sigma in enumerate(sigma_list):
@@ -426,11 +427,11 @@ def main():
 
     print(filter_list)
 
-# Pulls height coordinates that have been possibly stored with a time dimension.    
+# Pulls height coordinates that have been possibly stored with a time dimension.
     z = do.last_dim(dataset["z"])
     zn = do.last_dim(dataset["zn"])
 
-# Loop over list of 2D filters    
+# Loop over list of 2D filters
     for twod_filter in filter_list:
 
         print(twod_filter)
@@ -455,34 +456,34 @@ def main():
                                                  grid = opgrid)
 
 # Creates filtered versions of paired input variables
-#            print("\n    filter_variable_pair_list...",twod_filter.id)
-#            quad_field_list = sf.filter_variable_pair_list(dataset, ref_dataset,
-#                                                derived_data, filtered_data,
-#                                                options,
-#                                                twod_filter, var_list=None,
-#                                                grid = opgrid)
+            print("\n    filter_variable_pair_list...",twod_filter.id)
+            quad_field_list = sf.filter_variable_pair_list(dataset, ref_dataset,
+                                                derived_data, filtered_data,
+                                                options,
+                                                twod_filter, var_list=None,
+                                                grid = opgrid)
 
 # Creates filtered versions of the deformation field
-#            print("\n    filtered_deformation...",twod_filter.id)
-#            d_r, d_s = sf.filtered_deformation(dataset, derived_data,
-#                                               filtered_data, options,
-#                                               twod_filter, dx, dy, z, zn,
-#                                               xaxis=1, grid='w')
+            print("\n    filtered_deformation...",twod_filter.id)
+            d_r, d_s = sf.filtered_deformation(dataset, derived_data,
+                                              filtered_data, options,
+                                              twod_filter, dx, dy, z, zn,
+                                              xaxis=1, grid='w')
 
-#            times = derived_data[tname]
-#            print(times)
-#            print(times[:])
-#            print(d_r.shape)
-#            for i in range(3) :
-#                for j in range(3) :
-#                    print(d_r[i][j],d_s[i][j])
+            times = derived_data[tname]
+            print(times)
+            print(times[:])
+            print(d_r.shape)
+            for i in range(3) :
+                for j in range(3) :
+                    print(d_r[i][j],d_s[i][j])
 
-#            Sn_ij_r, mod_Sn_r = sf.shear(d_r)
-#            Sn_ij_s, mod_Sn_s = sf.shear(d_s)
-#            S_ij_r, mod_S_r = sf.shear(d_r, no_trace = False)
-#            S_ij_s, mod_S_s = sf.shear(d_s, no_trace = False)
-#            print(S_ij_r.keys())
-#        input("Press enter")
+            Sn_ij_r, mod_Sn_r = sf.shear(d_r)
+            Sn_ij_s, mod_Sn_s = sf.shear(d_s)
+            S_ij_r, mod_S_r = sf.shear(d_r, no_trace = False)
+            S_ij_s, mod_S_s = sf.shear(d_s, no_trace = False)
+            print(S_ij_r.keys())
+        input("Press enter")
 
 
         if figshow :
@@ -506,11 +507,11 @@ def main():
 
             #plot_shear(mod_Sn_r, mod_Sn_s, z, twod_filter, ilev, iy, no_trace = True)
             #plot_shear(mod_S_r, mod_S_s, z, twod_filter, ilev, iy, no_trace = False)
-       # end if figshow 
+       # end if figshow
 
 
         filtered_data.close() # close file for this filter.
-    # end for loop over 2D filters        
+    # end for loop over 2D filters
 
     derived_data.close()  # Close derived data file.
     dataset.close()  # Close the input dataset file.

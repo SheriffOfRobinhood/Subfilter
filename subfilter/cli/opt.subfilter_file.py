@@ -12,7 +12,7 @@ Created on Tue Oct 23 11:27:25 2018
 @modified: Todd Jones
 
 """
-import os 
+import os
 import sys
 import getopt
 import netCDF4
@@ -66,6 +66,7 @@ def read_cl_arguments():
     global plot_dir
     global plot_type
     global figshow
+    global options
 
     if len(sys.argv) > 1 :
         options, args = getopt.getopt(sys.argv[1:],"hi:f:r:o:p:t:s:", \
@@ -87,7 +88,7 @@ def read_cl_arguments():
             if opt in ("-t", "--plot_type"):
                 plot_type = arg
             if opt in ("-s", "--figshow"):
-                figshow = strtobool(arg)
+                figshow = (arg in ['True', 'true', 'T', 't'])
     else :
         print('No options arguments provided.')
         print(' STOP - Must provide path and file information:')
@@ -116,6 +117,7 @@ def read_cl_arguments():
         print(' STOP Must provide plot output path:\n')
         print_usage_message()
     print("")
+
 
 
 def plot_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
@@ -408,14 +410,14 @@ def main():
     read_cl_arguments()
 
 # Handle output directories
-os.makedirs(outpath,exist_ok = True)
-os.makedirs(plot_dir, exist_ok = True)
+    os.makedirs(outpath,exist_ok = True)
+    os.makedirs(plot_dir, exist_ok = True)
 
 # Set filter attributes:
     filter_name = 'gaussian'  # Can be: gaussian, running_mean, wave_cutoff, or domain
     sigma_list = [100., 200., 400., 800., 1600.] # lengthscale of Gaussian filter [m]
 
-    width = -1     # If set, controls the width of the filter. 
+    width = -1     # If set, controls the width of the filter.
                    # Must be set for running-mean filter:
                    #   filtername = 'running_mean'
                    #   width = 20  #
@@ -432,13 +434,13 @@ os.makedirs(plot_dir, exist_ok = True)
     dataset = Dataset(indir+infile, 'r') # Dataset is the class behavior to open the file
                                          # and create an instance of the ncCDF4 class
     ref_dataset = Dataset(indir+ref_file, 'r')
-    print("Dataset loaded."
+    print("Dataset loaded.")
 
 # Set arbitrary height level (ilev) and y-position (iy) for plotting
     ilev = 15
     iy = 40
 
-# Set the output grid type from [u,v,w,p]    
+# Set the output grid type from [u,v,w,p]
     opgrid = 'w'
 
 # Set append file label for output data files.
@@ -454,7 +456,7 @@ os.makedirs(plot_dir, exist_ok = True)
     print("Variables in derived dataset.")
     print(derived_data.variables)
 
-# Construct list of 2D filters to be applied    
+# Construct list of 2D filters to be applied
 # WATCH naming conventions
     filter_list = list([])
     for i,sigma in enumerate(sigma_list):
@@ -490,11 +492,11 @@ os.makedirs(plot_dir, exist_ok = True)
 
     print(filter_list)
 
-# Pulls height coordinates that have been possibly stored with a time dimension.    
+# Pulls height coordinates that have been possibly stored with a time dimension.
     z = do.last_dim(dataset["z"])
     zn = do.last_dim(dataset["zn"])
 
-# Loop over list of 2D filters    
+# Loop over list of 2D filters
     for twod_filter in filter_list:
 
         print(twod_filter)
@@ -519,19 +521,19 @@ os.makedirs(plot_dir, exist_ok = True)
                                                  grid = opgrid)
 
 # Creates filtered versions of paired input variables
-#            print("\n    filter_variable_pair_list...",twod_filter.id)
-#            quad_field_list = sf.filter_variable_pair_list(dataset, ref_dataset,
-#                                                derived_data, filtered_data,
-#                                                options,
-#                                                twod_filter, var_list=None,
-#                                                grid = opgrid)
+            print("\n    filter_variable_pair_list...",twod_filter.id)
+            quad_field_list = sf.filter_variable_pair_list(dataset, ref_dataset,
+                                                derived_data, filtered_data,
+                                                options,
+                                                twod_filter, var_list=None,
+                                                grid = opgrid)
 
 # Creates filtered versions of the deformation field
-#            print("\n    filtered_deformation...",twod_filter.id)
-#            d_r, d_s = sf.filtered_deformation(dataset, derived_data,
-#                                               filtered_data, options,
-#                                               twod_filter, dx, dy, z, zn,
-#                                               xaxis=1, grid='w')
+            print("\n    filtered_deformation...",twod_filter.id)
+            d_r, d_s = sf.filtered_deformation(dataset, derived_data,
+                                              filtered_data, options,
+                                              twod_filter, dx, dy, z, zn,
+                                              xaxis=1, grid='w')
 
 #            times = derived_data[tname]
 #            print(times)
@@ -570,11 +572,11 @@ os.makedirs(plot_dir, exist_ok = True)
 
             #plot_shear(mod_Sn_r, mod_Sn_s, z, twod_filter, ilev, iy, no_trace = True)
             #plot_shear(mod_S_r, mod_S_s, z, twod_filter, ilev, iy, no_trace = False)
-       # end if figshow 
+       # end if figshow
 
 
         filtered_data.close() # close file for this filter.
-    # end for loop over 2D filters        
+    # end for loop over 2D filters
 
     derived_data.close()  # Close derived data file.
     dataset.close()  # Close the input dataset file.

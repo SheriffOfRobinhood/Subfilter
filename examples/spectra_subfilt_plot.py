@@ -29,6 +29,8 @@ fileroot = 'diagnostics_3d_ts_*'
 fname = '_filter_spectra'
 outtag = '_spectra_w_2D'
 
+filt_type = 'cwc'
+
 plot_s = False
 
 
@@ -59,21 +61,25 @@ kE_kp_ref.plot(xscale='log', yscale='log', label='Ref 5 m', ax=axa[0])
 dso.close()
 nfilt=6
 for filt in range(nfilt):
-    filt_files = dir+fileroot+fname+f'_filter_ga{filt:02d}'+outtag+'.nc'
+    filt_files = dir+fileroot+fname+f'_filter_{filt_type}{filt:02d}'+outtag+'.nc'
 #    dso = xr.open_dataset(filt_file)
     dso = xr.open_mfdataset(filt_files)
 
+
     print(dso)
+    print(dso.attrs)
+#    sigma = dso.attrs["sigma"]
+    sigma = 2*np.pi/ dso.attrs["wavenumber"]
     k = dso['hfreq']
     kE_k = k * dso['spec_2d_f(w_on_w)_r']
     kE_kp = kE_k.mean(dim='time').sel(z=plot_height, method='nearest')
     kE_kp.plot(xscale='log', yscale='log',
-               label=f'{dso.attrs["sigma"]:2.0f} m'+r'$^r$', ax=axa[0])
+               label=f'{sigma:2.0f} m'+r'$^r$', ax=axa[0])
     if plot_s:
         kE_k = k * dso['spec_2d_f(w_on_w)_s']
         kE_kp = kE_k.mean(dim='time').sel(z=plot_height, method='nearest')
         kE_kp.plot(xscale='log', yscale='log',
-                   label=f'{dso.attrs["sigma"]:2.0f} m'+r'$^s$', ax=axa[0])
+                   label=f'{sigma:2.0f} m'+r'$^s$', ax=axa[0])
     dso.close()
 
 
@@ -116,17 +122,19 @@ idl_filt = kE_kp_ref / kE_kp_idl
 idl_filt.plot(xscale='log', yscale='log', ax=axa[1], label='Ref 5 m')
 
 for filt in range(nfilt):
-    filt_files = dir+fileroot+fname+f'_filter_ga{filt:02d}'+outtag+'.nc'
+    filt_files = dir+fileroot+fname+f'_filter_{filt_type}{filt:02d}'+outtag+'.nc'
 #    dso = xr.open_dataset(filt_file)
     dso = xr.open_mfdataset(filt_files)
 
     print(dso)
+#    sigma = dso.attrs["sigma"]
+    sigma = 2*np.pi/ dso.attrs["wavenumber"]
     k = dso['hfreq']
     kE_k = k * dso['spec_2d_f(w_on_w)_r']
     kE_kp_rat  = kE_k.mean(dim='time').sel(z=plot_height, method='nearest')\
         / kE_kp_idl
     kE_kp_rat.plot(xscale='log', yscale='log',
-               label=f'{dso.attrs["sigma"]:2.0f} m'+r'$^r$', ax=axa[1])
+               label=f'{sigma:2.0f} m'+r'$^r$', ax=axa[1])
     dso.close()
 
 
@@ -156,8 +164,6 @@ axa[1].set_ylim([0.1,1.1])
 axa[1].set_ylabel(r'$G(k)\times G(k)^*$')
 
 plt.tight_layout()
-plt.savefig(dir+'Gaussian_filter.png')
+plt.savefig(dir+'CWC_filter.png')
 
 dso.close()
-
-

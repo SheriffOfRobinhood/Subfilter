@@ -63,51 +63,74 @@ def deformation(source_dataset, ref_dataset, derived_dataset,
 
     u = re_chunk(u, xch=nch, ych=nch, zch = 'all')
     # print(u)
-    v = get_data(source_dataset, ref_dataset, "v", options)
-    v = re_chunk(v, xch=nch, ych=nch, zch = 'all')
     # print(v)
-    w = get_data(source_dataset, ref_dataset, "w", options)
-    w = re_chunk(w, xch=nch, ych=nch, zch = 'all')
 
     z = source_dataset["z"]
     zn = source_dataset["zn"]
 
-    ux = do.d_by_dx_field_on_u(u, z, grid = grid )
+    ux = do.d_by_dx_field(u, z, zn, grid = grid )
+#    ux = re_chunk(ux, xch=nch, ych=nch, zch = 'all')
+#    save_field(derived_dataset, ux)
+
 #    print(ux)
 
-    uy = do.d_by_dy_field_on_u(u, z, grid = grid )
+    uy = do.d_by_dy_field(u, z, zn, grid = grid )
+#    uy = re_chunk(uy, xch=nch, ych=nch, zch = 'all')
+#    save_field(derived_dataset, uy)
 #    print(uy)
 
-    uz = do.d_by_dz_field_on_u(u, z, grid = grid )
+    uz = do.d_by_dz_field(u, z, zn, grid = grid )
+#    uz = re_chunk(uz, xch=nch, ych=nch, zch = 'all')
+#    save_field(derived_dataset, uz)
+#    u = 0
 #    print(uz)
+    v = get_data(source_dataset, ref_dataset, "v", options)
+    v = re_chunk(v, xch=nch, ych=nch, zch = 'all')
 
-    vx = do.d_by_dx_field_on_v(v, z, grid = grid )
+    vx = do.d_by_dx_field(v, z, zn, grid = grid )
+#    vx = re_chunk(vx, xch=nch, ych=nch, zch = 'all')
+#    save_field(derived_dataset, vx)
 #    print(vx)
 
-    vy = do.d_by_dy_field_on_v(v, z, grid = grid )
+    vy = do.d_by_dy_field(v, z, zn, grid = grid )
+#    vy = re_chunk(vy, xch=nch, ych=nch, zch = 'all')
+#    save_field(derived_dataset, vy)
 #    print(vy)
 
-    vz = do.d_by_dz_field_on_v(v, z, grid = grid )
+    vz = do.d_by_dz_field(v, z, zn, grid = grid )
+#    vz = re_chunk(vz, xch=nch, ych=nch, zch = 'all')
+#    save_field(derived_dataset, vz)
 #    print(vz)
+    w = get_data(source_dataset, ref_dataset, "w", options)
+    w = re_chunk(w, xch=nch, ych=nch, zch = 'all')
 
-    wx = do.d_by_dx_field_on_w(w, zn, grid = grid )
+    wx = do.d_by_dx_field(w, z, zn, grid = grid )
+#    wx = re_chunk(wx, xch=nch, ych=nch, zch = 'all')
+#    save_field(derived_dataset, wx)
 #    print(wx)
 
-    wy = do.d_by_dy_field_on_w(w, zn, grid = grid )
+    wy = do.d_by_dy_field(w, z, zn, grid = grid )
+#    wy = re_chunk(wy, xch=nch, ych=nch, zch = 'all')
+#    save_field(derived_dataset, wy)
 #    print(wy)
 
-    wz = do.d_by_dz_field_on_w(w, zn, grid = grid )
+    wz = do.d_by_dz_field(w, z, zn, grid = grid )
+#    wz = re_chunk(wz, xch=nch, ych=nch, zch = 'all')
+#    save_field(derived_dataset, wz)
 #    print(wz)
 
     if subfilter_setup['use_concat']:
 
         print('Concatenating derivatives')
 
-        t0 = xr.concat([ux, uy, uz], dim='j', coords='minimal', compat='override')
+        t0 = xr.concat([ux, uy, uz], dim='j', coords='minimal',
+                       compat='override')
         print(t0)
-        t1 = xr.concat([vx, vy, vz], dim='j', coords='minimal', compat='override')
+        t1 = xr.concat([vx, vy, vz], dim='j', coords='minimal',
+                       compat='override')
         print(t1)
-        t2 = xr.concat([wx, wy, wz], dim='j', coords='minimal', compat='override')
+        t2 = xr.concat([wx, wy, wz], dim='j', coords='minimal',
+                       compat='override')
         print(t2)
 
         defm = xr.concat([t0, t1, t2], dim='i')

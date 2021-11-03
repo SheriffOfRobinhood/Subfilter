@@ -218,6 +218,9 @@ def get_and_transform(source_dataset, ref_dataset, var_name, options,
 
     """
     var = get_data(source_dataset, ref_dataset, var_name, options)
+    z = source_dataset["z"]
+    zn = source_dataset["zn"]
+    var = do.grid_conform(var, z, zn, grid = grid )
 
 #    print(var)
 
@@ -225,66 +228,67 @@ def get_and_transform(source_dataset, ref_dataset, var_name, options,
           'y_v' in var.dims,
           'z' in var.dims]
 
-    if grid=='p' :
-        if vp[0] :
-            print("Mapping {} from u grid to p grid.".format(var_name))
-            var = do.field_on_u_to_p(var)
-        if vp[1] :
-            print("Mapping {} from v grid to p grid.".format(var_name))
-            var = do.field_on_v_to_p(var)
-        if vp[2] :
-            print("Mapping {} from w grid to p grid.".format(var_name))
-            z = source_dataset["z"]
-            zn = source_dataset["zn"]
-            var = do.field_on_w_to_p(var, zn)
 
-    elif grid=='u' :
-        if not ( vp[0] or vp[1] or vp[2]):
-            print("Mapping {} from p grid to u grid.".format(var_name))
-            var = do.field_on_p_to_u(var)
-        if vp[1] :
-            print("Mapping {} from v grid to u grid.".format(var_name))
-            var = do.field_on_v_to_p(var)
-            var = do.field_on_p_to_u(var)
-        if vp[2] :
-            print("Mapping {} from w grid to u grid.".format(var_name))
-            z = source_dataset["z"]
-            zn = source_dataset["zn"]
-            var = do.field_on_w_to_p(var, zn)
-            var = do.field_on_p_to_u(var)
+    # if grid=='p' :
+    #     if vp[0] :
+    #         print("Mapping {} from u grid to p grid.".format(var_name))
+    #         var = do.field_on_u_to_p(var)
+    #     if vp[1] :
+    #         print("Mapping {} from v grid to p grid.".format(var_name))
+    #         var = do.field_on_v_to_p(var)
+    #     if vp[2] :
+    #         print("Mapping {} from w grid to p grid.".format(var_name))
+    #         z = source_dataset["z"]
+    #         zn = source_dataset["zn"]
+    #         var = do.field_on_w_to_p(var, zn)
 
-    elif grid=='v' :
-        if not ( vp[0] or vp[1] or vp[2]):
-            print("Mapping {} from p grid to v grid.".format(var_name))
-            var = do.field_on_p_to_v(var)
-        if vp[0] :
-            print("Mapping {} from u grid to v grid.".format(var_name))
-            var = do.field_on_u_to_p(var)
-            var = do.field_on_p_to_v(var)
-        if vp[2] :
-            print("Mapping {} from w grid to v grid.".format(var_name))
-            z = source_dataset["z"]
-            zn = source_dataset["zn"]
-            var = do.field_on_w_to_p(var, zn)
-            var = do.field_on_p_to_v(var)
+    # elif grid=='u' :
+    #     if not ( vp[0] or vp[1] or vp[2]):
+    #         print("Mapping {} from p grid to u grid.".format(var_name))
+    #         var = do.field_on_p_to_u(var)
+    #     if vp[1] :
+    #         print("Mapping {} from v grid to u grid.".format(var_name))
+    #         var = do.field_on_v_to_p(var)
+    #         var = do.field_on_p_to_u(var)
+    #     if vp[2] :
+    #         print("Mapping {} from w grid to u grid.".format(var_name))
+    #         z = source_dataset["z"]
+    #         zn = source_dataset["zn"]
+    #         var = do.field_on_w_to_p(var, zn)
+    #         var = do.field_on_p_to_u(var)
 
-    elif grid=='w' :
-        z = source_dataset["z"]
-        zn = source_dataset["zn"]
-        if not ( vp[0] or vp[1] or vp[2]):
-            print("Mapping {} from p grid to w grid.".format(var_name))
-            var = do.field_on_p_to_w(var, z)
-        if vp[0] :
-            print("Mapping {} from u grid to w grid.".format(var_name))
-            var = do.field_on_u_to_p(var)
-            var = do.field_on_p_to_w(var, z)
-        if vp[1] :
-            print("Mapping {} from v grid to w grid.".format(var_name))
-            var = do.field_on_v_to_p(var)
-            var = do.field_on_p_to_w(var, z)
+    # elif grid=='v' :
+    #     if not ( vp[0] or vp[1] or vp[2]):
+    #         print("Mapping {} from p grid to v grid.".format(var_name))
+    #         var = do.field_on_p_to_v(var)
+    #     if vp[0] :
+    #         print("Mapping {} from u grid to v grid.".format(var_name))
+    #         var = do.field_on_u_to_p(var)
+    #         var = do.field_on_p_to_v(var)
+    #     if vp[2] :
+    #         print("Mapping {} from w grid to v grid.".format(var_name))
+    #         z = source_dataset["z"]
+    #         zn = source_dataset["zn"]
+    #         var = do.field_on_w_to_p(var, zn)
+    #         var = do.field_on_p_to_v(var)
 
-    else:
-        print("Illegal grid ",grid)
+    # elif grid=='w' :
+    #     z = source_dataset["z"]
+    #     zn = source_dataset["zn"]
+    #     if not ( vp[0] or vp[1] or vp[2]):
+    #         print("Mapping {} from p grid to w grid.".format(var_name))
+    #         var = do.field_on_p_to_w(var, z)
+    #     if vp[0] :
+    #         print("Mapping {} from u grid to w grid.".format(var_name))
+    #         var = do.field_on_u_to_p(var)
+    #         var = do.field_on_p_to_w(var, z)
+    #     if vp[1] :
+    #         print("Mapping {} from v grid to w grid.".format(var_name))
+    #         var = do.field_on_v_to_p(var)
+    #         var = do.field_on_p_to_w(var, z)
+
+    # else:
+    #     print("Illegal grid ",grid)
     # print(var)
 
 #    print(zvar)
@@ -340,7 +344,7 @@ def get_data_on_grid(source_dataset, ref_dataset, derived_dataset, var_name,
     # If var_name already qualified with '_on_x', where x is a grid
     # then if x matches required output grid, see if in derived_dataset
     # already, and use if it is.
-    # otherwise strip '_on_x' and go back to source data as per default.
+    # Otherwise strip '_on_x' and go back to source data as per default.
 
     # First, find op_name
     # Default
@@ -445,5 +449,3 @@ def get_thref(ref_dataset, options):
             thref = thref.data[0,...]
 
     return thref
-
-

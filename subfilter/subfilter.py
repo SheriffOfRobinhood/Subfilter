@@ -377,9 +377,41 @@ def filtered_field_calc(var, options, filter_def):
                     filter_def.rfft = np.fft.rfft2(padfilt)
 
             field_r = convolve(field, options, filter_def.rfft, axis)
-            rdims = var.dims
-            rcoords = var.coords
 
+        elif options['FFT_type'].upper() == 'DIRECT' :
+            if filter_def.attributes['filter_type'] == 'one_two_one':
+
+
+                stencil = np.array([1,2,1])/4
+                field_r = np.zeros_like(field)
+                if filter_def.attributes['ndim'] == 1:
+                    if filter_def.attributes['width'] \
+                        == np.shape(filter_def.data)[0]:
+                        stencil = filter_def.data
+                    else:
+                        stencil = np.array([1,2,1])/4
+
+                    for ix in range(-1,2):
+                        field_r += np.roll(field, ix, axis=axis) \
+                                   * stencil[ix+1]
+                else:
+                    if filter_def.attributes['width'] \
+                        == np.shape(filter_def.data)[0]:
+                        stencil = filter_def.data
+                    else:
+                        stencil = np.array([1,2,1])/4
+                        stencil = np.outer(stencil, stencil)
+                    for ix in range(-1,2):
+                        for iy in range(-1,2):
+                            field_r += np.roll(field, (ix,iy), axis=axis) \
+                                       * stencil[ix+1, iy+1]
+
+            else:
+                raise ValueError(
+                    'FFT_type DIRECT only works with one_two_one filter.')
+
+        rdims = var.dims
+        rcoords = var.coords
         field_s = field[...] - field_r
 
     sdims = var.dims
@@ -580,4 +612,3 @@ def quadratic_subfilter(source_dataset,  ref_dataset, derived_dataset,
     s_var1var2.name = f"s({v1_name:s},{v2_name:s})_on_{grid:s}"
 
     return (s_var1var2, var1var2, var1var2_r, var1var2_s)
-

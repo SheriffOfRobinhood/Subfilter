@@ -98,14 +98,18 @@ figshow = True
 debug_label = False
 def label_cyclic(mask) :
     """
-    Function to label 3D objects taking account of cyclic boundary
-    in x and y. Uses ndimage(label) as primary engine.
+    Label 3D objects.
 
-    Args:
+        Takes account of cyclic boundary in x and y. Uses ndimage(label)
+        as primary engine.
+
+    Args
+    ----
         mask: 3D logical array with object mask (i.e. objects are
             contiguous True).
 
-    Returns:
+    Returns
+    -------
         Object identifiers::
 
             labs  : Integer array[nx,ny] of labels. -1 denotes unlabelled.
@@ -114,7 +118,6 @@ def label_cyclic(mask) :
     @author: Peter Clark
 
     """
-
 #    print np.shape(mask)
     (nx, ny) = np.shape(mask)
     labels, nobjects = ndimage.label(mask)
@@ -681,5 +684,3 @@ for twod_filter in filter_list:
 
 # C_MY=0.5*(1+sp.erf(QN_c/m.sqrt(2)))
 # q_cl_MY = C_MY * QN_c + np.exp(-(QN_c**2)/2)/m.sqrt(2*m.pi)
-
-

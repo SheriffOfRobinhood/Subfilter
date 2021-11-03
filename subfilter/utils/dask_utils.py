@@ -19,11 +19,15 @@ def re_chunk(f, chunks = None, xch = 'all', ych = 'all', zch = 'auto'):
             if 'x' in dim:
                 if xch == 'all':
                     chunks[dim] = sh[ip]
+                elif xch == 'auto':
+                    chunks[dim] = 'auto'
                 else:
                     chunks[dim] = np.min([xch, sh[ip]])
             elif 'y' in dim:
                 if ych == 'all':
                     chunks[dim] = sh[ip]
+                elif ych == 'auto':
+                    chunks[dim] = 'auto'
                 else:
                     chunks[dim] = np.min([ych, sh[ip]])
             elif 'z' in dim:
