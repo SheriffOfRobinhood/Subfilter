@@ -26,7 +26,7 @@ import subfilter.filters as filt
 
 from subfilter.utils.string_utils import get_string_index
 from subfilter.io.dataout import save_field
-from subfilter.io.MONC_utils import options_database
+from subfilter.io.datain import configure_model_resolution
 
 indir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
 indir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
@@ -78,15 +78,8 @@ def main():
 
     options, update = sf.subfilter_options(None)
 
-
-    od = options_database(dataset)
-    if od is None:
-        dx = 100.0
-        dy = 100.0
-    else:
-        dx = float(od['dxx'])
-        dy = float(od['dyy'])
-
+    # Get model resolution values
+    dx, dy, options = configure_model_resolution(dataset, options)
 
 #    sigma_list = [0.5,0.2]
     sigma_list = [100.0]

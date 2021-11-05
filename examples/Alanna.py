@@ -10,6 +10,7 @@ import subfilter as sf
 import filters as filt
 import difference_ops as do
 import dask
+from subfilter.io.datain import configure_model_resolution
 
 
 options = {
@@ -87,13 +88,8 @@ def main():
     else:
         ref_dataset = None
 
-    od = sf.options_database(dataset)
-    if od is None:
-        dx = options['dx']
-        dy = options['dy']
-    else:
-        dx = float(od['dxx'])
-        dy = float(od['dyy'])
+    # Get model resolution values
+    dx, dy, options = configure_model_resolution(dataset, options)
 
     ilev = 15
     iy = 40

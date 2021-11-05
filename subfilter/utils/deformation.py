@@ -13,11 +13,11 @@ import subfilter.utils.difference_ops as do
 from .string_utils import get_string_index
 from ..io.datain import get_data
 from .dask_utils import re_chunk
-from ..io.dataout import save_field, setup_child_file
+from ..io.dataout import save_field
 
 
 def deformation(source_dataset, ref_dataset, derived_dataset,
-                options, grid='w') :
+                options, grid='w', uvw_names=[]) :
     r"""
     Compute deformation tensor.
 
@@ -36,6 +36,8 @@ def deformation(source_dataset, ref_dataset, derived_dataset,
             General options e.g. FFT method used.
         grid : str
             destination grid (Default = 'w')
+        uvw_names: list of str
+            specific names for u, v, and w fields when differing from MONC default
 
     Returns
     -------
@@ -48,6 +50,7 @@ def deformation(source_dataset, ref_dataset, derived_dataset,
     if 'deformation' in derived_dataset['ds']:
         deformation = derived_dataset['ds']['deformation']
         return deformation
+
 
     u = get_data(source_dataset, ref_dataset, "u", options)
     [iix, iiy, iiz] = get_string_index(u.dims, ['x', 'y', 'z'])
@@ -220,6 +223,10 @@ def shear(d, no_trace:bool=True) :
             # However We are only calculating ij terms, not ji
             # for efficiency so we include 0.5 S_ji S_ji implicitly
             # by losing the 0.5 in off-diagonal terms.
+            # That is, we only sum over half of the off-diagonals
+            # and take that to be equivalent to summing all off-diagonals
+            # and dividing by two, while only actually applying the half
+            # term to the diagnonals to yield 1/2 S_{ij}S_{ij}
             if k == l :
                 S_kl = S_kl - trace
                 mod_S_sq += 0.5 * S_kl * S_kl

@@ -61,16 +61,12 @@ def get_data(source_dataset, ref_dataset, var_name, options) :
                       "q_vapour":{'grid':[False,False,False], "units":'kg/kg'},
                       "q_cloud_liquid_mass":{'grid':[False,False,False],
                                              "units":'kg/kg'},
+                      "q_ice_mass":{'grid':[False,False,False],
+                                             "units":'kg/kg'},
                       }
 
-    od = options_database(source_dataset)
-    if od is None:
-        dx = options['dx']
-        dy = options['dy']
-    else:
-        dx = float(od['dxx'])
-        dy = float(od['dyy'])
-
+    # Get model resolution values
+    dx, dy, options = configure_model_resolution(source_dataset, options)
 
     print(f'Retrieving {var_name:s}.')
     try :
@@ -92,10 +88,10 @@ def get_data(source_dataset, ref_dataset, var_name, options) :
                 nx = vard.shape[vard.get_axis_num('x')]
 
                 if vp[0] :
-                    x = (np.arange(nx) + 0.5) * np.float64(od['dxx'])
+                    x = (np.arange(nx) + 0.5) * np.float64(dx)
                     xn = 'x_u'
                 else:
-                    x = np.arange(nx) * np.float64(od['dxx'])
+                    x = np.arange(nx) * np.float64(dx)
                     xn = 'x_p'
 
                 vard = vard.rename({'x':xn})
@@ -104,10 +100,10 @@ def get_data(source_dataset, ref_dataset, var_name, options) :
             if 'y' in vard.dims:
                 ny = vard.shape[vard.get_axis_num('y')]
                 if vp[1] :
-                    y = (np.arange(ny) + 0.5) * np.float64(od['dyy'])
+                    y = (np.arange(ny) + 0.5) * np.float64(dy)
                     yn = 'y_v'
                 else:
-                    y = np.arange(ny) * np.float64(od['dyy'])
+                    y = np.arange(ny) * np.float64(dy)
                     yn = 'y_p'
 
                 vard = vard.rename({'y':yn})
@@ -129,14 +125,14 @@ def get_data(source_dataset, ref_dataset, var_name, options) :
 
             if 'x' in vard.dims:
                 nx = vard.shape[vard.get_axis_num('x')]
-                x = np.arange(nx) * np.float64(od['dxx'])
+                x = np.arange(nx) * np.float64(dx)
                 xn = 'x_p'
                 vard = vard.rename({'x':xn})
                 vard.coords[xn] = x
 
             if 'y' in vard.dims:
                 ny = vard.shape[vard.get_axis_num('y')]
-                y = np.arange(ny) * np.float64(od['dyy'])
+                y = np.arange(ny) * np.float64(dy)
                 yn = 'y_p'
                 vard = vard.rename({'y':yn})
                 vard.coords[yn] = y
@@ -172,13 +168,22 @@ def get_data(source_dataset, ref_dataset, var_name, options) :
                                          'q_vapour', options)
             q_cl = get_data(source_dataset, ref_dataset,
                                     'q_cloud_liquid_mass', options)
-            vard = q_v + q_cl
+            try:
+                q_ci = get_data(source_dataset, ref_dataset,
+                                         'q_ice_mass', options)
+            except:
+                print(" In calculation of q_total, q_cloud_ice_mass is not present.")
+                q_ci = 0.0
+
+            vard = q_v + q_cl + q_ci
 
         elif var_name == 'buoyancy':
             th_v = get_data(source_dataset, ref_dataset, 'th_v',
                                            options)
             # get mean over horizontal axes
-            mean_thv = th_v.mean(dim=('x','y'))
+            xdname = [a for a in th_v.dims if a.startswith('x')][0]
+            ydname = [a for a in th_v.dims if a.startswith('y')][0] 
+            mean_thv = th_v.mean(dim=(xdname, ydname))
             vard = thc.grav * (th_v - mean_thv)/mean_thv
 
         else :
@@ -305,7 +310,7 @@ def get_data_on_grid(source_dataset, ref_dataset, derived_dataset, var_name,
     Find data from source_dataset remapped to destination grid.
     Uses data from derived_dataset if present, otherwise uses
     get_and_transform to input from source_dataset and remap grid.
-    In this case, if options['save_all']=='yes', save teh remapped data to
+    In this case, if options['save_all']=='yes', save the remapped data to
     derived_dataset.
 
     See get_data for derived variables.
@@ -428,7 +433,7 @@ def get_thref(ref_dataset, options):
 
     Parameters
     ----------
-    ref_dataset : TnetCDF4 file or None
+    ref_dataset : netCDF4 file or None
         MONC output file containing pref
     options : dict
         Options. Options possibly used are th_ref.
@@ -451,3 +456,67 @@ def get_thref(ref_dataset, options):
             thref = thref.data[0,...]
 
     return thref
+
+def configure_model_resolution(dataset, options):
+    """
+    This routine applies an order of precedence between potenial 
+    pre-existing records of MONC horizontal resolutions and ensures
+    that the options dictionary contains these values.
+
+    Files written via io/dataout.py's setup_child_file will have 
+    the correct value listed in the file's global attributes, as this
+    routine is called within that space.
+
+    Repeated calls to this routine (for instance, to simply obtain
+    dx and dy) will not modify the options contents.
+
+
+    Parameters
+    ----------
+    dataset : xarray dataset
+        any subfilter-compatible dataset
+    options : dict
+        dataset-associated options dictionary
+
+    Returns
+    -------
+    dx : float (expected)
+        x-direction MONC resolution [m]
+    dy : float (expected)
+        y-direction MONC resolution [m]
+    options : dict
+        input options dictionary, possibly updated with dx and dy keys
+    """
+
+    od = options_database(dataset)
+    attrs = dataset.attrs    
+
+    # 1st priority: pull from options_database, if present
+    if type(od) is dict:
+        dx = float(od['dxx'])
+        dy = float(od['dyy'])
+        options['dx'] = dx    
+        options['dy'] = dy
+    # 2nd priority: pull from dataset attributes
+    elif ('dx' in attrs and 'dy' in attrs):
+        dx = attrs['dx']
+        dy = attrs['dy']
+        options['dx'] = dx
+        options['dy'] = dy
+    # 3rd priority: use values present in options
+    elif ('dx' in options and 'dy' in options):
+        dx = options['dx']
+        dy = options['dy']
+    # 4th priority: parse file path for coded info
+    elif 'input_file' in options:
+        fullpath = options['input_file']
+        mnc = fullpath.find('_m')
+        dx = float(fullpath[mnc+2:mnc+6])
+        dy = float(fullpath[mnc+2:mnc+6])
+        options['dx'] = dx
+        options['dy'] = dy
+    else:
+        raise RuntimeError("Cannot determine grid resolution.")
+
+    return dx, dy, options
+

@@ -49,6 +49,9 @@ def subfilter_options(config_file:str=None):
                 'FFT_type': 'RFFT',
                 'save_all': 'Yes',
                 'override': True,      # Overwrite output file if it exists.
+                'input_file': None,
+                'ref_file': None,
+                'outpath': None
               }
     if config_file is not None:
         with open(config_file) as c:
@@ -87,7 +90,7 @@ def filter_variable_list(source_dataset, ref_dataset, derived_dataset,
     """
     if (var_list==None):
         var_list = get_default_variable_list()
-        print("Default list:\n",var_list)
+        print("Filtering with default list:\n",var_list)
 
     for vin in var_list:
 
@@ -130,7 +133,7 @@ def filter_variable_pair_list(source_dataset, ref_dataset, derived_dataset,
 
     Returns
     -------
-        list : list of lists of pairs strings representing variable names.
+        var_list : list of lists of pairs strings representing variable names.
 
     """
     if (var_list==None):
@@ -146,13 +149,17 @@ def filter_variable_pair_list(source_dataset, ref_dataset, derived_dataset,
 
         (s_var1var2, var1var2, var1var2_r, var1var2_s) = svars
 
+#        if options['save_all'].lower() == 'yes':
+#            save_field(derived_dataset, var1var2)
+#
+#        for f in (s_var1var2, var1var2_r, var1var2_s):
+#            save_field(filtered_dataset, f)
+
         if options['save_all'].lower() == 'yes':
-            save_field(derived_dataset, var1var2)
+            for f in (var1var2, var1var2_r, var1var2_s):
+                save_field(filtered_dataset, f)
 
-        for f in (s_var1var2, var1var2_r, var1var2_s):
-            save_field(filtered_dataset, f)
-
-
+        save_field(filtered_dataset, s_var1var2)
     return var_list
 
 
@@ -225,6 +232,9 @@ def convolve(field, options, filter_def, dims):
             result = np.fft.irfft2(fft_filtered_field, axes=dims)
         result = result.real
 
+    else:
+        raise ValueError(f"The supplied FFT_type option, {options['FFT_type']}, \
+                           is not valid.  Use one of: [ FFTCONVOLVE, FFT, RFFT ].")
     return result
 
 def pad_to_len(field, newlen, mode='constant'):
@@ -343,6 +353,8 @@ def filtered_field_calc(var, options, filter_def):
                     filter_def.fft = np.fft.fft2(padfilt)
 
             field_r = convolve(field, options, filter_def.fft, axis)
+            rdims = var.dims
+            rcoords = var.coords
 
         elif options['FFT_type'].upper() == 'RFFT':
 

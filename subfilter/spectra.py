@@ -41,7 +41,9 @@ from scipy import ndimage      # Required for the radial summations
 from dask.diagnostics import ProgressBar
 import dask.array as da
 from .utils.string_utils import get_string_index
-from .io.MONC_utils import options_database
+from .io.datain import configure_model_resolution
+from subfilter import executing_on_cluster
+
 import yaml
 
 
@@ -79,11 +81,6 @@ def spectra_options(config_file=None):
 
     return options, update_config
 
-def forward(n):
-    return 2*np.pi/n # l = 2*np.pi/n
-
-def inverse(l):
-    return 2*np.pi/l # n = 2*np.pi/l
 
 def spectra_variable_list(ds, derived_dataset, options, var_list=None):
     """
@@ -113,27 +110,38 @@ def spectra_variable_list(ds, derived_dataset, options, var_list=None):
     if var_list is None:
         var_list = list(ds.data_vars.keys())
 
-    if 'dx' in ds.attrs:
-        dx = ds.attrs['dx']
-        dy = ds.attrs['dy']
-    else:
-        od = options_database(ds)
-        if od is None:
-            dx = options['dx']
-            dy = options['dy']
-        else:
-            dx = float(od['dxx'])
-            dy = float(od['dyy'])
+    # Check if KE spectra is requested
+#not yet implemented    if options['do_ke']: var_list.append('ke')
+
+    # Get model resolution values
+    dx, dy, options = configure_model_resolution(ds, options)
+
+#    if 'dx' in ds.attrs:
+#        dx = ds.attrs['dx']
+#        dy = ds.attrs['dy']
+#    else:
+#        od = options_database(ds)
+#        if od is None:
+#            dx = options['dx']
+#            dy = options['dy']
+#            print("in spectra, NOT using options_database")
+#        else:
+#            dx = float(od['dxx'])
+#            dy = float(od['dyy'])
+#            print("in spectra, IS, IN FACT, using options_database")
 
     dso = derived_dataset['ds']
     outfile = derived_dataset['file']
     kmap = None
 
-    # Loop over var_names
+    # Loop over var_list
     for vname in var_list:
 
         if vname == 'options_database':
             print(f'Ignoring variable {vname}.')
+            continue
+        if not (vname in ds):
+            print(f'[WARN] {vname} not present. skipping...')
             continue
 
         if options['spec_1D']:
@@ -307,8 +315,11 @@ def spectrum_ave_1D(ds, dso, vname, outfile, options, dx, dy):
 #    dso = xr.merge([ds1, ds2])
     d = ds1.to_netcdf(path = outfile, unlimited_dims="time", mode='a',
                       compute=False)
-    with ProgressBar():
+    if executing_on_cluster:
         results = d.compute()
+    else:
+        with ProgressBar():
+            results = d.compute()
     ds1.close()
 
     return
@@ -637,8 +648,11 @@ def spectrum_ave_1D_radial(ds, dso, vname, outfile, options, dx, dy,
 
     d = ds2.to_netcdf(path = outfile, unlimited_dims="time", mode='a',
                       compute=False)
-    with ProgressBar():
+    if executing_on_cluster:
         results = d.compute()
+    else:
+        with ProgressBar():
+            results = d.compute()
     ds2.close()
 
     return kmap

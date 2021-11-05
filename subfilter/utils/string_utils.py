@@ -11,9 +11,9 @@ def get_string_index(strings, substrings, exact=False):
       anywhere or, if exact=True, contains an exact match
 
     Args:
-        strings      : List of
-        substrings   : Search strings
-        exact        : (optional) Whether to perform search for exact match
+        strings      : List of strings to be searched
+        substrings   : List of strings to be found in **strings**
+        exact        : (bool, optional) Whether to perform search for exact match
 
     Returns:
         tuple of integers  : first index of match, or None, if not found

@@ -20,7 +20,7 @@ import subfilter.filters as filt
 import subfilter.spectra as spectra
 from subfilter.utils.string_utils import get_string_index
 from subfilter.io.dataout import setup_child_file
-from subfilter.io.MONC_utils import options_database
+from subfilter.io.datain import configure_model_resolution
 
 #import difference_ops as do
 import dask
@@ -95,13 +95,8 @@ def main():
         else:
             ref_dataset = None
 
-        od = options_database(dataset)
-        if od is None:
-            dx = options['dx']
-            dy = options['dy']
-        else:
-            dx = float(od['dxx'])
-            dy = float(od['dyy'])
+        # Get model resolution values
+        dx, dy, options = configure_model_resolution(dataset, options)
 
         [itime, iix, iiy, iiz] = get_string_index(dataset.dims,
                                                   ['time', 'x', 'y', 'z'])

@@ -17,7 +17,8 @@ import subfilter.filters as filt
 import subfilter.utils.deformation as defm
 
 from subfilter.utils.string_utils import get_string_index
-from subfilter.io.MONC_utils import options_database
+from subfilter.io.dataout import save_field
+from subfilter.io.datain import configure_model_resolution
 
 import config
 test_case = 0
@@ -30,7 +31,10 @@ figshow = True
 
 
 def main():
-    """Top level code, a bit of a mess."""
+    '''
+    Top level code, a bit of a mess.
+    '''
+
     if test_case == 0:
         config_file = 'config_test_case_0.yaml'
         indir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
@@ -78,13 +82,8 @@ def main():
     else:
         ref_dataset = None
 
-    od = options_database(dataset)
-    if od is None:
-        dx = options['dx']
-        dy = options['dy']
-    else:
-        dx = float(od['dxx'])
-        dy = float(od['dyy'])
+    # Get model resolution values
+    dx, dy, options = configure_model_resolution(dataset, options)
 
     [itime, iix, iiy, iiz] = get_string_index(dataset.dims, ['time', 'x', 'y', 'z'])
     timevar = list(dataset.dims)[itime]
