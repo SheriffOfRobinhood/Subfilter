@@ -91,7 +91,7 @@ def setup_child_file(source_file, destdir, outtag, options, override=False) :
 
     derived_dataset_name = os.path.basename(source_file)
     derived_dataset_name = ('.').join(derived_dataset_name.split('.')[:-1])
-    if options['l_slurm_job_tag']:
+    if options['l_slurm_job_tag'] and executing_on_cluster:
         jn = os.environ['SLURM_JOB_NAME']
         derived_dataset_name = destdir+derived_dataset_name + "_"+jn+ "_" + outtag + ".nc"
     else:
