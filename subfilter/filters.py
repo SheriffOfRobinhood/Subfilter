@@ -49,6 +49,8 @@ class Filter :
                  high_pass=0, wavenumber=-1, width=-1, sigma=-1,
                  ndim=2, set_fft=False):
 
+        rfft = None
+
         if (filter_name == 'domain'):
             data = np.ones([1,1])
 
@@ -56,14 +58,14 @@ class Filter :
             if (sigma == -1):
                 data = self.filter_error(filter_name, 'sigma')
             else:
-                (data, rfft)= gaussian_filter(sigma, delta_x, cutoff, npoints,
+                data = gaussian_filter(sigma, delta_x, cutoff, npoints,
                                                ndim=ndim)
         elif (filter_name == 'running_mean'):
             if (width == -1):
                 data = self.filter_error(filter_name, 'width')
             else:
-                (data, rfft) = running_mean_filter(width, npoints, ndim=ndim)
-                width = np.shape(data)[0]
+                data = running_mean_filter(width, npoints, ndim=ndim)
+                #width = np.shape(data)[0]
         elif (filter_name == 'wave_cutoff'):
             if (wavenumber == -1):
                 data = self.filter_error(filter_name, 'wavenumber')
@@ -76,7 +78,7 @@ class Filter :
             if (wavenumber == -1):
                 data = self.filter_error(filter_name, 'wavenumber')
             else:
-                (data,rfft) = circular_wave_cutoff_filter(wavenumber, delta_x,
+                (data, rfft) = circular_wave_cutoff_filter(wavenumber, delta_x,
                                                    npoints,
                                                    cutoff, high_pass,
                                                    ndim=ndim)
@@ -161,7 +163,7 @@ def running_mean_filter(width, npoints, ndim=2):
     else:
         result = np.ones((width,width))/(width*width)
         result = np.pad(result,
-                ((npoints-width)//2, (npoints-width-(npoints-width)//2)))
+                ((npoints-width)//2+1, (npoints-width-(npoints-width)//2 -1)))
     return result
 
 def one_two_one_filter(width, npoints, ndim=2):
@@ -261,13 +263,21 @@ def wave_cutoff_filter(wavenumber, delta_x=1000.0, npoints=-1, cutoff=0.000001,
     else:
         if ndim == 1:
             if set_fft:
-                k = np.fft.fftshift(np.fft.fftfreq(npoints, delta_x /(2*np.pi)))
-                k = np.abs(k)
-                filt = np.ones((npoints), dtype=complex)
-                filt[k > wavenumber] = 0.0
-                filt = np.fft.ifftshift(filt)
-                rfft = filt[0:npoints//2+1]
-                result = np.fft.ifftshift(np.fft.irfft(rfft)).real
+                # V2
+                # k = np.fft.fftshift(np.fft.fftfreq(npoints, delta_x /(2*np.pi)))
+                # k = np.abs(k)
+                # filt = np.ones((npoints), dtype=complex)
+                # filt[k > wavenumber] = 0.0
+                # filt = np.fft.ifftshift(filt)
+                # rfft = filt[0:npoints//2+1]
+                # result = np.fft.ifftshift(np.fft.irfft(rfft)).real
+
+                # V3
+                frq2 = np.fft.rfftfreq(npoints, delta_x /(2*np.pi))
+                filt = np.ones((npoints//2+1), dtype=complex)
+                filt[np.abs(frq2) > wavenumber] = 0.0
+                result = np.fft.fftshift(np.fft.irfft(filt)).real
+                rfft = filt
             else:
                 L = (npoints-1)/2 * delta_x
                 x = np.linspace(-L, L, npoints)
@@ -277,18 +287,30 @@ def wave_cutoff_filter(wavenumber, delta_x=1000.0, npoints=-1, cutoff=0.000001,
         else:
 
             if set_fft:
-                k = np.fft.fftshift(np.fft.fftfreq(npoints, delta_x /(2*np.pi)))
-                k = np.abs(k)
-                filt = np.ones((npoints, npoints), dtype=complex)
-                filt[k > wavenumber, :] = 0.0
-                filt[:, k > wavenumber] = 0.0
-                filt = np.fft.ifftshift(filt)
-                rfft = filt[:,0:npoints//2+1]
+                # V1
                 # rfft = np.zeros((npoints,npoints//2+1),dtype=complex)
                 # n = round((npoints*delta_x)/((2*np.pi)/wavenumber))+1
                 # rfft[0:n,     0:n] = 1
                 # rfft[-(n-1):, 0:n] = 1
-                result = np.fft.ifftshift(np.fft.irfft2(rfft)).real
+
+                # V2
+                # k = np.fft.fftshift(np.fft.fftfreq(npoints, delta_x /(2*np.pi)))
+                # k = np.abs(k)
+                # filt = np.ones((npoints, npoints), dtype=complex)
+                # filt[k > wavenumber, :] = 0.0
+                # filt[:, k > wavenumber] = 0.0
+                # filt = np.fft.ifftshift(filt)
+                # rfft = filt[:,0:npoints//2+1]
+                # result = np.fft.ifftshift(np.fft.irfft2(rfft)).real
+
+                # V3
+                frq = np.fft.fftfreq(npoints, delta_x /(2*np.pi))
+                frq2 = np.fft.rfftfreq(npoints, delta_x /(2*np.pi))
+                filt = np.ones((npoints, npoints//2+1), dtype=complex)
+                filt[np.abs(frq) > wavenumber,  :] = 0.0
+                filt[:, np.abs(frq2) > wavenumber] = 0.0
+                result = np.fft.fftshift(np.fft.irfft2(filt)).real
+                rfft = filt
             else:
                 L = (npoints)/2 * delta_x
                 c = np.linspace(-L, L-delta_x, npoints)
@@ -341,29 +363,32 @@ def circular_wave_cutoff_filter(wavenumber, delta_x=1000.0, npoints=-1,
 
         if ndim == 1:
 
-            k = np.fft.fftshift(np.fft.fftfreq(npoints,delta_x / (2 * np.pi)))
-            filt = np.ones((npoints)) +0j
+            k = np.fft.fftfreq(npoints,delta_x / (2 * np.pi))
+            filt = np.ones((npoints), dtype=complex)
             filt[k > wavenumber] = 0.0
-            filt = np.fft.ifftshift(filt)
-            result = np.fft.ifftshift(np.fft.ifft(filt)).real
+            result = np.fft.fftshift(np.fft.ifft(filt)).real
+            rfft = filt
 
         else:
-            # frq = np.fft.fftshift(np.fft.fftfreq(npoints, delta_x /(2*np.pi)))
+
+            # Working(ish)
+            # frq = np.fft.fftfreq(npoints, delta_x /(2*np.pi))
             # kx, ky = np.meshgrid(frq, frq)
             # k = np.sqrt(kx * kx + ky * ky)
-            # filt = np.zeros((npoints, npoints),dtype=complex)
+            # filt = np.ones((npoints, npoints), dtype=complex)
             # filt[k > wavenumber] = 0.0
-            # filt = np.fft.ifftshift(filt)[:,0:npoints//2+1]
-            # result = np.fft.ifftshift(np.fft.irfft2(filt)).real
+            # result = np.fft.fftshift(np.fft.ifft2(filt)).real
+            # rfft = None
 
-            frq = np.fft.fftshift(np.fft.fftfreq(npoints, delta_x /(2*np.pi)))
-            kx, ky = np.meshgrid(frq, frq)
+
+            frq = np.fft.fftfreq(npoints, delta_x /(2*np.pi))
+            frq2 = np.fft.rfftfreq(npoints, delta_x /(2*np.pi))
+            kx, ky = np.meshgrid(frq2, frq)
             k = np.sqrt(kx * kx + ky * ky)
-            filt = np.ones((npoints, npoints), dtype=complex)
+            filt = np.ones((npoints, npoints//2+1), dtype=complex)
             filt[k > wavenumber] = 0.0
-            filt = np.fft.ifftshift(filt)
-            rfft = filt[:,0:npoints//2+1]
-            result = np.fft.ifftshift(np.fft.irfft2(rfft)).real
+            result = np.fft.fftshift(np.fft.irfft2(filt)).real
+            rfft = filt
 
     return (result, rfft)
 
@@ -393,6 +418,7 @@ def gaussian_filter(sigma, delta_x=1000.0, cutoff=0.000001, npoints=-1,
       ndarray: 2D array of filter values
     '''
     if npoints == -1:
+
         half_width = 0
         result = np.ones((2))
         while result.min() > cutoff:
@@ -408,8 +434,9 @@ def gaussian_filter(sigma, delta_x=1000.0, cutoff=0.000001, npoints=-1,
             result = np.exp(-r_sq/(2 * (sigma**2)))
             result /= np.sum(result)
         npoints = 2 * half_width + 1
+
     else:
-#        L = (npoints-1)/2 * delta_x
+
         L = npoints/2 * delta_x
         if ndim == 1:
             x = np.linspace(-L, L, npoints)

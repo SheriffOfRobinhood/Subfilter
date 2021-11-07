@@ -7,8 +7,8 @@ Created on Mon Aug  2 12:02:20 2021.
 import time
 import os
 import xarray as xr
+import config
 from dask.diagnostics import ProgressBar
-from subfilter import subfilter_setup
 
 
 def save_field(dataset, field, write_to_file=True):
@@ -31,7 +31,7 @@ def save_field(dataset, field, write_to_file=True):
     """
     fn = dataset['file'].split('/')[-1]
     if field.name not in dataset['ds']:
-        print(f"Saving {field.name} to {fn}")
+        print(f"Saving {field.name} to {fn}.")
         dataset['ds'][field.name] = field
         if write_to_file:
             d = dataset['ds'][field.name].to_netcdf(
@@ -41,7 +41,7 @@ def save_field(dataset, field, write_to_file=True):
             with ProgressBar():
                 results = d.compute()
             # This wait seems to be needed to give i/o time to flush caches.
-            time.sleep(subfilter_setup['write_sleeptime'])
+            time.sleep(config.subfilter_setup['write_sleeptime'])
     else:
         print(f"{field.name} already in {fn}")
 #    print(dataset['ds'])

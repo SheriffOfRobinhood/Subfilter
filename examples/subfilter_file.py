@@ -5,16 +5,11 @@ Created on Tue Oct 23 11:27:25 2018
 @author: Peter Clark
 """
 import os
-#import netCDF4
-#from netCDF4 import Dataset
 import numpy as np
-#import pandas as pd
 import xarray as xr
-import matplotlib
 import matplotlib.pyplot as plt
 import dask
 #from dask.distributed import Client
-
 #from dask.diagnostics import Profiler, ResourceProfiler, CacheProfiler
 
 import subfilter.subfilter as sf
@@ -22,37 +17,34 @@ import subfilter.filters as filt
 import subfilter.utils.deformation as defm
 
 from subfilter.utils.string_utils import get_string_index
-from subfilter.io.dataout import save_field
 from subfilter.io.MONC_utils import options_database
 
+import config
 test_case = 0
 run_quad_fields = True
 run_deformation_fields = True
 override = True
-
-
 
 plot_type = '.png'
 figshow = True
 
 
 def main():
-    '''
-    Top level code, a bit of a mess.
-    '''
-
+    """Top level code, a bit of a mess."""
     if test_case == 0:
         config_file = 'config_test_case_0.yaml'
-        dir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
+        indir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
         odir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
         file = 'diagnostics_3d_ts_21600.nc'
         ref_file = 'diagnostics_ts_21600.nc'
     elif test_case == 1:
         config_file = 'config_test_case_1.yaml'
-        dir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/CBL/'
+        indir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/CBL/'
         odir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/CBL/'
         file = 'diagnostics_3d_ts_13200.nc'
         ref_file = None
+    options, update_config = sf.subfilter_options(config_file)
+
 
 #dir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
 #odir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
@@ -61,7 +53,6 @@ def main():
 #file = 'diagnostics_ts_18000.0.nc'
 #ref_file = 'diagnostics_ts_18000.0.nc'
 
-    options, update_config = sf.subfilter_options(config_file)
 
     odir = odir + 'test_dask_' + options['FFT_type']+'/'
     os.makedirs(odir, exist_ok = True)
@@ -69,19 +60,21 @@ def main():
     plot_dir = odir + 'plots/'
     os.makedirs(plot_dir, exist_ok = True)
 
+
 #    client = Client()
 #    client
 #    dask.config.set(scheduler='threads')
 #   Non-global variables that are set once
-
-    dask.config.set({"array.slicing.split_large_chunks": True})
-
-    dataset = xr.open_dataset(dir+file, chunks={'z':'auto', 'zn':'auto'})
+    if  config.dask_opts['no_dask']:
+        dataset = xr.open_dataset(indir+file)
+    else:
+        dask.config.set({"array.slicing.split_large_chunks": True})
+        dataset = xr.open_dataset(indir+file, chunks={'z':'auto', 'zn':'auto'})
 
     print(dataset)
 
     if ref_file is not None:
-        ref_dataset = xr.open_dataset(dir+ref_file)
+        ref_dataset = xr.open_dataset(indir+ref_file)
     else:
         ref_dataset = None
 
@@ -108,7 +101,7 @@ def main():
     fname = 'test_rewrite'
 
     derived_data, exists = \
-        sf.setup_derived_data_file( dir+file, odir, fname,
+        sf.setup_derived_data_file( indir+file, odir, fname,
                                    options, override=override)
     if exists :
         print('Derived data file exists' )
@@ -174,7 +167,7 @@ def main():
         print(twod_filter)
 
         filtered_data, exists = \
-            sf.setup_filtered_data_file( dir+file, odir, fname,
+            sf.setup_filtered_data_file( indir+file, odir, fname,
                                        options, twod_filter, override=True)
 
         if exists :

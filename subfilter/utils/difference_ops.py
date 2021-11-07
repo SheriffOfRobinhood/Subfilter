@@ -9,12 +9,11 @@ Difference operators for C-grid data.
 @author: Peter Clark
 """
 import numpy as np
+import config
 from .dask_utils import re_chunk
 from .string_utils import get_string_index
-import dask
 import xarray
-#use_map_overlap = False
-use_map_overlap = True
+
 
 grid_def = { 'p':('x_p', 'y_p', 'zn'),
              'u':('x_u', 'y_p', 'zn'),
@@ -40,16 +39,19 @@ def exec_fn(fn, field: xarray.DataArray, axis: int) -> xarray.DataArray:
     new xarray.DataArray
 
     """
-    if use_map_overlap:
-        print('Using map_overlap.')
-        d = field.data.map_overlap(fn, depth={axis:1},
-                                  boundary={axis:'periodic'})
-        field.data = d
-    else:
-        sh = np.shape(field)
-        ch = {field.dims[axis]:sh[axis]}
-        field = re_chunk(field, chunks=ch)
+    if config.dask_opts['no_dask']:
         field = fn(field)
+    else:
+        if config.dask_opts['use_map_overlap']:
+            print('Using map_overlap.')
+            d = field.data.map_overlap(fn, depth={axis:1},
+                                      boundary={axis:'periodic'})
+            field.data = d
+        else:
+            sh = np.shape(field)
+            ch = {field.dims[axis]:sh[axis]}
+            field = re_chunk(field, chunks=ch)
+            field = fn(field)
     return field
 
 
@@ -58,13 +60,13 @@ def last_dim(z) :
     Remove all but last dimension of z.
 
     Parameters
+    ----------
         z : n-dimensional array.
 
     Returns:
         z[0,0, etc. ,:]
     @author: Peter Clark
     """
-
     zd = z[...]
     while len(np.shape(zd))>1 :
         zd = zd[0,...]

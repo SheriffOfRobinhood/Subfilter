@@ -5,6 +5,7 @@ Created on Mon Aug  2 11:29:37 2021
 @author: paclk
 """
 import numpy as np
+import config
 import xarray as xr
 
 import subfilter.utils.difference_ops as do
@@ -12,7 +13,6 @@ import subfilter.utils.difference_ops as do
 from .string_utils import get_string_index
 from ..io.datain import get_data
 from .dask_utils import re_chunk
-from .. import subfilter_setup
 from ..io.dataout import save_field, setup_child_file
 
 
@@ -54,7 +54,7 @@ def deformation(source_dataset, ref_dataset, derived_dataset,
 
     sh = np.shape(u)
 
-    max_ch = subfilter_setup['chunk_size']
+    max_ch = config.subfilter_setup['chunk_size']
 
     nch = int(sh[iix]/(2**int(np.log(sh[iix]*sh[iiy]*sh[iiz]/max_ch)/np.log(2)/2)))
 
@@ -80,10 +80,14 @@ def deformation(source_dataset, ref_dataset, derived_dataset,
 #    print(uy)
 
     uz = do.d_by_dz_field(u, z, zn, grid = grid )
+
 #    uz = re_chunk(uz, xch=nch, ych=nch, zch = 'all')
 #    save_field(derived_dataset, uz)
 #    u = 0
 #    print(uz)
+
+    u = None # Save some memory
+
     v = get_data(source_dataset, ref_dataset, "v", options)
     v = re_chunk(v, xch=nch, ych=nch, zch = 'all')
 
@@ -101,6 +105,9 @@ def deformation(source_dataset, ref_dataset, derived_dataset,
 #    vz = re_chunk(vz, xch=nch, ych=nch, zch = 'all')
 #    save_field(derived_dataset, vz)
 #    print(vz)
+
+    v = None # Save some memory
+
     w = get_data(source_dataset, ref_dataset, "w", options)
     w = re_chunk(w, xch=nch, ych=nch, zch = 'all')
 
@@ -119,7 +126,9 @@ def deformation(source_dataset, ref_dataset, derived_dataset,
 #    save_field(derived_dataset, wz)
 #    print(wz)
 
-    if subfilter_setup['use_concat']:
+    w = None # Save some memory
+
+    if config.subfilter_setup['use_concat']:
 
         print('Concatenating derivatives')
 

@@ -5,9 +5,41 @@ Created on Mon Aug  2 11:33:51 2021
 @author: paclk
 """
 import numpy as np
+import config
 from subfilter.utils.string_utils import get_string_index
 
+
 def re_chunk(f, chunks = None, xch = 'all', ych = 'all', zch = 'auto'):
+    """
+    Wrapper to re-chunk dask array.
+
+    Parameters
+    ----------
+    f : dask array.
+        Input field
+    chunks : dict, optional
+        Chunk specification. The default is None.
+    xch : str or int, optional
+        New chunking for x dimension. 'all' | 'auto' | int .
+        The default is 'all'.
+    ych : str or int, optional
+        New chunking for y dimension. 'all' | 'auto' | int .
+        The default is 'all'.
+    zch :str or int, optional
+        New chunking for z dimension. 'all' | 'auto' | int .
+        The default is 'all'.
+
+    Returns
+    -------
+    f : dask array.
+        re-chunked input field.
+
+    """
+
+    if config.dask_opts['no_dask']:
+        return f
+
+    print('*** Using re_chunk ***')
 
     defn = 1
 
@@ -46,6 +78,7 @@ def re_chunk(f, chunks = None, xch = 'all', ych = 'all', zch = 'auto'):
 
 def guess_chunk(max_ch, dataset):
 
+    print('*** Using guess_chunk ***')
     [itime, iix, iiy, iiz] = get_string_index(dataset.dims,
                                               ['time', 'x', 'y', 'z'])
     timevar = list(dataset.dims)[itime]

@@ -25,11 +25,7 @@ from .io.dataout import save_field, setup_child_file
 from .io.MONC_utils import options_database
 from .utils.dask_utils import re_chunk
 import yaml
-
-subfilter_setup = {'write_sleeptime':3,
-                   'use_concat':True,
-                   'chunk_size':2**22 }
-
+import config
 
 def subfilter_options(config_file:str=None):
     """
@@ -548,8 +544,8 @@ def filtered_deformation(source_dataset, ref_dataset, derived_dataset,
 
     d_var = defm.deformation(source_dataset, ref_dataset, derived_dataset,
                         options, grid=grid)
-
-    d_var = re_chunk(d_var)
+    if not config.dask_opts['no_dask']:
+        d_var = re_chunk(d_var)
 
     (d_var_r, d_var_s) = filter_field(d_var, filtered_dataset,
                                       options, filter_def, grid=grid)

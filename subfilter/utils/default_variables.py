@@ -4,9 +4,8 @@ Created on Mon Aug  2 12:09:37 2021
 
 @author: paclk
 """
-
-test_level =1
-from .. import subfilter_setup
+import config
+test_level = 1
 
 def get_default_variable_list() :
     """

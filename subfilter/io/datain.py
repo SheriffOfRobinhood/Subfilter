@@ -13,7 +13,7 @@ from .dataout import save_field
 import subfilter.utils.difference_ops as do
 import xarray as xr
 import subfilter.thermodynamics.thermodynamics_constants as thc
-
+import config
 
 def get_data(source_dataset, ref_dataset, var_name, options) :
     """
@@ -292,7 +292,9 @@ def get_and_transform(source_dataset, ref_dataset, var_name, options,
     # print(var)
 
 #    print(zvar)
-    var = re_chunk(var)
+
+    if not config.dask_opts['no_dask']:
+        var = re_chunk(var)
 #    print(var)
 
     return var
