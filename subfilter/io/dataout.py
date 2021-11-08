@@ -111,9 +111,11 @@ def setup_child_file(source_file, destdir, outtag, options, override=False) :
         # Modify the True/False options for writing.
         for inc in options:
             if options[inc] is True:
-                options[inc]=1
+                options[inc] = "True"
             if options[inc] is False:
-                options[inc]=0
+                options[inc] = "False"
+            if options[inc] is None:
+                options[inc] = "None"
 
         derived_dataset = xr.Dataset(coords =
                         {'z':ds.coords['z'],'zn':ds.coords['zn']})

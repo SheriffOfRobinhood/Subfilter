@@ -59,6 +59,9 @@ def subfilter_options(config_file:str=None):
 
         options.update(update_config['options'])
 
+    if options['new_chunk_size'] is not None:
+        subfilter_setup['chunk_size'] = options['new_chunk_size']
+
     return options, update_config
 
 
