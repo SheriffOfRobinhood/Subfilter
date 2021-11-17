@@ -25,7 +25,7 @@ from .io.dataout import save_field, setup_child_file
 from .io.MONC_utils import options_database
 from .utils.dask_utils import re_chunk
 import yaml
-import config
+
 
 def subfilter_options(config_file:str=None):
     """
@@ -49,21 +49,17 @@ def subfilter_options(config_file:str=None):
                 'FFT_type': 'RFFT',
                 'save_all': 'Yes',
                 'override': True,      # Overwrite output file if it exists.
-                'input_file': None,
-                'ref_file': None,
-                'outpath': None
+                'input_file': None,    # For user convenience, not required
+                'ref_file': None,      # For user convenience, not required
+                'outpath': None,       # For user convenience, not required
               }
     if config_file is not None:
         with open(config_file) as c:
-            update_config = yaml.load(c, Loader = yaml.FullLoader)
+            update_config = yaml.load(c, Loader = yaml.SafeLoader)
 
         options.update(update_config['options'])
 
-    if options['new_chunk_size'] is not None:
-        subfilter_setup['chunk_size'] = options['new_chunk_size']
-
     return options, update_config
-
 
 def filter_variable_list(source_dataset, ref_dataset, derived_dataset,
                          filtered_dataset, options, filter_def,
@@ -168,7 +164,6 @@ def filter_variable_pair_list(source_dataset, ref_dataset, derived_dataset,
 
 # Flags are: 'u-grid, v-grid, w-grid'
 
-
 def convolve(field, options, filter_def, dims):
     """
     Convolve field filter using fftconvolve using padding.
@@ -265,7 +260,6 @@ def pad_to_len(field, newlen, mode='constant'):
     padright = padlen - padleft
     padfield = np.pad(field, ((padleft,padright),), mode=mode)
     return padfield
-
 
 def filtered_field_calc(var, options, filter_def):
     """
@@ -489,7 +483,6 @@ def setup_filtered_data_file(source_file, destdir, fname,
 
     return filtered_dataset, exists
 
-
 def filter_field(var, filtered_dataset, options, filter_def,
                  grid='p') :
     """
@@ -559,8 +552,7 @@ def filtered_deformation(source_dataset, ref_dataset, derived_dataset,
 
     d_var = defm.deformation(source_dataset, ref_dataset, derived_dataset,
                         options, grid=grid)
-    if not config.dask_opts['no_dask']:
-        d_var = re_chunk(d_var)
+    d_var = re_chunk(d_var)
 
     (d_var_r, d_var_s) = filter_field(d_var, filtered_dataset,
                                       options, filter_def, grid=grid)
@@ -623,3 +615,4 @@ def quadratic_subfilter(source_dataset,  ref_dataset, derived_dataset,
     s_var1var2.name = f"s({v1_name:s},{v2_name:s})_on_{grid:s}"
 
     return (s_var1var2, var1var2, var1var2_r, var1var2_s)
+

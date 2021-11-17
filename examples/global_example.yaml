@@ -1,0 +1,107 @@
+###########################################################################################
+global_config:
+    # int, Seconds to wait after writing to flush caches.
+    write_sleeptime: 3
+    # [True, False] Whether to concatenate deformation field output.
+    use_concat: True
+    # int, Maximum horizontal chunk size for deformation calculation, bytes?.
+    chunk_size: 33554432 #2**25=33554432 2**23=8388608 #2**20=1048576
+    # [True, False] Whether to completely disable dask in all routines.
+    no_dask: False
+    # dict, coordinate-specific rules about how to chunk input data
+    dask_chunks: {'z':'auto', 'zn':'auto'}
+    # [True, False] When using dask, whether to use dask's map_overlap
+    use_map_overlap: True
+    # [True, False] When executing_on_cluster, whether to add the Slurm job name to file
+    l_slurm_job_tag: True
+    # str, ["float64", "float32"]  Presision of output data.
+    output_precision: "float32"
+    # int, [null, 1, 2] Case ID to select variable lists for testing. Null gives full list.
+    test_level: 1
+
+###########################################################################################
+options:
+    # [ FFTCONVOLVE, FFT, {RFFT} ] Type of FFT to employ in filter
+    FFT_type: RFFT
+    # [ {'Yes'}, 'No' ] (str) Save regridded input and intermediate (e.g. theta_L) data to file
+    #   Also applies to deformation fields and paired filter fields
+    save_all: 'Yes'
+    # [ {True}, False ] Overwrite any existing output files
+    override: True      # [ True, False ] Overwrite any existing output files
+    # MONC x-direction resolution [m], this value only used when options_database is absent from 
+    #   the ref_file
+#    dx: 50.0
+    # MONC y-direction resolution [m], this value only used when options_database is absent from 
+    #   the ref_file
+#    dy: 50.0
+    # Full path to file to work on
+    #   Wildcard characters are permitted to induce loop over files.
+    input_file: /gws/nopw/j04/paracon_rdg/users/toddj/updates_suite/BOMEX_m0020_g0800/diagnostic_files//BOMEX_m0020_g0800_all_81000.nc
+    # Full path to file containing reference profiles (null or blank space is parsed as None by yaml.load
+    #   and is acceptable if input_file contains reference data)
+    ref_file: null
+    # Full output path
+    outpath: /work/scratch-pw/toddj/dummy/
+    # String, file label to be incorporated in all output file names
+    file_label: 'subfilter'
+
+###########################################################################################
+filters:
+    # [ domain, gaussian, running_mean, wave_cutoff, circular_wave_cutoff ] type of filter to use
+    filter_name: gaussian
+    # List of floats denoting filtering length scales
+    # If a wave-cutoff filter is used, contains the cutoff wavenumber 
+    #     (e.g. wavenumber=np.pi/(2*sigma)
+    sigma_list: [25.0,40.0,80.0,160.0,320.0]
+    # List of floats denoting filtering length scales where filtered variable pair lists and 
+    #   deformation fields are desired
+    germano_list: [25.0,40.0]
+    # [ True, False ] In addition to sigma_list filters, produce a domain mean filter
+    include_domain_mean: False
+    # [ 'u', 'v', 'w', {'p'} ] Output MONC grid
+    output_grid: 'w'
+    # [ True, False ] Whether to run filter_variable_pair_list
+    run_quad_fields: True
+    # [ True, False ] Whether to run deformation field analysis.
+    run_deformation_fields: True
+
+###########################################################################################
+spectra_options:
+    # Full output path
+    outpath_spectra: null
+    # String, file labels to be incorporated in all output file names
+    spectra_label: 'spectraALL'
+    # Compute 2D spectra as average of 1D spectra in both directions
+    spec_1D: True
+    # Compute 2D spectra via 2D-fft
+    spec_2D: True
+    # [Durran, ndimage] Use Durran method (which actually also uses ndimage), or faster, less 
+    #   accurate ndimage method
+    spec_method: 'durran'
+    # With spec_method: 'durran', use Durran/Tanguay method to compensate for systematic noise in 
+    #     the annular summation (spectra does not preserve energy when enabled)
+    spec_compensation: True
+    # With spec_method: 'durran', restrict the spec_2d result to values below the Nyquist frequency
+    spec_restrict: True
+    # list of string patterns to match applicable analysis variable names in var_list
+    filtered_spectra_fields: ['u_on_w_r','v_on_w_r','w_on_w_r','th_on_w_r','q_vapour_on_w_r','th_v_on_w_r','th_L_on_w_r','q_total_on_w_r','buoyancy_on_w_r']
+    derived_spectra_fields: ['u_on_w','v_on_w','w_on_w','th_on_w','q_vapour_on_w','th_v_on_w','th_L_on_w','q_total_on_w','buoyancy_on_w']
+    # [ True, {False} ] Whether to calculate 3D KE spectra
+    do_ke: True
+
+#cmd="python -u /home/users/toddj/subfilter/Subfilter/source//pc_subfilter_opt.py -i /work/scratch-pw/toddj/RCE_m0100_g1320/diagnostic_files -f /work/scratch-pw/toddj/RCE_m0100_g1320/diagnostic_files/diagnostics_ts_12096000.nc -r /work/scratch-pw/toddj/RCE_m0100_g1320/diagnostic_files/ref.nc -o /work/scratch-pw/toddj//RCE_m0100_g1320/diagnostic_files/subfilter/ --sigma_list=[200.0,400.0,800.0,1600.0] --germano_list=[200.0,400.0]"
+    #
+
+#            print('domain, gaussian, running_mean, wave_cutoff & '
+#                  'circular_wave_cutoff')
+#            self.attributes = {'filter_type' : filter_name,
+#                  'ndim' : ndim,
+#                  'wavenumber' : wavenumber,
+#                  'delta_x' : delta_x,
+#                  'width' : width,
+#                  'cutoff' : cutoff,
+#                  'high_pass' : high_pass,
+#                  'sigma' : sigma}
+#
+
+

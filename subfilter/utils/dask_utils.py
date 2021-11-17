@@ -5,7 +5,7 @@ Created on Mon Aug  2 11:33:51 2021
 @author: paclk
 """
 import numpy as np
-import config
+import subfilter
 from subfilter.utils.string_utils import get_string_index
 
 
@@ -36,7 +36,7 @@ def re_chunk(f, chunks = None, xch = 'all', ych = 'all', zch = 'auto'):
 
     """
 
-    if config.dask_opts['no_dask']:
+    if subfilter.global_config['no_dask']:
         return f
 
     print('*** Using re_chunk ***')
@@ -48,7 +48,8 @@ def re_chunk(f, chunks = None, xch = 'all', ych = 'all', zch = 'auto'):
         chunks={}
         sh = np.shape(f)
         for ip, dim in enumerate(f.dims):
-            if 'x' in dim:
+            if 'x' in dim:                     # ? if dim.startswith('x') ?
+                                               # ? if dim == 'x' or dim.startswith('x_') ?
                 if xch == 'all':
                     chunks[dim] = sh[ip]
                 elif xch == 'auto':
@@ -70,7 +71,7 @@ def re_chunk(f, chunks = None, xch = 'all', ych = 'all', zch = 'auto'):
                 else:
                     chunks[dim] = np.min([zch, sh[ip]])
             else:
-                chunks[f.dims[ip]] = defn
+                chunks[f.dims[ip]] = defn       # always 1 for time?
 
     f = f.chunk(chunks=chunks)
 

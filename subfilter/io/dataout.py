@@ -7,10 +7,9 @@ Created on Mon Aug  2 12:02:20 2021.
 import time
 import os
 import xarray as xr
-import config
 from dask.diagnostics import ProgressBar
-from subfilter import executing_on_cluster
 
+import subfilter  # for global prameters
 
 def save_field(dataset, field, write_to_file=True):
     """
@@ -32,23 +31,23 @@ def save_field(dataset, field, write_to_file=True):
     """
     fn = dataset['file'].split('/')[-1]
     if field.name not in dataset['ds']:
-        print(f"Saving {field.name} to {fn}.")
+        print(f"Saving {field.name} to {fn}")
         dataset['ds'][field.name] = field
-        encoding = {field.name: {"dtype": "float32"} }
+        encoding = {field.name: {"dtype": subfilter.global_config['output_precision']} }
         if write_to_file:
             d = dataset['ds'][field.name].to_netcdf(
                     dataset['file'],
                     unlimited_dims="time",
                     mode='a', compute=False, encoding = encoding)
             # Toggle ProgressBar depending on compute space
-            #   (for cleaner stdout)
-            if executing_on_cluster:
+            #   (for cleaner stdout on cluster)
+            if subfilter.executing_on_cluster:
                 results = d.compute()
             else: 
                 with ProgressBar():
                     results = d.compute()
             # This wait seems to be needed to give i/o time to flush caches.
-            time.sleep(config.subfilter_setup['write_sleeptime'])
+            time.sleep(subfilter.global_config['write_sleeptime'])
     else:
         print(f"{field.name} already in {fn}")
 #    print(dataset['ds'])
@@ -91,7 +90,8 @@ def setup_child_file(source_file, destdir, outtag, options, override=False) :
 
     derived_dataset_name = os.path.basename(source_file)
     derived_dataset_name = ('.').join(derived_dataset_name.split('.')[:-1])
-    if options['l_slurm_job_tag'] and executing_on_cluster:
+
+    if subfilter.global_config['l_slurm_job_tag'] and subfilter.executing_on_cluster:
         jn = os.environ['SLURM_JOB_NAME']
         derived_dataset_name = destdir+derived_dataset_name + "_"+jn+ "_" + outtag + ".nc"
     else:
@@ -108,18 +108,17 @@ def setup_child_file(source_file, destdir, outtag, options, override=False) :
             print(f"Overwriting file {derived_dataset_name}.")
         exists = False
 
-        # Modify the True/False options for writing.
-        for inc in options:
-            if options[inc] is True:
-                options[inc] = "True"
-            if options[inc] is False:
-                options[inc] = "False"
-            if options[inc] is None:
-                options[inc] = "None"
-
         derived_dataset = xr.Dataset(coords =
                         {'z':ds.coords['z'],'zn':ds.coords['zn']})
-        derived_dataset.attrs = {**atts, ** options}
+
+        # Ensure bool, dict, and None items can be stored
+        atts_out = {**atts, **subfilter.global_config, **options}
+        for inc in atts_out:
+            if isinstance(atts_out[inc], (dict, bool, type(None))):
+                atts_out[inc] = str(atts_out[inc])
+                print(atts_out[inc])
+        derived_dataset.attrs = atts_out
+
         derived_dataset.to_netcdf(derived_dataset_name, mode='w')
         print(derived_dataset)
     do = {'file':derived_dataset_name, 'ds': derived_dataset}

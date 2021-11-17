@@ -46,6 +46,7 @@ from subfilter import executing_on_cluster
 
 import yaml
 
+import subfilter
 
 time_dim_always_contains='time'
 
@@ -75,7 +76,7 @@ def spectra_options(config_file=None):
 
     if config_file is not None:
         with open(config_file) as c:
-            update_config = yaml.load(c, Loader = yaml.FullLoader)
+            update_config = yaml.load(c, Loader = yaml.SafeLoader)
 
         options.update(update_config['options'])
 
@@ -115,20 +116,6 @@ def spectra_variable_list(ds, derived_dataset, options, var_list=None):
 
     # Get model resolution values
     dx, dy, options = configure_model_resolution(ds, options)
-
-#    if 'dx' in ds.attrs:
-#        dx = ds.attrs['dx']
-#        dy = ds.attrs['dy']
-#    else:
-#        od = options_database(ds)
-#        if od is None:
-#            dx = options['dx']
-#            dy = options['dy']
-#            print("in spectra, NOT using options_database")
-#        else:
-#            dx = float(od['dxx'])
-#            dy = float(od['dyy'])
-#            print("in spectra, IS, IN FACT, using options_database")
 
     dso = derived_dataset['ds']
     outfile = derived_dataset['file']
@@ -255,8 +242,11 @@ def spectrum_ave_1D(ds, dso, vname, outfile, options, dx, dy):
 
     # Spectra in y-direction (mean removed)
 
-    field = (var - var.mean(dim=(yname))).data.rechunk(chunks={yx:ny})
-    temp2 = np.fft.rfft(field, axis=yx)
+    if subfilter.global_config['no_dask']:
+        temp2 = np.fft.rfft((var.values - var.values.mean(axis = yx, keepdims = True, dtype = 'float64')), axis = yx)
+    else:
+        field = (var - var.mean(dim=(yname))).data.rechunk(chunks={yx:ny})
+        temp2 = np.fft.rfft(field, axis=yx)
     # Average across all x
     ydir = np.mean((temp2*np.conj(temp2)).real, axis = xx) * (dy/(2*np.pi*ny))
 
@@ -265,8 +255,11 @@ def spectrum_ave_1D(ds, dso, vname, outfile, options, dx, dy):
     ydir[:,-1,:] /= 2
 
     # Repeat for x-direction
-    field = (var - var.mean(dim=(xname))).data.rechunk(chunks={xx:nx})
-    temp2 = np.fft.rfft(field, axis=xx)
+    if subfilter.global_config['no_dask']:
+        temp2 = np.fft.rfft((var.values - var.values.mean(axis = xx, keepdims = True, dtype = 'float64')), axis = xx)
+    else:
+        field = (var - var.mean(dim=(xname))).data.rechunk(chunks={xx:nx})
+        temp2 = np.fft.rfft(field, axis=xx)
     # Average across all x
     xdir = np.mean((temp2*np.conj(temp2)).real, axis = yx) * (dx/(2*np.pi*nx))
     xdir[:,-1,:] /= 2
@@ -532,10 +525,14 @@ def spectrum_ave_1D_radial(ds, dso, vname, outfile, options, dx, dy,
     norm = (dx*dy*dkmin)/(8*(np.pi**2)*nx*ny) # normalization factor (see eqn 24)
 
     # Compute the 2D fft for the full [t,y,x,z] dataset, over y and x, at once.
-    # Keep as xarray to expoit dask. Means losing 'keepdims' option.
-    field = (var - var.mean(dim=(xname,yname))).data
-    field = field.rechunk(chunks={xx:nx, yx:ny})
-    temp2 = np.fft.fft2(field, axes=(xx,yx))  # (time,...horiz...,vertical)
+    if subfilter.global_config['no_dask']:
+        # (time,...horiz...,vertical)
+        temp2 = np.fft.fft2((var.values - var.values.mean(axis=(yx,xx), keepdims=True, dtype='float64')),axes=(yx,xx))
+    else:
+        # Keep as xarray to expoit dask. Means losing 'keepdims' option.
+        field = (var - var.mean(dim=(xname,yname))).data
+        field = field.rechunk(chunks={xx:nx, yx:ny})
+        temp2 = np.fft.fft2(field, axes=(xx,yx))  # (time,...horiz...,vertical)
     Ek = (temp2*np.conj(temp2)).real
 
     # Populate the labels, counts, and means for each kp [for radial summation]
@@ -573,17 +570,33 @@ def spectrum_ave_1D_radial(ds, dso, vname, outfile, options, dx, dy,
             comp = (2*np.pi*kpbaro[:]/(dkmin*kcounto[:]))
             # @da.as_gufunc(signature="(i,j,k,l),(j,k),(m),(),(m),(m)->(i,m,l)",
 #               output_dtypes=float, vectorize=True)
-            rave = da.gufunc(rad_ave_with_comp,
-                             signature="(j,k),(j,k),(m),(),(m)->(m)",
-                             output_dtypes=float, vectorize=True,
-                             axes=[(1,2), (0,1), (0), (), (0), (1)])
-            Ekp = rave(Ek, rlab, rindexo, norm, comp)
+            if subfilter.global_config['no_dask']:
+                kplen=kpo.size
+                Ekp=np.zeros((nt,kplen,nz))
+                for tnc in np.arange(nt):
+                    for znc in np.arange(nz):
+                        # Sum points
+                        Ekp[tnc,:,znc] = norm * ndimage.sum(Ek[tnc,...,znc], rlab, index=rindexo) * comp
+            else:
+                rave = da.gufunc(rad_ave_with_comp,
+                                 signature="(j,k),(j,k),(m),(),(m)->(m)",
+                                 output_dtypes=float, vectorize=True,
+                                 axes=[(1,2), (0,1), (0), (), (0), (1)])
+                Ekp = rave(Ek, rlab, rindexo, norm, comp)
         else:
-            rave = da.gufunc(rad_ave_without_comp,
-                             signature="(j,k),(j,k),(m),()->(m)",
-                             output_dtypes=float, vectorize=True,
-                             axes=[(1,2), (0,1), (0), (), (1)])
-            Ekp = rave(Ek, rlab, rindexo, norm)
+            if subfilter.global_config['no_dask']:
+                kplen=kpo.size
+                Ekp=np.zeros((nt,kplen,nz))
+                for tnc in np.arange(nt):
+                    for znc in np.arange(nz):
+                        # Sum points
+                        Ekp[tnc,:,znc] = norm * ndimage.sum(Ek[tnc,...,znc], rlab, index=rindexo)
+            else:
+                rave = da.gufunc(rad_ave_without_comp,
+                                 signature="(j,k),(j,k),(m),()->(m)",
+                                 output_dtypes=float, vectorize=True,
+                                 axes=[(1,2), (0,1), (0), (), (1)])
+                Ekp = rave(Ek, rlab, rindexo, norm)
 
         # kplen=kpo.size
         # Ekp=np.zeros((nt,kplen,nz))
@@ -599,10 +612,19 @@ def spectrum_ave_1D_radial(ds, dso, vname, outfile, options, dx, dy,
         Ekp=np.zeros((nt,kplen,nz))
         kpo=fkx[0:kplen]
 
-        gpsd = da.gufunc(GetPSD1D,
-                         signature="(j,k),(l)->(l)",
-                         output_dtypes=float, vectorize=True,
-                         axes=[(1,2), (0), (1)])
+        if subfilter.global_config['no_dask']:
+            kplen=Ek[tnc,...,znc].shape[0]//2
+            Ekp=np.zeros((nt,kplen,nz))
+            kpo=fkx[0:kplen]
+            for tnc in np.arange(nt):
+                for znc in np.arange(nz):
+                    # Sum points
+                    Ekp[tnc,:,znc] = norm * GetPSD1D(np.fft.fftshift(Ek[tnc,...,znc]))
+        else:
+            gpsd = da.gufunc(GetPSD1D,
+                             signature="(j,k),(l)->(l)",
+                             output_dtypes=float, vectorize=True,
+                             axes=[(1,2), (0), (1)])
 
         Ekp = norm * gpsd(Ek, kpo)
         # for tnc in np.arange(nt):

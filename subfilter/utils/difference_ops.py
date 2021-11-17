@@ -9,7 +9,7 @@ Difference operators for C-grid data.
 @author: Peter Clark
 """
 import numpy as np
-import config
+import subfilter
 from .dask_utils import re_chunk
 from .string_utils import get_string_index
 import xarray
@@ -39,10 +39,10 @@ def exec_fn(fn, field: xarray.DataArray, axis: int) -> xarray.DataArray:
     new xarray.DataArray
 
     """
-    if config.dask_opts['no_dask']:
+    if subfilter.global_config['no_dask']:
         field = fn(field)
     else:
-        if config.dask_opts['use_map_overlap']:
+        if subfilter.global_config['use_map_overlap']:
             print('Using map_overlap.')
             d = field.data.map_overlap(fn, depth={axis:1},
                                       boundary={axis:'periodic'})

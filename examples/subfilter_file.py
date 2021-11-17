@@ -20,7 +20,7 @@ from subfilter.utils.string_utils import get_string_index
 from subfilter.io.dataout import save_field
 from subfilter.io.datain import configure_model_resolution
 
-import config
+import subfilter
 test_case = 0
 run_quad_fields = True
 run_deformation_fields = True
@@ -65,15 +65,13 @@ def main():
     os.makedirs(plot_dir, exist_ok = True)
 
 
-#    client = Client()
-#    client
-#    dask.config.set(scheduler='threads')
-#   Non-global variables that are set once
-    if  config.dask_opts['no_dask']:
-        dataset = xr.open_dataset(indir+file)
-    else:
+    # Avoid accidental large chunks and read dask_chunks
+    if not subfilter.global_config['no_dask']:
         dask.config.set({"array.slicing.split_large_chunks": True})
-        dataset = xr.open_dataset(indir+file, chunks={'z':'auto', 'zn':'auto'})
+        dask_chunks = subfilter.global_config['dask_chunks']
+
+    # Read data
+    dataset = xr.open_dataset(indir+file, chunks=dask_chunks)
 
     print(dataset)
 

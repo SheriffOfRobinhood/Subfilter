@@ -11,9 +11,8 @@ from ..utils.string_utils import get_string_index
 from ..utils.dask_utils import re_chunk
 from .dataout import save_field
 import subfilter.utils.difference_ops as do
-import xarray as xr
 import subfilter.thermodynamics.thermodynamics_constants as thc
-import config
+import subfilter
 
 def get_data(source_dataset, ref_dataset, var_name, options) :
     """
@@ -172,7 +171,7 @@ def get_data(source_dataset, ref_dataset, var_name, options) :
                 q_ci = get_data(source_dataset, ref_dataset,
                                          'q_ice_mass', options)
             except:
-                print(" In calculation of q_total, q_cloud_ice_mass is not present.")
+                print(" [WARN] In calculation of q_total, q_cloud_ice_mass is not present.")
                 q_ci = 0.0
 
             vard = q_v + q_cl + q_ci
@@ -298,7 +297,8 @@ def get_and_transform(source_dataset, ref_dataset, var_name, options,
 
 #    print(zvar)
 
-    if not config.dask_opts['no_dask']:
+    # Re-chunk data if using dask
+    if not subfilter.global_config['no_dask']:
         var = re_chunk(var)
 #    print(var)
 
@@ -470,6 +470,11 @@ def configure_model_resolution(dataset, options):
     Repeated calls to this routine (for instance, to simply obtain
     dx and dy) will not modify the options contents.
 
+    Precedence: 
+       1. options_database
+       2. dataset attributes
+       3. subfilter options
+       4. parse file path containing resolution encoding
 
     Parameters
     ----------
@@ -509,14 +514,42 @@ def configure_model_resolution(dataset, options):
         dy = options['dy']
     # 4th priority: parse file path for coded info
     elif 'input_file' in options:
-        fullpath = options['input_file']
-        mnc = fullpath.find('_m')
-        dx = float(fullpath[mnc+2:mnc+6])
-        dy = float(fullpath[mnc+2:mnc+6])
+        dx = path_to_resolution(options['input_file'])
+        dy = dx
         options['dx'] = dx
         options['dy'] = dy
     else:
         raise RuntimeError("Cannot determine grid resolution.")
 
     return dx, dy, options
+
+
+def path_to_resolution(inpath):
+    """
+    Pull resolution value from an encoded path as a float.
+            e.g., 'BOMEX_m0020_g0800'
+            i.e., it should have '_m[0-9][0-9][0-9]' (at least 3 integers)
+
+    Parameters
+    ----------
+    inpath : str
+        file path
+
+    Returns
+    -------
+    dx : float
+        MONC horizontal resolution [m]
+    """
+
+    fullpath = inpath
+    # Allow for variable length integer string.
+    usc = [i for i, ltr in enumerate(fullpath) if ltr not in '0123456789']
+    usc.append(len(fullpath))
+    usc = np.asarray(usc)
+    mnc = [m.start(0) for m in re.finditer('_m[0-9][0-9][0-9]', fullpath)][-1] + 2
+    enc = usc[usc > mnc].min()
+    dx = float(fullpath[mnc:enc])
+
+    return dx
+
 

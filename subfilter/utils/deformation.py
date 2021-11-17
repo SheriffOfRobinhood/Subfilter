@@ -5,7 +5,7 @@ Created on Mon Aug  2 11:29:37 2021
 @author: paclk
 """
 import numpy as np
-import config
+import subfilter
 import xarray as xr
 
 import subfilter.utils.difference_ops as do
@@ -17,7 +17,7 @@ from ..io.dataout import save_field
 
 
 def deformation(source_dataset, ref_dataset, derived_dataset,
-                options, grid='w', uvw_names=[]) :
+                options, grid='w', uvw_names=["u","v","w"]) :
     r"""
     Compute deformation tensor.
 
@@ -38,6 +38,7 @@ def deformation(source_dataset, ref_dataset, derived_dataset,
             destination grid (Default = 'w')
         uvw_names: list of str
             specific names for u, v, and w fields when differing from MONC default
+            Required to be in this order, otherwise we can change to 3 parameters?
 
     Returns
     -------
@@ -51,17 +52,21 @@ def deformation(source_dataset, ref_dataset, derived_dataset,
         deformation = derived_dataset['ds']['deformation']
         return deformation
 
+    # Check uvw_names
+    if not all([x in source_dataset for x in uvw_names]):
+        raise ValueError(f'The u, v, and w variable names, {uvw_names}, are not all present \
+                           in the source_dataset passed to the deformation() function.')
 
-    u = get_data(source_dataset, ref_dataset, "u", options)
+    u = get_data(source_dataset, ref_dataset, uvw_names[0], options)
     [iix, iiy, iiz] = get_string_index(u.dims, ['x', 'y', 'z'])
 
     sh = np.shape(u)
 
-    max_ch = config.subfilter_setup['chunk_size']
+    max_ch = subfilter.global_config['chunk_size']
 
     nch = int(sh[iix]/(2**int(np.log(sh[iix]*sh[iiy]*sh[iiz]/max_ch)/np.log(2)/2)))
 
-    print(f'nch={nch}')
+    print(f'Deformation nch={nch}')
 #    nch = 32
 
     u = re_chunk(u, xch=nch, ych=nch, zch = 'all')
@@ -91,7 +96,7 @@ def deformation(source_dataset, ref_dataset, derived_dataset,
 
     u = None # Save some memory
 
-    v = get_data(source_dataset, ref_dataset, "v", options)
+    v = get_data(source_dataset, ref_dataset, uvw_names[1], options)
     v = re_chunk(v, xch=nch, ych=nch, zch = 'all')
 
     vx = do.d_by_dx_field(v, z, zn, grid = grid )
@@ -111,7 +116,7 @@ def deformation(source_dataset, ref_dataset, derived_dataset,
 
     v = None # Save some memory
 
-    w = get_data(source_dataset, ref_dataset, "w", options)
+    w = get_data(source_dataset, ref_dataset, uvw_names[2], options)
     w = re_chunk(w, xch=nch, ych=nch, zch = 'all')
 
     wx = do.d_by_dx_field(w, z, zn, grid = grid )
@@ -131,7 +136,7 @@ def deformation(source_dataset, ref_dataset, derived_dataset,
 
     w = None # Save some memory
 
-    if config.subfilter_setup['use_concat']:
+    if subfilter.global_config['use_concat']:
 
         print('Concatenating derivatives')
 

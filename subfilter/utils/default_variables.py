@@ -4,8 +4,7 @@ Created on Mon Aug  2 12:09:37 2021
 
 @author: paclk
 """
-import config
-test_level = 1
+import subfilter
 
 def get_default_variable_list() :
     """
@@ -31,7 +30,7 @@ def get_default_variable_list() :
     @author: Peter Clark
 
     """
-    if test_level == 1:
+    if subfilter.global_config['test_level'] == 1:
 # For testing
         var_list = [
             "u",
@@ -39,7 +38,7 @@ def get_default_variable_list() :
             "w",
             "th",
             ]
-    elif test_level == 2:
+    elif subfilter.global_config['test_level'] == 2:
 # For testing
 #        var_list = ["u","w","th", "th_v", "th_L", "q_total"]
         var_list = [
@@ -106,12 +105,12 @@ def get_default_variable_pair_list() :
     @author: Peter Clark
 
     """
-    if test_level == 1:
+    if subfilter.global_config['test_level'] == 1:
 # For testing
         var_list = [
                 ["w","th"],
               ]
-    elif test_level == 2:
+    elif subfilter.global_config['test_level'] == 2:
 # For testing
         var_list = [
                 ["u","w"],
