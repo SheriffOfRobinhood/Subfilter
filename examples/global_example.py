@@ -6,6 +6,9 @@ Created on Tue Oct 23 11:27:25 2018
 
 
     Use of this script requires inspection of global_example.yaml
+    That file specifies the input data and many options.
+    Some of the options present are not configured by default for use
+      in subfilter routines but are co-opted by this script.
 
 
 
