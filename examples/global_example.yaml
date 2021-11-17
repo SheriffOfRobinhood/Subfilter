@@ -86,22 +86,5 @@ spectra_options:
     # list of string patterns to match applicable analysis variable names in var_list
     filtered_spectra_fields: ['u_on_w_r','v_on_w_r','w_on_w_r','th_on_w_r','q_vapour_on_w_r','th_v_on_w_r','th_L_on_w_r','q_total_on_w_r','buoyancy_on_w_r']
     derived_spectra_fields: ['u_on_w','v_on_w','w_on_w','th_on_w','q_vapour_on_w','th_v_on_w','th_L_on_w','q_total_on_w','buoyancy_on_w']
-    # [ True, {False} ] Whether to calculate 3D KE spectra
-    do_ke: True
-
-#cmd="python -u /home/users/toddj/subfilter/Subfilter/source//pc_subfilter_opt.py -i /work/scratch-pw/toddj/RCE_m0100_g1320/diagnostic_files -f /work/scratch-pw/toddj/RCE_m0100_g1320/diagnostic_files/diagnostics_ts_12096000.nc -r /work/scratch-pw/toddj/RCE_m0100_g1320/diagnostic_files/ref.nc -o /work/scratch-pw/toddj//RCE_m0100_g1320/diagnostic_files/subfilter/ --sigma_list=[200.0,400.0,800.0,1600.0] --germano_list=[200.0,400.0]"
-    #
-
-#            print('domain, gaussian, running_mean, wave_cutoff & '
-#                  'circular_wave_cutoff')
-#            self.attributes = {'filter_type' : filter_name,
-#                  'ndim' : ndim,
-#                  'wavenumber' : wavenumber,
-#                  'delta_x' : delta_x,
-#                  'width' : width,
-#                  'cutoff' : cutoff,
-#                  'high_pass' : high_pass,
-#                  'sigma' : sigma}
-#
 
 
