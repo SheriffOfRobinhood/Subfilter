@@ -32,12 +32,12 @@ import subfilter
 test_case = 0
 run_quad_fields = True
 #run_quad_fields = False
-run_deformation_fields = True
-#run_deformation_fields = False
+#run_deformation_fields = True
+run_deformation_fields = False
 run_cloud_fields = True
 #run_cloud_fields = False
-run_ri = True
-#run_ri = False
+#run_ri = True
+run_ri = False
 override = True
 
 plot_type = '.png'

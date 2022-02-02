@@ -65,7 +65,7 @@ class Filter :
             if (sigma == -1):
                 data = self.filter_error(filter_name, 'sigma')
             else:
-                data = gaussian_filter(sigma, delta_x, cutoff, npoints,
+                data = gaussian_filter(sigma, delta_x, npoints, cutoff,
                                                ndim=ndim)
         elif (filter_name == 'running_mean'):
             if (width == -1):

@@ -121,22 +121,55 @@ s_qt_qt =filtered_dataset["s(q_total,q_total)_on_w"]
 s_thL_qt =filtered_dataset["s(th_L,q_total)_on_w"]
 s_thL_thL =filtered_dataset["s(th_L,th_L)_on_w"]
 
+cloud_fraction_true = np.clip(filtered_dataset["f(cloud_fraction_on_w)_r"],0,None)
+qcl_true = np.clip(filtered_dataset["f(q_cloud_liquid_mass_on_w)_r"],0,None)
+
 (delta_q, qc, sig_s, cloud_fraction, qcl) = cldm.gaussian_cloud(th_L, qt, th_ref, p_ref, s_qt_qt, s_thL_qt, s_thL_thL)
+
 #%%
+Clev = np.linspace(0,1.0,21)
+qlev = np.linspace(0,1E-3,21)
 for it, t in enumerate(filtered_dataset.coords[timevar]):
 
-    fig, axa = plt.subplots(3,2,figsize=(10,10))
+    fig1, axa = plt.subplots(5,2,figsize=(10,15))
 
     sig_s.isel({timevar:it,zvar:ilev}).plot.contourf(x=xvar, y=yvar, ax=axa[0,0], levels=nlevels)
     sig_s.isel({timevar:it,yvar:iy,zvar:slice(1,None)}).plot.contourf(x=xvar, y=zvar, ax=axa[0,1], levels=nlevels)
 
-    cloud_fraction.isel({timevar:it,zvar:ilev}).plot.contourf(x=xvar, y=yvar, ax=axa[1,0], levels=nlevels)
-    cloud_fraction.isel({timevar:it,yvar:iy,zvar:slice(1,None)}).plot.contourf(x=xvar, y=zvar, ax=axa[1,1], levels=nlevels)
+    cloud_fraction.isel({timevar:it,zvar:ilev}).plot.contourf(x=xvar, y=yvar, ax=axa[1,0], levels=Clev)
+    cloud_fraction.isel({timevar:it,yvar:iy,zvar:slice(1,None)}).plot.contourf(x=xvar, y=zvar, ax=axa[1,1], levels=Clev)
 
+    cloud_fraction_true.isel({timevar:it,zvar:ilev}).plot.contourf(x=xvar, y=yvar, ax=axa[2,0], levels=Clev)
+    cloud_fraction_true.isel({timevar:it,yvar:iy,zvar:slice(1,None)}).plot.contourf(x=xvar, y=zvar, ax=axa[2,1], levels=Clev)
 
-    qcl.isel({timevar:it,zvar:ilev}).plot.contourf(x=xvar, y=yvar, ax=axa[2,0], levels=nlevels)
-    qcl.isel({timevar:it,yvar:iy,zvar:slice(1,None)}).plot.contourf(x=xvar, y=zvar, ax=axa[2,1], levels=nlevels)
+    qcl.isel({timevar:it,zvar:ilev}).plot.contourf(x=xvar, y=yvar, ax=axa[3,0], levels=qlev)
+    qcl.isel({timevar:it,yvar:iy,zvar:slice(1,None)}).plot.contourf(x=xvar, y=zvar, ax=axa[3,1], levels=qlev)
 
-    fig.tight_layout()
-    plt.savefig(f'{plot_dir}Cloud_lev_{ilev:03d}_x_z{iy:03d}_{filter_id}_{it:02d}{plot_type}')
+    qcl_true.isel({timevar:it,zvar:ilev}).plot.contourf(x=xvar, y=yvar, ax=axa[4,0], levels=qlev)
+    qcl_true.isel({timevar:it,yvar:iy,zvar:slice(1,None)}).plot.contourf(x=xvar, y=zvar, ax=axa[4,1], levels=qlev)
+
+    fig1.tight_layout()
+    fig1.savefig(f'{plot_dir}Cloud_lev_{ilev:03d}_x_z{iy:03d}_{filter_id}_{it:02d}{plot_type}')
     plt.close()
+
+fig2, axb = plt.subplots(1,2,figsize=(10,5))
+axb[0].plot(cloud_fraction_true.values.flatten(),
+            cloud_fraction.values.flatten(),
+            marker='.', linestyle='none', markersize=0.01)
+axb[0].set_xlim([0,1])
+axb[0].set_ylim([0,1])
+axb[0].set_xlabel('True Cloud Fraction')
+axb[0].set_ylabel('Gaussian Cloud Fraction')
+
+
+axb[1].plot(qcl_true.values.flatten(),
+            qcl.values.flatten(),
+            marker='.', linestyle='none', markersize=0.01)
+axb[1].set_xlim([0,0.001])
+axb[1].set_ylim([0,0.001])
+axb[1].set_xlabel(r'True $q_{cl}$')
+axb[1].set_ylabel(r'Gaussian $q_{cl}$')
+
+fig2.tight_layout()
+fig2.savefig(f'{plot_dir}Cloud_scatter_{filter_id}{plot_type}')
+plt.close()

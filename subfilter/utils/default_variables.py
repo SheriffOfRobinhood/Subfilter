@@ -43,7 +43,9 @@ def get_default_variable_list() :
             "u",
             "w",
             "th_L",
+            "q_cloud_liquid_mass",
             "q_total",
+            "cloud_fraction"
             ]
     else:
         var_list = [
@@ -114,12 +116,12 @@ def get_default_variable_pair_list() :
     elif subfilter.global_config['test_level'] == 2:
 # For testing
         var_list = [
-                ["u","w"],
-                ["w","w"],
-                ["u","th"],
-                ["w","th"],
-                ["w","th_L"],
-                ["w","q_total"],
+                # ["u","w"],
+                # ["w","w"],
+                # ["u","th"],
+                # ["w","th"],
+                # ["w","th_L"],
+                # ["w","q_total"],
                 ["th_L","th_L"],
                 ["th_L","q_total"],
                 ["q_total","q_total"],
