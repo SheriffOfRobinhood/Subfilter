@@ -17,6 +17,8 @@ Welcome to Subfilter's documentation!
    utils
    io
    thermodynamics
+   deformation
+   cloud_monc
     
 
 Indices and tables

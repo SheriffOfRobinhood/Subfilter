@@ -39,7 +39,7 @@ def re_chunk(f, chunks = None, xch = 'all', ych = 'all', zch = 'auto'):
     if subfilter.global_config['no_dask']:
         return f
 
-    print('*** Using re_chunk ***')
+    #print('*** Using re_chunk ***')
 
     defn = 1
 

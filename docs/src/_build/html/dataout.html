@@ -87,25 +87,26 @@
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>source_file</strong> – str
-Input NetCDF file name.</p></li>
-<li><p><strong>destdir</strong> – str
-Output directory.</p></li>
-<li><p><strong>options</strong> – dict
-Options database</p></li>
-<li><p><strong>override=False</strong> – bool
-if True force creation of file</p></li>
+<li><p><strong>source_file</strong> (<em>str</em>) – Input NetCDF file name.</p></li>
+<li><p><strong>destdir</strong> (<em>str</em>) – Output directory.</p></li>
+<li><p><strong>options</strong> (<em>dict</em>) – Options dictionary</p></li>
+<li><p><strong>override=False</strong> (<em>bool</em>) – if True force creation of file</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><ul class="simple">
-<li><p><em>derived_dataset {dict}</em></p></li>
-<li><p><em>exists</em></p></li>
+<dd class="field-even"><p><ul>
+<li><p><strong>do</strong> (<em>dict</em>) –</p>
+<p>{<strong>‘file’</strong>: derived_dataset_name (str) - file name,</p>
+<blockquote>
+<div><p><a href="#id1"><span class="problematic" id="id2">|</span></a><strong>’ds’</strong>: derived_dataset (xarray Dataset) - NetCDF dataset for derived data}</p>
+</div></blockquote>
+</li>
+<li><p><strong>exists</strong> (<em>bool</em>) – True when input <strong>source_file</strong> already existed and was not overwritten</p></li>
+<li><p><strong>&#64;author</strong> (<em>Peter Clark</em>)</p></li>
 </ul>
 </p>
 </dd>
 </dl>
-<p>&#64;author: Peter Clark</p>
 </dd></dl>
 
 <p>Created on Mon Aug  2 11:21:15 2021</p>
@@ -177,7 +178,7 @@ if True force creation of file</p></li>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2019, 2020, 2021 Peter Clark.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.1.2.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.2.
     </div>
   </body>
 </html>

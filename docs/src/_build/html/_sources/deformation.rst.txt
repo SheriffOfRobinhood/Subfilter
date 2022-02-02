@@ -1,7 +1,7 @@
 ==========================
 The deformation module.
 ==========================
-This module implements averaging and differencing functions for data on a C-grid.
+This module implements functions to calculate the deformation tensor for data on a C-grid.
 
 .. topic:: New at 0.5
 

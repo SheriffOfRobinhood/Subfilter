@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 """
 Created on Mon Aug  2 11:29:37 2021
 
-@author: paclk
+@author: Peter Clark
 """
 import numpy as np
 import subfilter
@@ -10,10 +9,10 @@ import xarray as xr
 
 import subfilter.utils.difference_ops as do
 
-from .string_utils import get_string_index
-from ..io.datain import get_data
-from .dask_utils import re_chunk
-from ..io.dataout import save_field
+from subfilter.io.datain import get_data
+from subfilter.io.dataout import save_field
+from subfilter.utils.string_utils import get_string_index
+from subfilter.utils.dask_utils import re_chunk
 
 
 def deformation(source_dataset, ref_dataset, derived_dataset,
@@ -54,8 +53,9 @@ def deformation(source_dataset, ref_dataset, derived_dataset,
 
     # Check uvw_names
     if not all([x in source_dataset for x in uvw_names]):
-        raise ValueError(f'The u, v, and w variable names, {uvw_names}, are not all present \
-                           in the source_dataset passed to the deformation() function.')
+        raise ValueError(f'The u, v, and w variable names, {uvw_names}, \
+                           are not all present in the source_dataset passed \
+                           to the deformation() function.')
 
     u = get_data(source_dataset, ref_dataset, uvw_names[0], options)
     [iix, iiy, iiz] = get_string_index(u.dims, ['x', 'y', 'z'])
@@ -67,32 +67,17 @@ def deformation(source_dataset, ref_dataset, derived_dataset,
     nch = int(sh[iix]/(2**int(np.log(sh[iix]*sh[iiy]*sh[iiz]/max_ch)/np.log(2)/2)))
 
     print(f'Deformation nch={nch}')
-#    nch = 32
 
     u = re_chunk(u, xch=nch, ych=nch, zch = 'all')
-    # print(u)
-    # print(v)
 
     z = source_dataset["z"]
     zn = source_dataset["zn"]
 
     ux = do.d_by_dx_field(u, z, zn, grid = grid )
-#    ux = re_chunk(ux, xch=nch, ych=nch, zch = 'all')
-#    save_field(derived_dataset, ux)
-
-#    print(ux)
 
     uy = do.d_by_dy_field(u, z, zn, grid = grid )
-#    uy = re_chunk(uy, xch=nch, ych=nch, zch = 'all')
-#    save_field(derived_dataset, uy)
-#    print(uy)
 
     uz = do.d_by_dz_field(u, z, zn, grid = grid )
-
-#    uz = re_chunk(uz, xch=nch, ych=nch, zch = 'all')
-#    save_field(derived_dataset, uz)
-#    u = 0
-#    print(uz)
 
     u = None # Save some memory
 
@@ -100,19 +85,10 @@ def deformation(source_dataset, ref_dataset, derived_dataset,
     v = re_chunk(v, xch=nch, ych=nch, zch = 'all')
 
     vx = do.d_by_dx_field(v, z, zn, grid = grid )
-#    vx = re_chunk(vx, xch=nch, ych=nch, zch = 'all')
-#    save_field(derived_dataset, vx)
-#    print(vx)
 
     vy = do.d_by_dy_field(v, z, zn, grid = grid )
-#    vy = re_chunk(vy, xch=nch, ych=nch, zch = 'all')
-#    save_field(derived_dataset, vy)
-#    print(vy)
 
     vz = do.d_by_dz_field(v, z, zn, grid = grid )
-#    vz = re_chunk(vz, xch=nch, ych=nch, zch = 'all')
-#    save_field(derived_dataset, vz)
-#    print(vz)
 
     v = None # Save some memory
 
@@ -120,19 +96,10 @@ def deformation(source_dataset, ref_dataset, derived_dataset,
     w = re_chunk(w, xch=nch, ych=nch, zch = 'all')
 
     wx = do.d_by_dx_field(w, z, zn, grid = grid )
-#    wx = re_chunk(wx, xch=nch, ych=nch, zch = 'all')
-#    save_field(derived_dataset, wx)
-#    print(wx)
 
     wy = do.d_by_dy_field(w, z, zn, grid = grid )
-#    wy = re_chunk(wy, xch=nch, ych=nch, zch = 'all')
-#    save_field(derived_dataset, wy)
-#    print(wy)
 
     wz = do.d_by_dz_field(w, z, zn, grid = grid )
-#    wz = re_chunk(wz, xch=nch, ych=nch, zch = 'all')
-#    save_field(derived_dataset, wz)
-#    print(wz)
 
     w = None # Save some memory
 

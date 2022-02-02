@@ -1,22 +1,19 @@
 ==========================
-The deformation module.
+The cloud_monc module.
 ==========================
-This module implements functions to calculate the deformation tensor for data on a C-grid.
+This module implements functions related to cloud parametrization.
 
 .. topic:: New at 0.5
 
-    #. Relocated to :py:mod:`subfilter.utils`.
+    This module was introduced at version 0.5.
 
-.. topic:: New at 0.4
-
-    #. Use of xarray and dask.
 
 
 Detailed Module Contents
 ------------------------
 The entire module is documented below.
 
-.. automodule:: subfilter.utils.deformation
+.. automodule:: subfilter.utils.cloud_monc
    :member-order: bysource
    :members:
    :undoc-members:

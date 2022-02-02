@@ -1,8 +1,8 @@
 """
+filters.py.
 
-  filters.py
-
-    - This module contains the code to generate a selection of 2-dimensional filters.
+This module contains the code to generate a selection of 2-dimensional filters.
+    @author: Peter Clark
 
 """
 
@@ -17,32 +17,39 @@ eps = float_info.min # smallest possible float
 
 #===============================================================================
 class Filter :
-    '''
+    """
     Class defining a filter function.
 
-    Args:
-        filter_name (str): Name of filter used. Chices are: gaussian, wave-cutoff,
-                         circular_wave_cutoff, running-mean, one_two-one
-        wavenumber (float): If a wave-cutoff filter is used, contains the cutoff
-                          wavenumber.
-        delta_x (float): Distance between points in the horizontal,
-                       used to caculate the filter
-        width (int): If set, controls the width of the filter. Must be set for
-                   running-mean filter.
-        cutoff (float): If float is not set, this controls the width of the
-                      filter. The width of the filter is extended until the
-                      minimum value in the filter is less than this cutoff
-                      value.
-        high_pass (bool): If a wave-cutoff filter is used, this determines whether
-                        it is high or low pass (note high pass hasn't actually
-                        been coded yet!)
-        sigma (float): If a Gaussian filter is used, this is the lengthscale of
-                     the filter.
-        ndim (int): Number of dimensions (default=2)
+    Args
+    ----
+        filter_name: str
+            Name of filter used. Chices are: gaussian, wave-cutoff,
+            circular_wave_cutoff, running-mean, one_two-one
+        wavenumber: float
+            If a wave-cutoff filter is used, contains the cutoff
+            wavenumber.
+        delta_x: float
+            Distance between points in the horizontal,
+            used to caculate the filter
+        width: int
+            If set, controls the width of the filter. Must be set for
+            running-mean filter.
+        cutoff: float
+            If float is not set, this controls the width of the
+            filter. The width of the filter is extended until the
+            minimum value in the filter is less than this cutoff
+            value.
+        high_pass: bool
+            If a wave-cutoff filter is used, this determines whether
+            it is high or low pass (note high pass hasn't actually
+            been coded yet!)
+        sigma: float
+            If a Gaussian filter is used, this is the lengthscale of
+            the filter.
+        ndim: int
+            Number of dimensions (default=2)
 
-    @author: Peter Clark
-
-    '''
+    """
 
     def __init__(self, filter_id, filter_name,
                  delta_x=1000.0, cutoff=0.000001, npoints = None,
@@ -125,8 +132,8 @@ class Filter :
         return rep
 
     def filter_error(filter_name, problem):
-        '''
-        Prints error when parameter required by filter does not exist.
+        """
+        Print error when parameter required by filter does not exist.
 
         Args:
           filter_name (str): Name of filter
@@ -134,25 +141,35 @@ class Filter :
 
         Returns:
           filter_err (-9999): Error code for filter.
-        '''
+        """
         print(f'A {filter_name:s} filter was selected, but a suitable value')
         print(f'for the {problem:s} was not chosen.')
         filter_err = -9999
         return filter_err
 
+def is_npi(x, tol=0.000001):
+    r = np.abs(np.pi*np.round(x/np.pi )- x) <= tol
+    return r
+
+
 def running_mean_filter(width, npoints, ndim=2):
-    '''
-    Calculates a square 1 or 2D running mean filter with the given width
+    """
+    Calculate a square 1 or 2D running mean filter with the given width.
 
-    Args:
-        width (int): width of the filter
-        npoints (int) : number of points in output array.
-        ndim (int): Number of dimensions (default=2)
+    Args
+    ----
+    width: int
+        Width of the filter.
+    npoints: int
+        Number of points in output array.
+    ndim: int (default=2)
+        Number of dimensions.
 
-    Returns:
+    Returns
+    -------
         ndarray: ndim dimensional array of size width in each dimension.
           Every element equals 1.0/(width**ndim)
-    '''
+    """
     width = int(width)
     if npoints is None:
         npoints = width
@@ -167,19 +184,23 @@ def running_mean_filter(width, npoints, ndim=2):
     return result
 
 def one_two_one_filter(width, npoints, ndim=2):
-    '''
-    Calculates a square 1 or 2D running mean filter with the given width
+    """
+    Calculate a square 1 or 2D running mean filter with the given width.
 
-    Args:
-        width (int): width of the filter
-        npoints (int) : number of points in output array.
-        ndim (int): Number of dimensions (default=2)
+    Args
+    ----
+    width: int
+        Width of the filter.
+    npoints: int
+        Number of points in output array.
+    ndim: int (default=2)
+        Number of dimensions.
 
-    Returns:
+    Returns
+    -------
         ndarray: ndim dimensional array of size width in each dimension.
           Every element equals 1.0/(width**ndim)
-    '''
-
+    """
     stencil = np.array([1,2,1])/4
     if ndim == 1:
         result = stencil
@@ -192,36 +213,37 @@ def one_two_one_filter(width, npoints, ndim=2):
                             (npoints//2-1, (npoints-2-npoints//2)))
     return result
 
-def is_npi(x, tol=0.000001):
-    r = np.abs(np.pi*np.round(x/np.pi )- x) <= tol
-    return r
-
 def wave_cutoff_filter(wavenumber, delta_x=1000.0, npoints=-1, cutoff=0.000001,
                        high_pass=0, ndim=2, set_fft=True):
-    '''
-    Calculates a 2D wave-cutoff filter caculated using the given wavenumber.
+    """
+    Calculate a 2D wave-cutoff filter caculated using the given wavenumber.
 
     Uses filter(x,y) = :math:`\sin(wavenumber * x)/x * \sin(wavenumber * y)/y`
     in 2D.
     Normalised by sum(filter(x,y)).
     Note that this returns the point sampled value of filter(x).
 
-    Args:
-      wavenumber (float):
-      delta_x (float, default=1000.0): The distance between two points in the
-                                    data that the filter will be applied to.
-      npoints (int, default=-1): If not -1, used to explicitly set the npoints of
-                               the filter.
-      cutoff (float, default=0.0001): If npoints=-1, the npoints of the filter is
-                                      set dynamically, and increased until the
-                                      smallest value of the filter is less
-                                      than the cutoff value.
-      high_pass (bool, default=0): If true a high pass filter is calculated
-      ndim (int): Number of dimensions (default=2)
+    Args
+    ----
+    wavenumber: float
+        Cutoff wavenumber in radians/wavelength.
+    delta_x: (float, default=1000.0)
+        The distance between two points in the data that the filter will be applied to.
+    npoints: int (default=-1)
+        If not -1, used to explicitly set the npoints of the filter.
+    cutoff: float (default=0.0001)
+        If npoints=-1, the npoints of the filter is set dynamically, and
+        increased until the smallest value of the filter is less than the
+        cutoff value.
+    high_pass: bool (default=0)
+        If true a high pass filter is calculated
+    ndim: int
+        Number of dimensions (default=2)
 
-    Returns:
-      ndarray: 2D array of filter values
-    '''
+    Returns
+    -------
+    ndarray: 2D array of filter values
+    """
     rfft = None
     if high_pass:
         print("High pass not yet coded.")
@@ -324,30 +346,35 @@ def wave_cutoff_filter(wavenumber, delta_x=1000.0, npoints=-1, cutoff=0.000001,
 
 def circular_wave_cutoff_filter(wavenumber, delta_x=1000.0, npoints=-1,
                        cutoff=0.000001, high_pass=0, ndim=2):
-    '''
-    Calculates a 2D wave-cutoff filter caculated using the given wavenumber.
+    """
+    Calculate a 2D wave-cutoff filter caculated using the given wavenumber.
 
     Uses filter(x,y) = :math:`\sin(wavenumber * x)/x * \sin(wavenumber * y)/y`
     in 2D.
     Normalised by sum(filter(x,y)).
     Note that this returns the point sampled value of filter(x).
 
-    Args:
-      wavenumber (float):
-      delta_x (float, default=1000.0): The distance between two points in the data
-                                    that the filter will be applied to.
-      npoints (int, default=-1): If not -1, used to explicitly set the npoints of the
-                               filter.
-      cutoff (float, default=0.0001): If npoints=-1, the npoints of the filter is set
-                                      dynamically, and increased until the
-                                      smallest value of the filter is less than
-                                      the cutoff value.
-      high_pass (bool, default=0): If true a high pass filter is calculated
-      ndim (int): Number of dimensions (default=2)
+    Args
+    ----
+    wavenumber: float
+        Cutoff wavenumber in radians/wavelength.
+    delta_x: (float, default=1000.0)
+        The distance between two points in the data that the filter will be applied to.
+    npoints: int (default=-1)
+        If not -1, used to explicitly set the npoints of the filter.
+    cutoff: float (default=0.0001)
+        If npoints=-1, the npoints of the filter is set dynamically, and
+        increased until the smallest value of the filter is less than the
+        cutoff value.
+    high_pass: bool (default=0)
+        If true a high pass filter is calculated
+    ndim: int
+        Number of dimensions (default=2)
 
-    Returns:
-      ndarray: 2D array of filter values
-    '''
+    Returns
+    -------
+    ndarray: 2D array of filter values
+    """
     if high_pass:
         print("High pass not yet coded.")
         return None
@@ -393,30 +420,34 @@ def circular_wave_cutoff_filter(wavenumber, delta_x=1000.0, npoints=-1,
     return (result, rfft)
 
 
-def gaussian_filter(sigma, delta_x=1000.0, cutoff=0.000001, npoints=-1,
-                       ndim=2):
-    '''
+def gaussian_filter(sigma, delta_x=1000.0, npoints=-1, cutoff=0.000001,
+                    ndim=2):
+    """
     Calculates a 1 or 2D Gaussian filter calculated with the given lengthscale (sigma)
 
     Uses filter(x,y) = :math:`\exp(-(x^2+y^2)/(2\sigma^2))` in 2D.
     Normalised by sum(filter(x)).
     Note that this returns the point sampled value of filter(x).
 
-    Args:
-      sigma (float): The lengthscale of the filter.
-      delta_x (float, default=1000.0): The distance between two points in the data
-                                    that the filter will be applied to.
-      npoints (int, default=-1): If not -1, used to explicitly set the npoints of the
-                               filter in gridpoints.
-      cutoff (float, default=0.0001): If npoints=-1, the npoints of the filter is set
-                                      dynamically, and increased until the
-                                      smallest value of the filter is less than
-                                      the cutoff value.
-      ndim (int): Number of dimensions (default=2)
+    Args
+    ----
+    sigma: float
+        The lengthscale of the filter.
+    delta_x: float (default=1000.0)
+        The distance between two points in the data that the filter will be applied to.
+    npoints: int (default=-1)
+        If not -1, used to explicitly set the npoints of the filter.
+    cutoff: float (default=0.0001)
+        If npoints=-1, the npoints of the filter is set dynamically, and
+        increased until the smallest value of the filter is less than the
+        cutoff value.
+    ndim: int
+        Number of dimensions (default=2)
 
-    Returns:
-      ndarray: 2D array of filter values
-    '''
+    Returns
+    -------
+    ndarray: 2D array of filter values
+    """
     if npoints == -1:
 
         half_width = 0

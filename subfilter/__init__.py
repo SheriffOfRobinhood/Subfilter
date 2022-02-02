@@ -20,7 +20,7 @@ global_config = {
     'no_dask': False,                                # [True, False] Whether to completely disable dask in all routines.
                                                      #   Smaller chunks generally take longer to compute.
     'dask_chunks': {'z':'auto', 'zn':'auto'},        # dict, coordinate-specific rules about how to chunk input data when
-                                                     #   reading. For example: 
+                                                     #   reading. For example:
                                                      #       if not subfilter.global_config['no_dask']:
                                                      #          dask.config.set({"array.slicing.split_large_chunks": True})
                                                      #          dask_chunks = subfilter.global_config['dask_chunks']
@@ -33,10 +33,10 @@ global_config = {
                                                      #   'auto' will use dask auto chunking.
     'use_map_overlap': True,                         # [True, False] When using dask, whether to use dask's map_overlap to
                                                      #   perform difference operator actions with periodic boundaries.
-    'l_slurm_job_tag': False,                        # [True, False] When executing_on_cluster, whether to add the Slurm job 
+    'l_slurm_job_tag': False,                        # [True, False] When executing_on_cluster, whether to add the Slurm job
                                                      #   name to output file names.
     'output_precision': "float64",                   # str, ["float64", "float32"]  Presision of output data.
-    'test_level': 1,                                 # int, [1, 2] Case ID to select variable lists for testing.
+    'test_level': 0,                                 # int, [1, 2] Case ID to select variable lists for testing.
     }
 
 

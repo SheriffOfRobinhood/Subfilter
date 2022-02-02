@@ -6,13 +6,14 @@ Created on Tue Sep 15 16:10:18 2020
 """
 import numpy as np
 import xarray as xr
+import os
 import matplotlib
 import matplotlib.pyplot as plt
 import time
 
 import subfilter.subfilter as sf
 import subfilter.filters as filt
-#import difference_ops as do
+import subfilter
 
 options = {
 #       'FFT_type': 'FFTconvolve',
@@ -21,23 +22,19 @@ options = {
 #       'FFT_type': 'DIRECT',
           }
 
+op_dir = 'test_figs/'
 
-#sigma_list = [2000.0, 1000.0, 500.0, 200.0, 100.0]
-#sigma_list = [71.0]
+os.makedirs(op_dir, exist_ok=True)
 
+wavelength_list = [3200.0, 1600.0, 800.0, 400.0, 200.0, 100.0]
+#wavelength_list = [200.0]
 
-#sigma_list = [2000.0, 1000.0, 500.0, 200.0, 100.0]
-#wavelength_list = [3200.0, 1600.0, 800.0, 400.0, 200.0, 100.0]
-wavelength_list = [200.0]
-#sigma_list = [1600.0]
-dx = 100.0
-
-#filter_name = 'gaussian'
-#filter_name = 'wave_cutoff'
-filter_name = 'circular_wave_cutoff'
-#filter_name = 'running_mean'
-#filter_name = 'one_two_one'
-filter_list = list([])
+filter_types = ['gaussian',
+                'wave_cutoff',
+                'circular_wave_cutoff',
+                'running_mean',
+                'one_two_one'
+                ]
 
 N = 128
 dx = 100
@@ -74,41 +71,61 @@ yc /= 1000
 x /= 1000
 y /= 1000
 
+id = 0
+filter_list = list([])
+for filter_name in filter_types:
 
-for i,wavelength in enumerate(wavelength_list):
-    filter_id = 'filter_{:02d}'.format(i)
-    if filter_name == 'running_mean':
-        width = max(min(N-2,np.round( wavelength/dx+1)),1)
-        sigma=-1
-        wavenumber = -1
-    elif filter_name == 'gaussian':
-        sigma = wavelength/4.0
-        width = -1
-        wavenumber = -1
+    if filter_name == 'one_two_one':
+        filter_id = 'filter_{:02d}'.format(id)
+        twod_filter = filt.Filter(filter_id, filter_name,
+                                  wavenumber= -1,
+                                  sigma=dx, width=-1, npoints = N,
+                                  delta_x=dx, set_fft=True)
+        twod_filter.attributes['wavelength'] = 2*dx
+
+#        print(twod_filter)
+        filter_list.append(twod_filter)
+        id += 1
+
     else:
-        width = -1
-        wavenumber = 2*np.pi/wavelength
-        sigma=-1
 
-    twod_filter = filt.Filter(filter_id, filter_name,
-                              wavenumber= wavenumber,
-                              sigma=sigma, width=width, npoints = N,
-                              delta_x=dx, set_fft=True)
+        for i,wavelength in enumerate(wavelength_list):
 
-    print(twod_filter)
-    filter_list.append(twod_filter)
+            filter_id = 'filter_{:02d}'.format(id)
+
+            if filter_name == 'running_mean':
+                width = max(min(N-2,np.round( wavelength/dx+1)),1)
+                sigma=-1
+                wavenumber = -1
+            elif filter_name == 'gaussian':
+                sigma = wavelength/4.0
+                width = -1
+                wavenumber = -1
+            else:
+                width = -1
+                wavenumber = 2*np.pi/wavelength
+                sigma=-1
+
+            twod_filter = filt.Filter(filter_id, filter_name,
+                                      wavenumber= wavenumber,
+                                      sigma=sigma, width=width, npoints = N,
+                                      delta_x=dx, set_fft=True)
+            twod_filter.attributes['wavelength'] = wavelength
+#            print(twod_filter)
+            filter_list.append(twod_filter)
+        id += 1
 
 
 print(filter_list)
 
 for i, twod_filter in enumerate(filter_list):
 
-    wavelength = wavelength_list[i]
+    filter_name = twod_filter.attributes['filter_type']
 
-#    print(np.sum(twod_filter.data))
+    wavelength = twod_filter.attributes['wavelength']
 
-#    f = plt.figure()
-    sigma=twod_filter.attributes['sigma']
+#    sigma=twod_filter.attributes['sigma']
+
     nx, ny = np.shape(twod_filter.data)
 
     x = np.linspace(-(nx//2), (nx-1)//2, nx) * twod_filter.attributes['delta_x']/1000
@@ -133,9 +150,9 @@ for i, twod_filter in enumerate(filter_list):
     ax[1,1].legend()
     f.tight_layout()
 
-    time_1 = time.time()
+    time_1 = time.perf_counter()
     (var_r, var_s) = sf.filtered_field_calc(var, options, twod_filter )
-    time_2 = time.time()
+    time_2 = time.perf_counter()
     elapsed_time = time_2 - time_1
     print(f'Elapsed time = {elapsed_time}')
     # var_r = var_r['data']
@@ -183,8 +200,8 @@ for i, twod_filter in enumerate(filter_list):
 
     fc.tight_layout()
 
-    f.savefig(f'{filter_name}_{wavelength:04.0f}_filter.png')
-    fc.savefig(f'{filter_name}_{wavelength:04.0f}_test_data.png')
+    f.savefig(f'{op_dir}{filter_name}_{wavelength:04.0f}_filter.png')
+    fc.savefig(f'{op_dir}{filter_name}_{wavelength:04.0f}_test_data.png')
 
     plt.close(f)
     plt.close(fc)

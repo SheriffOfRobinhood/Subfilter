@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 """
-Created on Mon Aug  2 12:09:37 2021
+Created on Mon Aug  2 12:09:37 2021.
 
-@author: paclk
+@author: Peter Clark
 """
 import subfilter
 
@@ -40,7 +39,6 @@ def get_default_variable_list() :
             ]
     elif subfilter.global_config['test_level'] == 2:
 # For testing
-#        var_list = ["u","w","th", "th_v", "th_L", "q_total"]
         var_list = [
             "u",
             "w",
@@ -57,7 +55,10 @@ def get_default_variable_list() :
             "th_L",
             "q_vapour",
             "q_cloud_liquid_mass",
-            "q_total"]
+            "q_total",
+            "cloud_fraction"
+            ]
+
     return var_list
 
 def get_default_variable_pair_list() :
@@ -119,6 +120,9 @@ def get_default_variable_pair_list() :
                 ["w","th"],
                 ["w","th_L"],
                 ["w","q_total"],
+                ["th_L","th_L"],
+                ["th_L","q_total"],
+                ["q_total","q_total"],
               ]
     else:
         var_list = [

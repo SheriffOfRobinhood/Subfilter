@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
 """
-difference_ops.py
+difference_ops.py.
 
 Created on Wed Apr 17 21:03:43 2019
 
@@ -13,6 +12,10 @@ import subfilter
 from .dask_utils import re_chunk
 from .string_utils import get_string_index
 import xarray
+
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning,
+                                   module='xarray.core.missing')
 
 
 grid_def = { 'p':('x_p', 'y_p', 'zn'),
@@ -63,7 +66,8 @@ def last_dim(z) :
     ----------
         z : n-dimensional array.
 
-    Returns:
+    Returns
+    -------
         z[0,0, etc. ,:]
     @author: Peter Clark
     """
@@ -74,13 +78,15 @@ def last_dim(z) :
 
 def interpolate(field, znew) :
     """
-    Interpolate field from z to zn
+    Interpolate field from z to zn.
 
     Parameters
+    ----------
         field : xarray nD field
         znew  : xarray coordinate new z.
 
-    Returns:
+    Returns
+    -------
         field on zn levels
     @author: Peter Clark
     """
@@ -111,6 +117,8 @@ def grid_conform_x(field, target_xdim):
 
     """
     [xaxis] = get_string_index(field.dims,['x'])
+    if xaxis is None:
+        return field
     xdim = field.dims[xaxis]
     if xdim == target_xdim:
         print(f'xdim is already {target_xdim}')
@@ -152,6 +160,8 @@ def grid_conform_y(field, target_ydim):
 
     """
     [yaxis] = get_string_index(field.dims,['y'])
+    if yaxis is None:
+        return field
     ydim = field.dims[yaxis]
     if ydim == target_ydim:
         print(f'ydim is already {target_ydim}')
@@ -194,6 +204,8 @@ def grid_conform_z(field, z, zn, target_zdim):
 
     """
     [zaxis] = get_string_index(field.dims,['z'])
+    if zaxis is None:
+        return field
     zdim = field.dims[zaxis]
     if zdim == target_zdim:
         print(f'zdim is already {target_zdim}')
@@ -380,18 +392,19 @@ def d_by_dz_field(field, z, zn, grid: str = 'p'):
 
 def padleft(f, zt, axis=0) :
     """
-    Add dummy field at bottom of nD array
+    Add dummy field at bottom of nD array.
 
     Parameters
+    ----------
         f : nD field
         zt: 1D zcoordinates
         axis=0: Specify axis to extend
 
-    Returns:
+    Returns
+    -------
         extended field, extended coord
     @author: Peter Clark
     """
-
     s = list(np.shape(f))
     s[axis] += 1
     newfield = np.zeros(s)
@@ -403,18 +416,19 @@ def padleft(f, zt, axis=0) :
 
 def padright(f, zt, axis=0) :
     """
-    Add dummy field at top of nD array
+    Add dummy field at top of nD array.
 
     Parameters
+    ----------
         f : nD field
         zt: 1D zcoordinates
         axis=0: Specify axis to extend
 
-    Returns:
+    Returns
+    -------
         extended field, extended coord
     @author: Peter Clark
     """
-
     s = list(np.shape(f))
     s[axis] += 1
     newfield = np.zeros(s)

@@ -177,12 +177,12 @@ def main():
         q_cl_r = derived_data['ds']["q_cloud_liquid_mass_r_onp"][...]
         q_cl_s = derived_data['ds']["q_cloud_liquid_mass_s_onp"][...]
         pref = ref_dataset.variables['prefn'][-1,...]
-        piref = (pref[:]/1.0E5)**kappa
+        piref = (pref[:]/1.0E5)**thc.kappa
         z = ref_dataset["z"][...]
         zn = ref_dataset["zn"][...]
 #        piref_on_w = do.field_on_p_to_w(piref, z, zn)
 #        p_on_w = 1.0E5 * (piref_on_w ** rk)
-        p = 1.0E5 * (piref ** rk)
+        p = 1.0E5 * (piref ** thc.rk)
 #        print(piref)
 #        print(piref_on_w)
 #        print(p_on_w)
@@ -191,7 +191,7 @@ def main():
         alpha_L = th.dqsatbydT(T_L_r, p)
 
         print(np.max(alpha_L),np.min(alpha_L))
-        a_L = 1.0 / (1.0 + L_over_cp * alpha_L)
+        a_L = 1.0 / (1.0 + thc.L_over_cp * alpha_L)
         print(np.shape(a_L))
         print(np.max(a_L),np.min(a_L))
 
@@ -278,5 +278,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

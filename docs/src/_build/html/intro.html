@@ -82,6 +82,7 @@ The file name is created from arguments destdir, source_file, fname and filter_d
 <li><p>Spectral wave cutoff.</p></li>
 <li><p>Spectral cylindrical wave cutoff.</p></li>
 <li><p>Running mean (or ‘top-hat’).</p></li>
+<li><p>2D version of the 1-2-1 filter.</p></li>
 <li><p>For completeness, a ‘whole domain’ filter in which the resolved field is the horizontal domain average. In this case the resolved field has no horizontal dimensions.</p></li>
 </ol>
 </dd>
@@ -89,8 +90,12 @@ The file name is created from arguments destdir, source_file, fname and filter_d
 </section>
 <section id="input-transforms">
 <h1>Input Transforms<a class="headerlink" href="#input-transforms" title="Permalink to this headline">¶</a></h1>
+<p>Basic variables (‘u’, ‘v’, ‘w’, ‘th’, ‘p’, ‘q_vapour’, ‘q_cloud_liquid_mass’, ‘q_cloud_ice_mass’) are expected to be available in the input file.
+If MONC is used, the horizontal grid specification is corrected on input to ‘x_p’ or ‘x_u’, ‘y_p’ or ‘y_v’ as appropriate.</p>
+<p>To facilitate use of other models, a list of aliases can be provided under the key ‘aliases’ to translate variable names.</p>
 <p>In order to facilitate comparisons and products, tools have been coded (efficiently but not very elegantly) to transform data from different points on the C-grid. Thus, second order terms can be computed correctly on required points just by specifying the ouput grid.</p>
-<p>A number of derived variables have been implemented that are calculated provided the required inputs are available. These are currently</p>
+<p>A number of derived variables have been implemented that are calculated provided the required inputs are available. These are provided in the <a class="reference internal" href="thermodynamics.html#module-subfilter.thermodynamics.thermodynamics" title="subfilter.thermodynamics.thermodynamics"><code class="xref py py-mod docutils literal notranslate"><span class="pre">subfilter.thermodynamics.thermodynamics</span></code></a> module.
+Examples are:</p>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 15%" />
@@ -103,10 +108,13 @@ The file name is created from arguments destdir, source_file, fname and filter_d
 <tr class="row-even"><td><p>‘th_v’</p></td>
 <td><p>Virtual potential temperature  <img class="math" src="_images/math/f0ec08091b2bd6bce618e4a034b692d310c0fe43.png" alt="\theta_v"/>.</p></td>
 </tr>
-<tr class="row-odd"><td><p>‘q_total’</p></td>
+<tr class="row-odd"><td><p>‘th_w’</p></td>
+<td><p>Wet bulb potential temperature  <img class="math" src="_images/math/654b7413ae4e620cf27d9c99e0d8c0bd57c4d184.png" alt="\theta_w"/>.</p></td>
+</tr>
+<tr class="row-even"><td><p>‘q_total’</p></td>
 <td><p>Total water  <img class="math" src="_images/math/2924b03f0c712be788a7e886b5bc4e04bcb709cc.png" alt="q_t"/>.</p></td>
 </tr>
-<tr class="row-even"><td><p>‘buoyancy’</p></td>
+<tr class="row-odd"><td><p>‘buoyancy’</p></td>
 <td><p><img class="math" src="_images/math/aabe769e638607494cc5e3763372fd6e5a4ca7fe.png" alt="(g/\overline{\theta_v})*(\theta_v-\overline{\theta_v})"/>,
 where the mean is the domain mean.</p></td>
 </tr>
@@ -117,11 +125,13 @@ and <a class="reference internal" href="subfilter.html#subfilter.subfilter.filte
 Each has a default list - this can easily be changed.</p>
 <div class="admonition-todo admonition" id="id1">
 <p class="admonition-title">Todo</p>
-<p>Code to calculate the deformation field and hence shear and vorticiy has also been implemented but needs full integration.</p>
+<p>Code to calculate the deformation field and hence shear and vorticity has also been implemented but needs full integration.</p>
 </div>
 <div class="admonition-todo admonition" id="id2">
 <p class="admonition-title">Todo</p>
-<p>The next step is to implement arbitrary derivatives, so one could specify in the variable list, e.g. “d_u_d_x_on_w”. This has been implemented in the trajectory code and will be ported to here for compatibility.</p>
+<p>The next step is to implement arbitrary derivatives, so one could specify in the variable list, e.g. “d_u_d_x_on_w”. This has been implemented in the trajectory code and will be ported to here for compatibility.
+The <a class="reference internal" href="tools.html#module-subfilter.utils.difference_ops" title="subfilter.utils.difference_ops"><code class="xref py py-mod docutils literal notranslate"><span class="pre">subfilter.utils.difference_ops</span></code></a> module now has general, grid-aware derivative and averaging functions.
+These are used internally but the ability to use them in the input variable list has yet to be implemented, apart from some special variables like buoyancy gradient.</p>
 </div>
 <p>An example of use can be found in examples/subfilter_file.py.</p>
 </section>
@@ -132,7 +142,7 @@ Each has a default list - this can easily be changed.</p>
 <p class="topic-title">New at 0.5</p>
 <ol class="arabic simple">
 <li><p>Complete re-structuring.</p></li>
-<li><p>Addition of py:module:<cite>subfilter.spectra</cite>.</p></li>
+<li><p>Addition of <a class="reference internal" href="spectra.html#module-subfilter.spectra" title="subfilter.spectra"><code class="xref py py-mod docutils literal notranslate"><span class="pre">subfilter.spectra</span></code></a>.</p></li>
 <li><p>The <a class="reference internal" href="subfilter.html#subfilter.subfilter.filtered_field_calc" title="subfilter.subfilter.filtered_field_calc"><code class="xref py py-func docutils literal notranslate"><span class="pre">subfilter.subfilter.filtered_field_calc()</span></code></a> function outputs filtered variables phi inder the names “f(phi)_r” and “f(phi)_s”.</p></li>
 </ol>
 </div>
@@ -245,7 +255,7 @@ The user must tell the code to use it by setting <cite>options[‘save_all’] =
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2019, 2020, 2021 Peter Clark.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.1.2.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.2.
     </div>
   </body>
 </html>

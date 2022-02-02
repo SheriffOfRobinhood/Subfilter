@@ -10,8 +10,9 @@ The main functions are:
 * :py:func:`subfilter.spectra.spectrum_ave_1D_radial`.
 
 
-#.. topic:: New at 0.5
-    
+.. topic:: New at 0.5
+
+        First introduced.
 
 Detailed Module Contents
 ------------------------

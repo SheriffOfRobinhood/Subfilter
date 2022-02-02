@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 subfilter.py
 - This is the "subfilter module"
@@ -9,7 +8,6 @@ Created on Tue Oct 23 11:07:05 2018
 
 @author: Peter Clark
 """
-import os
 
 import numpy as np
 import xarray as xr
@@ -17,19 +15,19 @@ import xarray as xr
 from scipy.signal import fftconvolve
 
 import subfilter.utils.deformation as defm
+import subfilter.utils.cloud_monc as cldm
 from .utils.default_variables import (get_default_variable_list,
                                       get_default_variable_pair_list)
 from .utils.string_utils import get_string_index
 from .io.datain import get_data_on_grid
 from .io.dataout import save_field, setup_child_file
-from .io.MONC_utils import options_database
 from .utils.dask_utils import re_chunk
 import yaml
 
 
 def subfilter_options(config_file:str=None):
     """
-
+    Set default options for filtering.
 
     Parameters
     ----------
@@ -147,12 +145,6 @@ def filter_variable_pair_list(source_dataset, ref_dataset, derived_dataset,
                                   filter_def, v[0], v[1], grid=grid)
 
         (s_var1var2, var1var2, var1var2_r, var1var2_s) = svars
-
-#        if options['save_all'].lower() == 'yes':
-#            save_field(derived_dataset, var1var2)
-#
-#        for f in (s_var1var2, var1var2_r, var1var2_s):
-#            save_field(filtered_dataset, f)
 
         if options['save_all'].lower() == 'yes':
             for f in (var1var2, var1var2_r, var1var2_s):
@@ -560,7 +552,6 @@ def filtered_deformation(source_dataset, ref_dataset, derived_dataset,
 
     return (d_var_r, d_var_s)
 
-
 def quadratic_subfilter(source_dataset,  ref_dataset, derived_dataset,
                         filtered_dataset, options, filter_def,
                         v1_name, v2_name, grid='p') :
@@ -594,13 +585,16 @@ def quadratic_subfilter(source_dataset,  ref_dataset, derived_dataset,
     (var1_r, var1_s) = filter_field(v1, filtered_dataset, options,
                                     filter_def, grid=grid)
 
+    if v2_name == v1_name:
+        v2 = v1
+        (var2_r, var2_s) = (var1_r, var1_s)
+    else:
+        v2 = get_data_on_grid(source_dataset, ref_dataset,
+                              derived_dataset, v2_name, options,
+                              grid=grid)
 
-    v2 = get_data_on_grid(source_dataset, ref_dataset,
-                          derived_dataset, v2_name, options,
-                          grid=grid)
-
-    (var2_r, var2_s) = filter_field(v2, filtered_dataset, options,
-                                    filter_def, grid=grid)
+        (var2_r, var2_s) = filter_field(v2, filtered_dataset, options,
+                                        filter_def, grid=grid)
 
 
     var1var2 = v1 * v2
@@ -615,4 +609,3 @@ def quadratic_subfilter(source_dataset,  ref_dataset, derived_dataset,
     s_var1var2.name = f"s({v1_name:s},{v2_name:s})_on_{grid:s}"
 
     return (s_var1var2, var1var2, var1var2_r, var1var2_s)
-

@@ -59,27 +59,74 @@
 <span class="target" id="module-subfilter.io.datain"></span><p>Created on Mon Aug  2 11:01:11 2021</p>
 <p>&#64;author: paclk</p>
 <dl class="py function">
+<dt class="sig sig-object py" id="subfilter.io.datain.correct_grid_and_units">
+<span class="sig-prename descclassname"><span class="pre">subfilter.io.datain.</span></span><span class="sig-name descname"><span class="pre">correct_grid_and_units</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vard</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.core.dataarray.DataArray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.core.dataset.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.io.datain.correct_grid_and_units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Correct input grid specification.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>var_name</strong> (<em>str</em>) – Name of variable to retrieve.</p></li>
+<li><p><strong>vard</strong> (<em>xarray.core.dataarray.DataArray</em>) – Input (at least 2D) data.</p></li>
+<li><p><strong>source_dataset</strong> (<em>xarray.core.dataset.Dataset</em>) – Source dataset for vard</p></li>
+<li><p><strong>options</strong> (<em>dict</em>) – Options possibly used are ‘dx’ and ‘dy’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>vard</strong> – DESCRIPTION.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>TYPE</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.io.datain.get_derived_vars">
+<span class="sig-prename descclassname"><span class="pre">subfilter.io.datain.</span></span><span class="sig-name descname"><span class="pre">get_derived_vars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">derived_vars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.io.datain.get_derived_vars" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get data from source_dataset and compute required variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source_dataset</strong> (<em>xarray Dataset</em>) – Input (at least 2D) data.</p></li>
+<li><p><strong>ref_dataset</strong> (<em>xarray Dataset</em>) – Contains reference profiles. Can be None.</p></li>
+<li><p><strong>options</strong> (<em>dict</em>) – Options. Options possibly used are ‘dx’ and ‘dy’.</p></li>
+<li><p><strong>var_name</strong> (<em>str</em>) – Name of variable to retrieve.</p></li>
+<li><p><strong>derived_vars</strong> (<em>dict</em>) – Maps var_name to function name and argument list.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>vard</strong> – DESCRIPTION.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>TYPE</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="subfilter.io.datain.get_data">
-<span class="sig-prename descclassname"><span class="pre">subfilter.io.datain.</span></span><span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.io.datain.get_data" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">subfilter.io.datain.</span></span><span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_none</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.io.datain.get_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extract data or derived data field from source NetCDF dataset.</p>
+<p>If var_name is in source_dataset it is retrieved; if one of the primary
+variables with a key in var_properties the grid is corrected.
+Otherwise, it is assumed to be on a ‘p’ point.</p>
 <p>Currently written for MONC data, enforcing C-grid. Returned coords are
-‘’x_p’, ‘x_u’,, y_p’, ‘y_v’, ‘z’, ‘zn’. Coordinate x- and -y values are
+‘x_p’, ‘x_u’, ‘y_p’, ‘y_v’, ‘z’, ‘zn’. Coordinate x- and -y values are
 retrieved from the MONC options_database in source_dataset
-or from ‘dx’ and ‘dy’ in options otherwise</p>
-<p>Currently supported derived data are:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;th_L&#39;</span>     <span class="p">:</span> <span class="n">Liquid</span> <span class="n">water</span> <span class="n">potential</span> <span class="n">temperature</span><span class="o">.</span>
-<span class="s1">&#39;th_v&#39;</span>     <span class="p">:</span> <span class="n">Virtual</span> <span class="n">potential</span> <span class="n">temperature</span><span class="o">.</span>
-<span class="s1">&#39;q_total&#39;</span>  <span class="p">:</span> <span class="n">Total</span> <span class="n">water</span><span class="o">.</span>
-<span class="s1">&#39;buoyancy&#39;</span> <span class="p">:</span> <span class="p">(</span><span class="n">g</span><span class="o">/</span><span class="n">mean_th_v</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">th_v</span><span class="o">-</span><span class="n">mean_th_v</span><span class="p">),</span> <span class="n">where</span> <span class="n">the</span> <span class="n">mean</span> <span class="ow">is</span> <span class="n">the</span> <span class="n">domain</span> <span class="n">mean</span><span class="o">.</span>
-</pre></div>
-</div>
+or from ‘dx’ and ‘dy’ in options otherwise.</p>
+<p>Alternative names of variables can be supplied in options[‘aliases’] as
+a list of strings. If var_name is not found in source_dataset the first
+alias present in source_dataset is retrieved and renamed to var_name.</p>
+<p>Currently supported derived data are specified if the thermodynamics module.</p>
+<p>The special var_name ‘thref’ retrieves the reference theta profile.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>source_dataset</strong> (<em>xarray Dataset</em>) – Input (at least 2D) data.</p></li>
 <li><p><strong>ref_dataset</strong> (<em>xarray Dataset</em>) – Contains reference profiles. Can be None.</p></li>
 <li><p><strong>var_name</strong> (<em>str</em>) – Name of variable to retrieve.</p></li>
-<li><p><strong>options</strong> (<em>dict</em>) – Options Options possibly used are ‘dx’ and ‘dy’.</p></li>
+<li><p><strong>options</strong> (<em>dict</em>) – Options possibly used are ‘dx’ and ‘dy’.</p></li>
+<li><p><strong>allow_none</strong> (<em>bool</em><em> (</em><em>optional - default=False</em><em>)</em>) – If True, return None if not found.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -95,8 +142,7 @@ or from ‘dx’ and ‘dy’ in options otherwise</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="subfilter.io.datain.get_and_transform">
 <span class="sig-prename descclassname"><span class="pre">subfilter.io.datain.</span></span><span class="sig-name descname"><span class="pre">get_and_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'p'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.io.datain.get_and_transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extract data or derived data from source NetCDF dataset and transform
-to alternative grid.</p>
+<dd><p>Extract data from dataset and transform to alternative grid.</p>
 <p>See get_data for derived variables.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -121,10 +167,10 @@ to alternative grid.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="subfilter.io.datain.get_data_on_grid">
 <span class="sig-prename descclassname"><span class="pre">subfilter.io.datain.</span></span><span class="sig-name descname"><span class="pre">get_data_on_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">derived_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'p'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.io.datain.get_data_on_grid" title="Permalink to this definition">¶</a></dt>
-<dd><p>Find data from source_dataset remapped to destination grid.
-Uses data from derived_dataset if present, otherwise uses
+<dd><p>Find data from source_dataset remapped to destination grid.</p>
+<p>Uses data from derived_dataset if present, otherwise uses
 get_and_transform to input from source_dataset and remap grid.
-In this case, if options[‘save_all’]==’yes’, save teh remapped data to
+In this case, if options[‘save_all’]==’yes’, save the remapped data to
 derived_dataset.</p>
 <p>See get_data for derived variables.</p>
 <dl class="field-list simple">
@@ -178,7 +224,7 @@ options_database and options[‘th_ref’].</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ref_dataset</strong> (<em>TnetCDF4 file</em><em> or </em><em>None</em>) – MONC output file containing pref</p></li>
+<li><p><strong>ref_dataset</strong> (<em>netCDF4 file</em><em> or </em><em>None</em>) – MONC output file containing pref</p></li>
 <li><p><strong>options</strong> (<em>dict</em>) – Options. Options possibly used are th_ref.</p></li>
 </ul>
 </dd>
@@ -187,6 +233,64 @@ options_database and options[‘th_ref’].</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>float or float array.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.io.datain.configure_model_resolution">
+<span class="sig-prename descclassname"><span class="pre">subfilter.io.datain.</span></span><span class="sig-name descname"><span class="pre">configure_model_resolution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.io.datain.configure_model_resolution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find model resolution from available sources.</p>
+<p>This routine applies an order of precedence between potential
+pre-existing records of MONC horizontal resolutions and ensures
+that the options dictionary contains these values.</p>
+<p>Files written via io/dataout.py’s setup_child_file will have
+the correct value listed in the file’s global attributes, as this
+routine is called within that space.</p>
+<p>Repeated calls to this routine (for instance, to simply obtain
+dx and dy) will not modify the options contents.</p>
+<dl class="simple">
+<dt>Precedence:</dt><dd><ol class="arabic simple">
+<li><p>options_database</p></li>
+<li><p>dataset attributes</p></li>
+<li><p>subfilter options</p></li>
+<li><p>parse file path containing resolution encoding</p></li>
+</ol>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<em>xarray dataset</em>) – any subfilter-compatible dataset</p></li>
+<li><p><strong>options</strong> (<em>dict</em>) – dataset-associated options dictionary</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>dx</strong> (<em>float (expected)</em>) – x-direction MONC resolution [m]</p></li>
+<li><p><strong>dy</strong> (<em>float (expected)</em>) – y-direction MONC resolution [m]</p></li>
+<li><p><strong>options</strong> (<em>dict</em>) – input options dictionary, possibly updated with dx and dy keys</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="subfilter.io.datain.path_to_resolution">
+<span class="sig-prename descclassname"><span class="pre">subfilter.io.datain.</span></span><span class="sig-name descname"><span class="pre">path_to_resolution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inpath</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#subfilter.io.datain.path_to_resolution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pull resolution value from an encoded path as a float.</p>
+<p>e.g., ‘BOMEX_m0020_g0800’
+i.e., it should have ‘_m[0-9][0-9][0-9]’ (at least 3 integers)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>inpath</strong> (<em>str</em>) – file path</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>dx</strong> – MONC horizontal resolution [m]</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
 </dd>
 </dl>
 </dd></dl>
@@ -260,7 +364,7 @@ options_database and options[‘th_ref’].</p>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2019, 2020, 2021 Peter Clark.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.1.2.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.2.
     </div>
   </body>
 </html>

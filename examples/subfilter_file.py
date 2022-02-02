@@ -15,26 +15,36 @@ import dask
 import subfilter.subfilter as sf
 import subfilter.filters as filt
 import subfilter.utils.deformation as defm
+import subfilter.utils.cloud_monc as cldm
+import subfilter.thermodynamics.thermodynamics as th
+
 
 from subfilter.utils.string_utils import get_string_index
 from subfilter.io.dataout import save_field
-from subfilter.io.datain import configure_model_resolution
+from subfilter.io.datain import (configure_model_resolution,
+                                 get_data_on_grid,
+                                 )
+from subfilter.utils.default_variables import (get_default_variable_list,
+                                      get_default_variable_pair_list)
+
 
 import subfilter
 test_case = 0
 run_quad_fields = True
+#run_quad_fields = False
 run_deformation_fields = True
+#run_deformation_fields = False
+run_cloud_fields = True
+#run_cloud_fields = False
+run_ri = True
+#run_ri = False
 override = True
 
 plot_type = '.png'
-figshow = True
 
 
 def main():
-    '''
-    Top level code, a bit of a mess.
-    '''
-
+    """Top level code, a bit of a mess."""
     if test_case == 0:
         config_file = 'config_test_case_0.yaml'
         indir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
@@ -49,6 +59,9 @@ def main():
         ref_file = None
     options, update_config = sf.subfilter_options(config_file)
 
+#    var_list = ["q_cloud_liquid_mass", "cloud_fraction"]
+
+
 
 #dir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
 #odir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
@@ -57,19 +70,20 @@ def main():
 #file = 'diagnostics_ts_18000.0.nc'
 #ref_file = 'diagnostics_ts_18000.0.nc'
 
+    fname = 'test_rewrite'
 
-    odir = odir + 'test_dask_' + options['FFT_type']+'/'
+    odir = odir + fname +'_'+ options['FFT_type']+'/'
     os.makedirs(odir, exist_ok = True)
 
     plot_dir = odir + 'plots/'
     os.makedirs(plot_dir, exist_ok = True)
-
 
     # Avoid accidental large chunks and read dask_chunks
     if not subfilter.global_config['no_dask']:
         dask.config.set({"array.slicing.split_large_chunks": True})
         dask_chunks = subfilter.global_config['dask_chunks']
 
+    subfilter.global_config['test_level'] = 2
     # Read data
     dataset = xr.open_dataset(indir+file, chunks=dask_chunks)
 
@@ -84,18 +98,17 @@ def main():
     dx, dy, options = configure_model_resolution(dataset, options)
 
     [itime, iix, iiy, iiz] = get_string_index(dataset.dims, ['time', 'x', 'y', 'z'])
-    timevar = list(dataset.dims)[itime]
-    xvar = list(dataset.dims)[iix]
-    yvar = list(dataset.dims)[iiy]
-    zvar = list(dataset.dims)[iiz]
+    [timevar, xvar, yvar, zvar] = [list(dataset.dims)[i] for i in [itime, iix, iiy, iiz]]
+
     npoints = dataset.dims[xvar]
 
 # For plotting
-    ilev = 15
-    iy = 40
+#    ilev = 15
+    ilev = 40
+#    iy = 40
+    iy = 95
 
     opgrid = 'w'
-    fname = 'test_rewrite'
 
     derived_data, exists = \
         sf.setup_derived_data_file( indir+file, odir, fname,
@@ -105,10 +118,12 @@ def main():
         print("Variables in derived dataset.")
         print(derived_data['ds'].variables)
 
+
 # Now create list of filter definitions.
 
     filter_name = update_config['filters']['filter_name']
     sigma_list = update_config['filters']['sigma_list']
+#    sigma_list = [220.0]
     filter_list = list([])
 
     for i,sigma in enumerate(sigma_list):
@@ -171,20 +186,22 @@ def main():
             print('Filtered data file exists' )
             print("Variables in filtered dataset.")
             print(filtered_data['ds'].variables)
+            field_list = get_default_variable_list()
         else :
-            field_list =sf.filter_variable_list(dataset, ref_dataset,
+            field_list = sf.filter_variable_list(dataset, ref_dataset,
                                                 derived_data, filtered_data,
                                                 options,
                                                 twod_filter, var_list=None,
                                                 grid = opgrid)
 
             if run_quad_fields:
-                quad_field_list =sf.filter_variable_pair_list(dataset,
+                quad_field_list = sf.filter_variable_pair_list(dataset,
                                                 ref_dataset,
                                                 derived_data, filtered_data,
                                                 options,
                                                 twod_filter, var_list=None,
                                                 grid = opgrid)
+
 
             if run_deformation_fields:
                 deformation_r, deformation_s = sf.filtered_deformation(
@@ -194,37 +211,63 @@ def main():
                                                 filtered_data, options,
                                                 twod_filter, grid='w')
 
+
                 Sn_ij_r, mod_Sn_r = defm.shear(deformation_r)
                 Sn_ij_r.name = 'f('+Sn_ij_r.name + ')_r'
-                Sn_ij_r = sf.save_field(filtered_data, Sn_ij_r)
+                Sn_ij_r = save_field(filtered_data, Sn_ij_r)
                 mod_Sn_r.name = 'f('+mod_Sn_r.name + ')_r'
-                mod_Sn_r = sf.save_field(filtered_data, mod_Sn_r)
+                mod_Sn_r = save_field(filtered_data, mod_Sn_r)
 
                 Sn_ij_s, mod_Sn_s = defm.shear(deformation_s)
                 Sn_ij_s.name = 'f('+Sn_ij_s.name + ')_s'
-                Sn_ij_s = sf.save_field(filtered_data, Sn_ij_s)
+                Sn_ij_s = save_field(filtered_data, Sn_ij_s)
                 mod_Sn_s.name = 'f('+mod_Sn_s.name + ')_s'
-                mod_Sn_s = sf.save_field(filtered_data, mod_Sn_s)
+                mod_Sn_s = save_field(filtered_data, mod_Sn_s)
 
-                S_ij_r, mod_S_r = defm.shear(deformation_r, no_trace = False)
-                S_ij_r.name = 'f('+S_ij_r.name + ')_r'
-                S_ij_r = sf.save_field(filtered_data, S_ij_r)
-                mod_S_r.name = 'f('+mod_S_r.name + ')_r'
-                mod_S_r = sf.save_field(filtered_data, mod_S_r)
+                # S_ij_r, mod_S_r = defm.shear(deformation_r, no_trace = False)
+                # S_ij_r.name = 'f('+S_ij_r.name + ')_r'
+                # S_ij_r = sf.save_field(filtered_data, S_ij_r)
+                # mod_S_r.name = 'f('+mod_S_r.name + ')_r'
+                # mod_S_r = sf.save_field(filtered_data, mod_S_r)
 
-                S_ij_s, mod_S_s = defm.shear(deformation_s, no_trace = False)
-                S_ij_s.name = 'f('+S_ij_s.name + ')_s'
-                S_ij_s = sf.save_field(filtered_data, S_ij_s)
-                mod_S_s.name = 'f('+mod_S_s.name + ')_s'
-                mod_S_s = sf.save_field(filtered_data, mod_S_s)
+                # S_ij_s, mod_S_s = defm.shear(deformation_s, no_trace = False)
+                # S_ij_s.name = 'f('+S_ij_s.name + ')_s'
+                # S_ij_s = sf.save_field(filtered_data, S_ij_s)
+                # mod_S_s.name = 'f('+mod_S_s.name + ')_s'
+                # mod_S_s = sf.save_field(filtered_data, mod_S_s)
 
-                print(S_ij_r)
+                print(Sn_ij_r)
 
                 v_r = defm.vorticity(deformation_r)
                 v_r.name = 'f('+v_r.name + ')_r'
-                v_r = sf.save_field(filtered_data, v_r)
+                v_r = save_field(filtered_data, v_r)
 
                 print(v_r)
+
+        if run_cloud_fields:
+            th_ref = get_data_on_grid(dataset, ref_dataset, derived_data, 'thref', options,grid = opgrid)
+            p_ref  = get_data_on_grid(dataset, ref_dataset, derived_data, 'pref',  options, grid = opgrid)
+            parms = th.cloud_params_monc(th_ref, p_ref)
+            s_qt_qt = filtered_data['ds']["s(q_total,q_total)_on_w"]
+            s_thL_qt = filtered_data['ds']["s(th_L,q_total)_on_w"]
+            s_thL_thL = filtered_data['ds']["s(th_L,th_L)_on_w"]
+            sigma_s = cldm.sigma_s(s_qt_qt, s_thL_qt, s_thL_thL, parms)
+            sigma_s = save_field(filtered_data, sigma_s)
+
+        if run_ri:
+
+            sf.filter_variable_list(dataset, ref_dataset,
+                                    derived_data, filtered_data,
+                                    options,
+                                    twod_filter,
+                                    var_list=['moist_dbdz'],
+                                    grid = opgrid)
+            dbdz_r = filtered_data["ds"][f"f(moist_dbdz_on_{opgrid})_r"]
+
+            ri_r = cldm.richardson(mod_Sn_r, dbdz_r)
+            ri_r.name = 'moist_Ri_r'
+            ri_r = save_field(filtered_data, ri_r)
+
 
             print('--------------------------------------')
 
@@ -271,9 +314,26 @@ def main():
             print("Plotting mod_Sn")
             plot_shear(mod_Sn_r, mod_Sn_s, z, twod_filter, plot_dir, ilev, iy,
                         no_trace = True)
-            print("Plotting mod_S")
-            plot_shear(mod_S_r, mod_S_s, z, twod_filter, plot_dir, ilev, iy,
-                        no_trace = False)
+        #     print("Plotting mod_S")
+        #     plot_shear(mod_S_r, mod_S_s, z, twod_filter, plot_dir, ilev, iy,
+        #                 no_trace = False)
+        if run_cloud_fields:
+            for field in [sigma_s]:
+                print(f"Plotting {field.name}")
+                plot_single(field, filtered_data, twod_filter, plot_dir,
+                            ilev, iy,
+                            grid=opgrid)
+
+        if run_ri:
+
+            print(f"Plotting {dbdz_r.name}")
+            plot_single(dbdz_r, filtered_data, twod_filter, plot_dir,
+                        ilev, iy,
+                        grid=opgrid)
+            print(f"Plotting {ri_r.name}")
+            plot_single(ri_r, filtered_data, twod_filter, plot_dir,
+                        ilev, iy,
+                        grid=opgrid, levels=np.linspace(-1,1,41))
 
         filtered_data['ds'].close()
     print('--------------------------------------')
@@ -291,9 +351,7 @@ def plot_field(var_name, filtered_data, twod_filter, plot_dir,
     var_s = filtered_data['ds'][f"f({var_name}_on_{grid})_s"]
 
     [iix, iiy, iiz] =  get_string_index(var_s.dims, ['x', 'y', 'z'])
-    xvar = var_s.dims[iix]
-    yvar = var_s.dims[iiy]
-    zvar = var_s.dims[iiz]
+    [xvar, yvar, zvar] = [list(var_s.dims)[i] for i in [iix, iiy, iiz]]
 
     for it, time in enumerate(var_r.coords['time']):
 
@@ -386,7 +444,11 @@ def plot_quad_field(var_name, filtered_data, twod_filter, plot_dir,
                     (v2_r.isel(time=it) - v2_r.isel(time=it).mean(dim=(xvar, yvar)))
 
 
-            pltdat = (var_r - var_r.mean(dim=(xvar, yvar)))
+            pltdat = var_r
+
+#            pltdat = (var_r - var_r.mean(dim=(xvar, yvar)))
+
+#            pltdat = v1_r.isel(time=it) * v2_r.isel(time=it)
 
             pltdat.name = 'f('+v1+')_r.'+'f('+v2+')_r'
 
@@ -396,9 +458,6 @@ def plot_quad_field(var_name, filtered_data, twod_filter, plot_dir,
             fig1, axa = plt.subplots(3,2,figsize=(10,12))
 
             Cs1 = pltdat.isel({zvar:ilev}).plot.imshow(x=xvar, y=yvar, ax=axa[0,0], levels=nlevels)
-
-#            axa[0,0].set_title(r'{}$^r${}$^r$ pert level {:03d}'.format(v1, v2,ilev))
-
 
             Cs2 = s_v1v2.isel({'time':it, zvar:ilev}).plot.imshow(x=xvar, y=yvar, ax=axa[0,1], levels=nlevels)
 
@@ -423,9 +482,7 @@ def plot_shear(var_r, var_s, zcoord,  twod_filter, plot_dir, ilev, iy, no_trace 
     if no_trace : var_name = var_name+'n'
 
     [iix, iiy, iiz] = get_string_index(var_s.dims, ['x', 'y', 'z'])
-    xvar = var_s.dims[iix]
-    yvar = var_s.dims[iiy]
-    zvar = var_s.dims[iiz]
+    [xvar, yvar, zvar] = [list(var_s.dims)[i] for i in [iix, iiy, iiz]]
 
     for it, time in enumerate(var_r.coords['time']):
         print(f'it:{it}')
@@ -468,6 +525,58 @@ def plot_shear(var_r, var_s, zcoord,  twod_filter, plot_dir, ilev, iy, no_trace 
             plt.close()
 
     return
+
+def plot_single(var, filtered_data, twod_filter, plot_dir,
+               ilev, iy, grid='p', levels = None):
+
+
+    for it, time in enumerate(var.coords['time']):
+
+        print(f'it:{it}')
+
+
+        if twod_filter.attributes['filter_type']=='domain' :
+            [iiz] =  get_string_index(var.dims, ['z'])
+            zvar = var.dims[iiz]
+
+            fig1, axa = plt.subplots(1,1,figsize=(5,5))
+
+            Cs1 = var.isel({'time':it, zvar:slice(1,None)}).plot(y=zvar, ax = axa)
+
+            plt.tight_layout()
+
+            plt.savefig(plot_dir+var.name+'_prof_'+\
+                    twod_filter.id+'_%02d'%it+plot_type)
+            plt.close()
+        else :
+
+            [iix, iiy, iiz] =  get_string_index(var.dims, ['x', 'y', 'z'])
+            [xvar, yvar, zvar] = [list(var.dims)[i] for i in [iix, iiy, iiz]]
+            meanfield= var.isel(time=it).mean(dim=(xvar, yvar))
+            pltdat = (var.isel(time=it)-meanfield)
+
+            nlevels = 40
+            if levels is None:
+                levels = 40
+            plt.clf
+
+            fig1, axa = plt.subplots(2,2,figsize=(10,12))
+
+            Cs1 = pltdat.isel({zvar:ilev}).plot.imshow(x=xvar, y=yvar, ax=axa[0,0], levels=levels)
+            Cs3 = pltdat.isel({yvar:iy, zvar:slice(1,None)}).plot.imshow(x=xvar, y=zvar, ax=axa[0,1], levels=levels)
+
+            p1 = pltdat.isel({yvar:iy, zvar:ilev}).plot(ax=axa[1,0])
+#            p2 = pltdat.isel({yvar:iy, zvar:ilev}).plot(ax=axa[1,1])
+
+            plt.tight_layout()
+
+            plt.savefig(plot_dir+var.name+'_lev_'+'%03d'%ilev+'_x_z'+'%03d'%iy+'_'+\
+                        twod_filter.id+'_%02d'%it+plot_type)
+
+            plt.close()
+
+    return
+
 
 if __name__ == "__main__":
     main()
