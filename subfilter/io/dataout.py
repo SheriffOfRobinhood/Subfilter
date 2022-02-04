@@ -2,7 +2,7 @@
 """
 Created on Mon Aug  2 12:02:20 2021.
 
-@author: paclk
+   @author: Peter Clark
 """
 import time
 import os
@@ -13,7 +13,7 @@ import subfilter  # for global prameters
 
 def save_field(dataset, field, write_to_file=True):
     """
-    Save dask-chunked xarray field to xarray Dataset
+    Save dask-chunked xarray field to xarray Dataset.
 
     Parameters
     ----------
@@ -43,7 +43,7 @@ def save_field(dataset, field, write_to_file=True):
             #   (for cleaner stdout on cluster)
             if subfilter.executing_on_cluster:
                 results = d.compute()
-            else: 
+            else:
                 with ProgressBar():
                     results = d.compute()
             # This wait seems to be needed to give i/o time to flush caches.
@@ -74,14 +74,11 @@ def setup_child_file(source_file, destdir, outtag, options, override=False) :
     -------
     do              : dict
         {**'file'**: derived_dataset_name (str) - file name,\n
-         |**'ds'**: derived_dataset (xarray Dataset) - NetCDF dataset for derived data}
+        **'ds'**: derived_dataset (xarray Dataset) - NetCDF dataset for derived data}
     exists          : bool
         True when input **source_file** already existed and was not overwritten
 
-    @author: Peter Clark
     """
-
-
     if os.path.isfile(source_file):
         ds = xr.open_dataset(source_file)
         atts = ds.attrs
@@ -124,4 +121,3 @@ def setup_child_file(source_file, destdir, outtag, options, override=False) :
     do = {'file':derived_dataset_name, 'ds': derived_dataset}
     ds.close()
     return do, exists
-

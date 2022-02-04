@@ -1,0 +1,276 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Introduction &#8212; Subfilter 0.5.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="The subfilter module." href="subfilter.html" />
+    <link rel="prev" title="Welcome to Subfilter’s documentation!" href="index.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="subfilter.html" title="The subfilter module."
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to Subfilter’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Subfilter 0.5.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Introduction</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<p>The purpose of this set of modules is to implement horizontal 1- and 2-dimensional spatial filtering of 2- and 3- dimensional output from MONC (and similar data), as well as 1D power spectra from 2D fields.</p>
+</section>
+<section id="filtering">
+<h1>Filtering<a class="headerlink" href="#filtering" title="Permalink to this headline">¶</a></h1>
+<p>This notionally corresponds to a split of a variable:</p>
+<div class="math">
+<p><img src="_images/math/699c65ad00af95dada8833c26962bcdd7563e24f.png" alt="\phi = \phi^r + \phi^s"/></p>
+</div><p>Note that this is <strong>not</strong> the same as coarse graining; the ‘resolved’ field <img class="math" src="_images/math/7b6b69578a2e5f881cf49f7d9c6843a72e248cc1.png" alt="\phi^r"/> has the same number of gridpoints as the original, it is just smoother (with one exception noted below).</p>
+<p>The code also produces ‘subfilter’ fluxes, variances and covariances: for any pair of variables <img class="math" src="_images/math/20aa4bb64f23237c58a832ca5fb60702a4789305.png" alt="\phi,\psi"/>:</p>
+<div class="math">
+<p><img src="_images/math/3c9ce6cd4c29a0ff0f67717cf1d7b9a1fb16b3d9.png" alt="s(\phi,\psi) = (\phi\psi)^r - \phi^r\psi^r."/></p>
+</div></section>
+<section id="power-spectra">
+<h1>Power Spectra<a class="headerlink" href="#power-spectra" title="Permalink to this headline">¶</a></h1>
+<p>The Power Spectra computed are conventional 2D power spectra averaged either in x- or y-direction, or radial spectra averaged around the azimuthal direction.
+Care has been taken to normalise in using standard and corrections can be applied to the radial spectra. See <a class="reference external" href="https://doi.org/10.1175/MWR-D-17-0056.1">Durran et al. (2017)</a> for details.</p>
+</section>
+<section id="output-files">
+<h1>Output Files<a class="headerlink" href="#output-files" title="Permalink to this headline">¶</a></h1>
+<p>An important feature of the code is that it creates two types of derived files.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>A single file containing intermediate data such as <img class="math" src="_images/math/5aedef230ab5aab17c013808b691bfe393cec831.png" alt="\theta_L"/> interpolated to the required grid, stored at variable <cite>th_L_on_w</cite> in NetCDF. This must be setup by the user using <a class="reference internal" href="subfilter.html#subfilter.subfilter.setup_derived_data_file" title="subfilter.subfilter.setup_derived_data_file"><code class="xref py py-func docutils literal notranslate"><span class="pre">setup_derived_data_file()</span></code></a>. The user must tell the code to use it by setting <code class="docutils literal notranslate"><span class="pre">options['save_all']</span> <span class="pre">=</span> <span class="pre">'Yes'</span></code>.
+The file name is created from arguments destdir, source_file and fname.</p></li>
+<li><p>A file <em>for each filter</em> containing filtered variables and sub-filter counterparts. This must be setup by the user using <a class="reference internal" href="subfilter.html#subfilter.subfilter.setup_filtered_data_file" title="subfilter.subfilter.setup_filtered_data_file"><code class="xref py py-func docutils literal notranslate"><span class="pre">setup_filtered_data_file()</span></code></a>.
+The file name is created from arguments destdir, source_file, fname and filter_def.id.</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="variable-names">
+<h1>Variable Names<a class="headerlink" href="#variable-names" title="Permalink to this headline">¶</a></h1>
+<p>This package uses xarray - returned variables are xarray DataArrays.
+These have names; this package follows the following naming convention.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Variables or derived variables read from the source or reference file using <a class="reference internal" href="datain.html#subfilter.io.datain.get_data" title="subfilter.io.datain.get_data"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_data()</span></code></a> have the name requested (possibly changed from the internal name in the source data by the aliases dictionary). For example, <code class="docutils literal notranslate"><span class="pre">u</span></code>. They have grid specifications corrected to the appropriate dimensionnspecificatio  in MONC (for example, <code class="docutils literal notranslate"><span class="pre">u</span></code> will be on <code class="docutils literal notranslate"><span class="pre">x_u</span></code>, <code class="docutils literal notranslate"><span class="pre">y_p</span></code> and <code class="docutils literal notranslate"><span class="pre">zn</span></code>) and the time dimension renamed <code class="docutils literal notranslate"><span class="pre">time</span></code>.</p></li>
+<li><p>Variables or derived variables read from the source or reference file using <a class="reference internal" href="datain.html#subfilter.io.datain.get_and_transform" title="subfilter.io.datain.get_and_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_and_transform()</span></code></a> behave as above but are then interpolated to the requested grid (<code class="docutils literal notranslate"><span class="pre">u</span></code>, <code class="docutils literal notranslate"><span class="pre">v</span></code>, <code class="docutils literal notranslate"><span class="pre">w</span></code> or <code class="docutils literal notranslate"><span class="pre">p,</span></code> or a tuple made up of x, y and z dimension names) using <a class="reference internal" href="tools.html#subfilter.utils.difference_ops.grid_conform" title="subfilter.utils.difference_ops.grid_conform"><code class="xref py py-func docutils literal notranslate"><span class="pre">grid_conform()</span></code></a>.</p></li>
+<li><p>Variables or derived variables read from the source or reference file using <a class="reference internal" href="datain.html#subfilter.io.datain.get_data_on_grid" title="subfilter.io.datain.get_data_on_grid"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_data_on_grid()</span></code></a> behave as above but have the grid name appended to the variable name, e.g. <code class="docutils literal notranslate"><span class="pre">u_on_w</span></code>. If <code class="docutils literal notranslate"><span class="pre">options['save_all']</span></code> is set to <code class="docutils literal notranslate"><span class="pre">'yes'</span></code>, the variable is retrieved from the derived data file if already there and stored to it if not.</p></li>
+<li><p>Filtered variables obtained using <a class="reference internal" href="subfilter.html#subfilter.subfilter.filter_field" title="subfilter.subfilter.filter_field"><code class="xref py py-func docutils literal notranslate"><span class="pre">filter_field()</span></code></a> or <a class="reference internal" href="subfilter.html#subfilter.subfilter.filter_variable_list" title="subfilter.subfilter.filter_variable_list"><code class="xref py py-func docutils literal notranslate"><span class="pre">filter_variable_list()</span></code></a> are retrieved from the filtered variables file if present or calculated and stored therein if not. Data are returned as two variables, named <code class="docutils literal notranslate"><span class="pre">f(x)_r</span></code> and <code class="docutils literal notranslate"><span class="pre">f(x)_s</span></code>, the ‘resolved’ and ‘sub-filter’ parts of variable <code class="docutils literal notranslate"><span class="pre">x</span></code>, with <code class="docutils literal notranslate"><span class="pre">x</span></code> including the grid specification (e.g. <code class="docutils literal notranslate"><span class="pre">u_on_w</span></code>) if <a class="reference internal" href="subfilter.html#subfilter.subfilter.filter_variable_list" title="subfilter.subfilter.filter_variable_list"><code class="xref py py-func docutils literal notranslate"><span class="pre">filter_variable_list()</span></code></a> is used.</p></li>
+<li><p>Filtered products of pairs of variables obtained using <a class="reference internal" href="subfilter.html#subfilter.subfilter.quadratic_subfilter" title="subfilter.subfilter.quadratic_subfilter"><code class="xref py py-func docutils literal notranslate"><span class="pre">quadratic_subfilter()</span></code></a> or <a class="reference internal" href="subfilter.html#subfilter.subfilter.filter_variable_pair_list" title="subfilter.subfilter.filter_variable_pair_list"><code class="xref py py-func docutils literal notranslate"><span class="pre">filter_variable_pair_list()</span></code></a> are retrieved from the filtered variables file if present or calculated and stored therein if not. Data are returned as <code class="docutils literal notranslate"><span class="pre">s(x,y)_on_g</span></code>, where x and y are the two variables and g is the requested output grid. If <a class="reference internal" href="subfilter.html#subfilter.subfilter.filter_variable_pair_list" title="subfilter.subfilter.filter_variable_pair_list"><code class="xref py py-func docutils literal notranslate"><span class="pre">filter_variable_pair_list()</span></code></a> is used with <code class="docutils literal notranslate"><span class="pre">options['save_all']</span></code> set to <code class="docutils literal notranslate"><span class="pre">'yes'</span></code>, the variables <code class="docutils literal notranslate"><span class="pre">x_on_g.y_on_g</span></code>, <code class="docutils literal notranslate"><span class="pre">f(x_on_g.y_on_g)_r</span></code> and <code class="docutils literal notranslate"><span class="pre">f(x_on_g.y_on_g)_s</span></code> are also saved.</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="filters">
+<h1>Filters<a class="headerlink" href="#filters" title="Permalink to this headline">¶</a></h1>
+<dl class="simple">
+<dt>A number of filters have been implemented, currently</dt><dd><ol class="arabic simple">
+<li><p>Gaussian.</p></li>
+<li><p>Spectral wave cutoff.</p></li>
+<li><p>Spectral cylindrical wave cutoff.</p></li>
+<li><p>Running mean (or ‘top-hat’).</p></li>
+<li><p>2D version of the 1-2-1 filter.</p></li>
+<li><p>For completeness, a ‘whole domain’ filter in which the resolved field is the horizontal domain average. In this case the resolved field has no horizontal dimensions.</p></li>
+</ol>
+</dd>
+</dl>
+</section>
+<section id="input-transforms">
+<h1>Input Transforms<a class="headerlink" href="#input-transforms" title="Permalink to this headline">¶</a></h1>
+<p>Basic variables (<code class="docutils literal notranslate"><span class="pre">'u'</span></code>, <code class="docutils literal notranslate"><span class="pre">'v'</span></code>, <code class="docutils literal notranslate"><span class="pre">'w'</span></code>, <code class="docutils literal notranslate"><span class="pre">'th'</span></code>, <code class="docutils literal notranslate"><span class="pre">'p'</span></code>, <code class="docutils literal notranslate"><span class="pre">'q_vapour'</span></code>, <code class="docutils literal notranslate"><span class="pre">'q_cloud_liquid_mass'</span></code>, <code class="docutils literal notranslate"><span class="pre">'q_cloud_ice_mass'</span></code>) are expected to be available in the input file.
+If MONC is used, the horizontal grid specification is corrected on input to <code class="docutils literal notranslate"><span class="pre">'x_p'</span></code> or <code class="docutils literal notranslate"><span class="pre">'x_u'</span></code>, <code class="docutils literal notranslate"><span class="pre">'y_p'</span></code> or <code class="docutils literal notranslate"><span class="pre">'y_v'</span></code> as appropriate.</p>
+<p>To facilitate use of other models, a list of aliases can be provided under the key ‘aliases’ to translate variable names.</p>
+<p>In order to facilitate comparisons and products, tools have been coded (efficiently but not very elegantly) to transform data from different points on the C-grid. Thus, second order terms can be computed correctly on required points just by specifying the ouput grid.</p>
+<p>A number of derived variables have been implemented that are calculated provided the required inputs are available. These are provided in the <a class="reference internal" href="thermodynamics.html#module-subfilter.thermodynamics.thermodynamics" title="subfilter.thermodynamics.thermodynamics"><code class="xref py py-mod docutils literal notranslate"><span class="pre">thermodynamics</span></code></a> module.
+Examples are:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 85%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p>‘th_L’</p></td>
+<td><p>Liquid water potential temperature  <img class="math" src="_images/math/5aedef230ab5aab17c013808b691bfe393cec831.png" alt="\theta_L"/>.</p></td>
+</tr>
+<tr class="row-even"><td><p>‘th_v’</p></td>
+<td><p>Virtual potential temperature  <img class="math" src="_images/math/f0ec08091b2bd6bce618e4a034b692d310c0fe43.png" alt="\theta_v"/>.</p></td>
+</tr>
+<tr class="row-odd"><td><p>‘th_w’</p></td>
+<td><p>Wet bulb potential temperature  <img class="math" src="_images/math/654b7413ae4e620cf27d9c99e0d8c0bd57c4d184.png" alt="\theta_w"/>.</p></td>
+</tr>
+<tr class="row-even"><td><p>‘q_total’</p></td>
+<td><p>Total water  <img class="math" src="_images/math/2924b03f0c712be788a7e886b5bc4e04bcb709cc.png" alt="q_t"/>.</p></td>
+</tr>
+<tr class="row-odd"><td><p>‘buoyancy’</p></td>
+<td><p><img class="math" src="_images/math/aabe769e638607494cc5e3763372fd6e5a4ca7fe.png" alt="(g/\overline{\theta_v})*(\theta_v-\overline{\theta_v})"/>,
+where the mean is the domain mean.</p></td>
+</tr>
+</tbody>
+</table>
+<p>While a variety of basic functions have been written, the intention is to use <a class="reference internal" href="subfilter.html#subfilter.subfilter.filter_variable_list" title="subfilter.subfilter.filter_variable_list"><code class="xref py py-func docutils literal notranslate"><span class="pre">filter_variable_list()</span></code></a> to automatically filter a list of NetCDF variables and write the output to a new NetCDF file,
+and <a class="reference internal" href="subfilter.html#subfilter.subfilter.filter_variable_pair_list" title="subfilter.subfilter.filter_variable_pair_list"><code class="xref py py-func docutils literal notranslate"><span class="pre">filter_variable_pair_list()</span></code></a> to do the same with products of fields.
+Each has a default list - this can easily be changed.</p>
+<div class="admonition-todo admonition" id="id1">
+<p class="admonition-title">Todo</p>
+<p>Code to calculate the deformation field and hence shear and vorticity has also been implemented but needs full integration.</p>
+</div>
+<div class="admonition-todo admonition" id="id2">
+<p class="admonition-title">Todo</p>
+<p>The next step is to implement arbitrary derivatives, so one could specify in the variable list, e.g. <code class="docutils literal notranslate"><span class="pre">'d_u_d_x_on_w'</span></code>. This has been implemented in the trajectory code and will be ported to here for compatibility.
+The <a class="reference internal" href="tools.html#module-subfilter.utils.difference_ops" title="subfilter.utils.difference_ops"><code class="xref py py-mod docutils literal notranslate"><span class="pre">difference_ops</span></code></a> module now has general, grid-aware derivative and averaging functions.
+These are used internally but the ability to use them in the input variable list has yet to be implemented, apart from some special variables like buoyancy gradient.</p>
+</div>
+<p>An example of use can be found in examples/subfilter_file.py.</p>
+</section>
+<section id="version-history">
+<h1>Version History<a class="headerlink" href="#version-history" title="Permalink to this headline">¶</a></h1>
+<p>Latest version is 0.5.0</p>
+<div class="topic">
+<p class="topic-title">New at 0.5</p>
+<ol class="arabic simple">
+<li><p>Complete re-structuring.</p></li>
+<li><p>Addition of <a class="reference internal" href="spectra.html#module-subfilter.spectra" title="subfilter.spectra"><code class="xref py py-mod docutils literal notranslate"><span class="pre">subfilter.spectra</span></code></a>.</p></li>
+<li><p>The <a class="reference internal" href="subfilter.html#subfilter.subfilter.filtered_field_calc" title="subfilter.subfilter.filtered_field_calc"><code class="xref py py-func docutils literal notranslate"><span class="pre">subfilter.subfilter.filtered_field_calc()</span></code></a> function outputs filtered variables phi inder the names “f(phi)_r” and “f(phi)_s”.</p></li>
+</ol>
+</div>
+<div class="topic">
+<p class="topic-title">New at 0.4</p>
+<ol class="arabic simple">
+<li><p>Use of xarray.</p></li>
+<li><p>Use of dask for filtering.</p></li>
+<li><p>Correction of MONC grid specifications on input.</p></li>
+</ol>
+</div>
+<div class="topic">
+<p class="topic-title">New at 0.3</p>
+<ol class="arabic simple">
+<li><p>The filters.filter_2D class has been replaced with <a class="reference internal" href="filters.html#subfilter.filters.Filter" title="subfilter.filters.Filter"><code class="xref py py-class docutils literal notranslate"><span class="pre">subfilter.filters.Filter</span></code></a>. This now accepts an optional argument ndim when creating a Filter instance. This may be 1 or 2 and defaults to 2. The use_ave option is no longer supported.</p></li>
+<li><p>The <a class="reference internal" href="subfilter.html#subfilter.subfilter.filter_variable_pair_list" title="subfilter.subfilter.filter_variable_pair_list"><code class="xref py py-func docutils literal notranslate"><span class="pre">subfilter.subfilter.filter_variable_pair_list()</span></code></a> function outputs filtered pairs <img class="math" src="_images/math/20aa4bb64f23237c58a832ca5fb60702a4789305.png" alt="\phi,\psi"/> inder the name “s(<img class="math" src="_images/math/20aa4bb64f23237c58a832ca5fb60702a4789305.png" alt="\phi,\psi"/>)_on_grid” where “grid” will be “u”, “v”, “w” or “p”.</p></li>
+</ol>
+</div>
+<div class="topic">
+<p class="topic-title">New at 0.2</p>
+<ol class="arabic simple">
+<li><p>New ‘options’ dictionary passed to many functions.</p></li>
+<li><dl class="simple">
+<dt>More efficient FFT convolutions. <cite>options[‘FFT_type’]</cite> can equal:</dt><dd><ul class="simple">
+<li><p><cite>‘FFTconvolve’</cite> for original implementation. Deprecated.</p></li>
+<li><p><cite>‘FFT’</cite> for full FFT.</p></li>
+<li><p><cite>‘RFFT’</cite> for real FFT.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Two types of derived files are produced.</dt><dd><ul class="simple">
+<li><p>As before, a file <em>for each filter</em> containing filtered variables and sub-filter counterparts.
+This must now be setup by the user using <code class="xref py py-func docutils literal notranslate"><span class="pre">subfilter.setup_filtered_data_file()</span></code>.</p></li>
+<li><p>A single file containing intermediate data such as <img class="math" src="_images/math/5aedef230ab5aab17c013808b691bfe393cec831.png" alt="\theta_L"/> interpolated to the w grid, variable <cite>th_L_on_w</cite> in NetCDF.
+This must now be setup by the user using <code class="xref py py-func docutils literal notranslate"><span class="pre">subfilter.setup_derived_data_file()</span></code>.
+The user must tell the code to use it by setting <cite>options[‘save_all’] = ‘Yes’</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ol>
+</div>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Introduction</a></li>
+<li><a class="reference internal" href="#filtering">Filtering</a></li>
+<li><a class="reference internal" href="#power-spectra">Power Spectra</a></li>
+<li><a class="reference internal" href="#output-files">Output Files</a></li>
+<li><a class="reference internal" href="#variable-names">Variable Names</a></li>
+<li><a class="reference internal" href="#filters">Filters</a></li>
+<li><a class="reference internal" href="#input-transforms">Input Transforms</a></li>
+<li><a class="reference internal" href="#version-history">Version History</a></li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to Subfilter’s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="subfilter.html"
+                        title="next chapter">The subfilter module.</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/intro.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="subfilter.html" title="The subfilter module."
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to Subfilter’s documentation!"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Subfilter 0.5.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Introduction</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, 2020, 2021 Peter Clark.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.2.
+    </div>
+  </body>
+</html>

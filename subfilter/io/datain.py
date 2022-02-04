@@ -1,7 +1,7 @@
 """
-Created on Mon Aug  2 11:01:11 2021
+Created on Mon Aug  2 11:01:11 2021.
 
-@author: paclk
+@author: Peter Clark
 """
 import sys
 import numpy as np
