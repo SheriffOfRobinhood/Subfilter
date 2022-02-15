@@ -17,6 +17,7 @@ import subfilter
 
 import dask
 
+import matplotlib.pyplot as plt
 #from dask.diagnostics import Profiler, ResourceProfiler, CacheProfiler
 #from dask.diagnostics import ProgressBar
 
@@ -29,8 +30,16 @@ if test_case == 0:
     config_file = 'config_test_case_0.yaml'
     indir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
     odir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
-    file = 'diagnostics_3d_ts_21600.nc'
-    ref_file = 'diagnostics_ts_21600.nc'
+#    file = 'diagnostics_3d_ts_21600.nc'
+#    ref_file = 'diagnostics_ts_21600.nc'
+    file = 'diagnostics_3d_ts_23400.nc'
+    ref_file = 'diagnostics_ts_23400.nc'
+    iz = 40
+#    iy = 95
+    iy = 89
+#    it = 0
+    it = 5
+
 elif test_case == 1:
     config_file = 'config_test_case_1.yaml'
     #indir = '/storage/silver/wxproc/xm904103/'
@@ -46,10 +55,10 @@ options, update_config = sf.subfilter_options(config_file)
 options['aliases'] = {
     'th':['theta', 'potential_temperature'],
     'p':['pressure'],
-    'tracer': ['tracer_rad1'],
+    'tracer': ['tracer_rad2'],
     }
 
-odir = odir + 'test_dask_' + options['FFT_type']+'/'
+odir = odir + 'test_datain_' + options['FFT_type']+'/'
 
 #dir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
 #odir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
@@ -58,36 +67,45 @@ os.makedirs(odir, exist_ok = True)
 
 #file = 'diagnostics_ts_18000.0.nc'
 #ref_file = 'diagnostics_ts_18000.0.nc'
+# var_list = [
+#     "saturation",
+#     "moist_dbdz",
+#     "dmoist_bdz",
+#     "dbdz",
+#     "dbdz_monc",
+#     "buoyancy_moist",
+#     "buoyancy",
+#     "buoyancy_monc",
+#     "u",
+#     "v",
+#     "w",
+#     "th",
+#     "p",
+#     "tracer",
+#     "th_L",
+#     "th_v",
+#     "thref",
+#     "T",
+#     "th_e",
+#     "th_w",
+#     "T_w",
+#     "m_vapour",
+#     "q_vapour",
+#     "cloud_fraction",
+#     "q_cloud_liquid_mass",
+#     "q_total",
+#     "m_total",
+#     "rh",
+#      ]
+
 
 var_list = [
     "saturation",
-    "moist_dbdz",
-    "dmoist_bdz",
-    "dbdz",
-    "dbdz_monc",
-    "buoyancy_moist",
-    "buoyancy",
-    "buoyancy_monc",
-    "u",
-    "v",
-    "w",
-    "th",
-    "p",
     "tracer",
     "th_L",
-    "th_v",
-    "thref",
-    "T",
-    "th_e",
-    "th_w",
-    "T_w",
-    "m_vapour",
     "q_vapour",
-    "cloud_fraction",
     "q_cloud_liquid_mass",
     "q_total",
-    "m_total",
-    "rh",
      ]
 
 
@@ -138,12 +156,18 @@ for var_name in var_list:
         print(op_var.name, op_var.min().values, op_var.max().values,
               op_var.attrs['units'], op_var.shape)
         [itime, iix, iiy, iiz] = get_string_index(op_var.dims, ['time', 'x', 'y', 'z'])
+        if "tracer" in op_var.name:
+            lev = np.linspace(0,5,51)
+        else:
+            lev =51
         if iix is not None:
             tvar = op_var.dims[itime]
             xvar = op_var.dims[iix]
             yvar = op_var.dims[iiy]
             zvar = op_var.dims[iiz]
-            op_var.isel({tvar:0, zvar:40}).plot.contourf(
-                figsize=(12,10), levels=51, x=xvar)
-            op_var.isel({tvar:0, yvar:95, zvar:slice(1,None)}).plot.contourf(
-                figsize=(12,10), levels=51, x=xvar)
+            op_var.isel({tvar:it, zvar:iz}).plot.contourf(
+                figsize=(12,10), levels=lev, x=xvar)
+            op_var.isel({tvar:it, yvar:iy, zvar:slice(1,None)}).plot.contourf(
+                figsize=(12,10), levels=lev, x=xvar)
+
+plt.show()
