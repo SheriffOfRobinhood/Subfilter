@@ -39,11 +39,9 @@ goto end
 :github
 %SPHINXBUILD% -M html %SOURCEDIR% %BUILDDIR% %SPHINXOPTS%
 popd
-move /Y ..\docs\html\* ..\docs 
-move /Y ..\docs\html\_static ..\docs\_static 
-move /Y ..\docs\html\_images ..\docs\_images
-move /Y ..\docs\html\_sources ..\docs\_sources
-rd ..\docs\html 
+
+xcopy /Y /E ..\docs\html ..\docs 
+
 pushd   
 
 :end
