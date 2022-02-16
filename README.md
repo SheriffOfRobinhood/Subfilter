@@ -1,16 +1,14 @@
 # Subfilter
 python code to compute sub-filter quantities from MONC output.
-See http://www.met.reading.ac.uk/~xm904103/code/subfilter/index.html for documentation.
-
-Currently only the testing branch is pip installable.
+See https://readingclouds.github.io/Subfilter/ for documentation.
 
 Users should pip install to a suitable environment using
 
-    pip install  git+https://github.com/ReadingClouds/Subfilter.git@testing
+    pip install  git+https://github.com/ReadingClouds/Subfilter.git
 
 This will install into the standard library.
 
-Developers should clone the repository (please create a branch before making 
+Developers should fork then clone the repository (please create a branch before making 
 any changes!), open a terminal window and activate the python environment 
 required, cd to the Subfilter directory and
 
