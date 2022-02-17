@@ -98,7 +98,7 @@ def read_cl_arguments():
 
     else:
         print('No option arguments provided.')
-        response = yes_or_no(f'Continue with default driver config ({default_config})?')
+        response = True #yes_or_no(f'Continue with default driver config ({default_config})?')
         if response:
             driver_config = default_config
         else:

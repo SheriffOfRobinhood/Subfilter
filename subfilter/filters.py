@@ -113,6 +113,7 @@ class Filter :
                   'wavenumber' : wavenumber,
                   'delta_x' : delta_x,
                   'width' : width,
+                  'npoints' : npoints,
                   'cutoff' : cutoff,
                   'high_pass' : high_pass,
                   'sigma' : sigma}

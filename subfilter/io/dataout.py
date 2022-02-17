@@ -17,7 +17,9 @@ def save_field(dataset, field, write_to_file=True):
 
     Parameters
     ----------
-    dataset : xarray Dataset
+    dataset : : dict
+        {**'file'**: dataset_name (str) - file name,\n
+        **'ds'**: derived_dataset (xarray Dataset) - NetCDF dataset for derived data}
         Output dataset.
     field :  dask-chunked xarray
         Input field.
@@ -26,7 +28,7 @@ def save_field(dataset, field, write_to_file=True):
 
     Returns
     -------
-    None.
+    field_name : str
 
     """
     fn = dataset['file'].split('/')[-1]
@@ -113,7 +115,6 @@ def setup_child_file(source_file, destdir, outtag, options, override=False) :
         for inc in atts_out:
             if isinstance(atts_out[inc], (dict, bool, type(None))):
                 atts_out[inc] = str(atts_out[inc])
-                print(atts_out[inc])
         derived_dataset.attrs = atts_out
 
         derived_dataset.to_netcdf(derived_dataset_name, mode='w')

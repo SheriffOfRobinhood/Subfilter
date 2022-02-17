@@ -42,6 +42,7 @@ from dask.diagnostics import ProgressBar
 import dask.array as da
 from .utils.string_utils import get_string_index
 from .io.datain import configure_model_resolution
+from .io.dataout import save_field
 from subfilter import executing_on_cluster
 
 import yaml
@@ -100,9 +101,8 @@ def spectra_variable_list(ds, derived_dataset, options, var_list=None):
 
     Returns
     -------
-    dso : xarray dataset
-        Output data.
     outfile : str
+        Output file name
 
     """
 
@@ -132,17 +132,17 @@ def spectra_variable_list(ds, derived_dataset, options, var_list=None):
             continue
 
         if options['spec_1D']:
-            spectrum_ave_1D(ds, dso, vname, outfile, options, dx, dy)
+            spectrum_ave_1D(ds, derived_dataset, vname, options, dx, dy)
 
         if options['spec_2D']:
-            kmap = spectrum_ave_1D_radial(ds, dso, vname, outfile,
-                                           options, dx, dy, kmap=kmap)
+            kmap = spectrum_ave_1D_radial(ds, derived_dataset, vname, 
+                                   options, dx, dy, kmap=kmap)
 
     ds.close()
 
-    return dso
+    return outfile
 
-def spectrum_ave_1D(ds, dso, vname, outfile, options, dx, dy):
+def spectrum_ave_1D(ds, derived_dataset, vname, options, dx, dy):
     """
     Compute averaged 1D spectra in x and y directions separately.
     Use real fft of anomalies, Durran et al. (2017), Eq. 13,
@@ -154,12 +154,10 @@ def spectrum_ave_1D(ds, dso, vname, outfile, options, dx, dy):
     ----------
     ds : xarray Dataset
         Input data.
-    dso :  xarray Dataset
-        Output data.
+    derived_dataset : dict
+        Output data.    'ds':xarray dataset 'file': Path to output file.
     vname : str
         Variable name (in ds).
-    outfile : str
-        Path to output file.
     options : dict
         Options controlling spectrum calculations.
     dx : float
@@ -175,7 +173,7 @@ def spectrum_ave_1D(ds, dso, vname, outfile, options, dx, dy):
     # Ignore divide-by-zero warnings that occur when converting between wavenumbers/frequency/wavelength
     np.seterr(divide='ignore')
 
-    print(f"Working on spectra for: {vname}.")
+    print(f"Working on 1D spectra for: {vname}.")
     # Load variable
 #    var = ds[vname].load()
     var = ds[vname]
@@ -213,8 +211,6 @@ def spectrum_ave_1D(ds, dso, vname, outfile, options, dx, dy):
     L_x = dx*nx
     L_y = dy*ny
 
-    print(var)
-
     #_____________________________________________________________________________
     # Handle averaged 1D spectra option
     # Use real fft of anomalies, Durran et al. (2017), Eq. 13,
@@ -238,7 +234,6 @@ def spectrum_ave_1D(ds, dso, vname, outfile, options, dx, dy):
     #    Alternatively, we could make a function to only return the spectra and deal with Dataset assembly elsewhere,
     #      in which case this would require very little input.
     #_____________________________________________________________________________
-    print("Calculating 1D spectra")
 
     # Spectra in y-direction (mean removed)
 
@@ -274,11 +269,7 @@ def spectrum_ave_1D(ds, dso, vname, outfile, options, dx, dy):
 
     # Assemble the 1D Dataset
     ds1 = xr.Dataset(data_vars = {"spec_ydir_"+vname:(["time","yfreq",zname],ydir),
-                                  "spec_xdir_"+vname:(["time","xfreq",zname],xdir),
-                                  "ywaven":(['yfreq'],ywaven),
-                                  "xwaven":(['xfreq'],xwaven),
-                                  "ywavel":(['yfreq'],ywavel),
-                                  "xwavel":(['xfreq'],xwavel),   },
+                                  "spec_xdir_"+vname:(["time","xfreq",zname],xdir), },
                      coords    = {"time": (["time"],times),
                                   zname: ([zname],z),
                                   "yfreq": (["yfreq"],fy),
@@ -295,6 +286,13 @@ def spectrum_ave_1D(ds, dso, vname, outfile, options, dx, dy):
                          "long_name": "model time since start"}
     ds1[zname].attrs = {"units": "m",
                         "long_name": "height above surface"}
+
+    alt_coords = {"ywaven":(['yfreq'],ywaven),
+                  "ywavel":(['yfreq'],ywavel),
+                  "xwaven":(['xfreq'],xwaven),
+                  "xwavel":(['xfreq'],xwavel)}
+    ds1 = ds1.assign_coords(alt_coords)
+
     ds1['ywaven'].attrs = {"units": "rad m-1",
                            "long_name": "spectral wavenumber, y-direction"}
     ds1['xwaven'].attrs = {"units": "rad m-1",
@@ -304,18 +302,12 @@ def spectrum_ave_1D(ds, dso, vname, outfile, options, dx, dy):
     ds1['xwavel'].attrs = {"units": "m",
                            "long_name": "spectral wavelength, x-direction"}
 
-        # Append new vname spectra to the output Dataset
-#    dso = xr.merge([ds1, ds2])
-    d = ds1.to_netcdf(path = outfile, unlimited_dims="time", mode='a',
-                      compute=False)
-    if executing_on_cluster:
-        results = d.compute()
-    else:
-        with ProgressBar():
-            results = d.compute()
+    _ = save_field(derived_dataset,ds1['spec_ydir_'+vname])
+    _ = save_field(derived_dataset,ds1['spec_xdir_'+vname])
+        
+
     ds1.close()
 
-    return
 
 #===================================================================
 # Get PSD 1D (total radial power spectrum)
@@ -356,7 +348,7 @@ def GetPSD1D(psd2D, k):
 
 
 def prepare_map(fkx, fky, kp, dkh, Nmax):
-    print("Preparing map")
+    print("  Preparing map")
     nx = len(fkx)
     ny = len(fky)
     # Prepare wavnumber grid (rmap) based on kx and ky
@@ -397,7 +389,7 @@ def rad_ave_without_comp(Ek, rlab, index, norm):
 
     return Ekp
 
-def spectrum_ave_1D_radial(ds, dso, vname, outfile, options, dx, dy,
+def spectrum_ave_1D_radial(ds, derived_dataset, vname, options, dx, dy,
                            kmap=None):
     """
     Compute averaged 2D spectra averaged to 1D.
@@ -410,12 +402,10 @@ def spectrum_ave_1D_radial(ds, dso, vname, outfile, options, dx, dy,
     ----------
     ds : xarray Dataset
         Input data.
-    dso :  xarray Dataset
-        Output data.
+    derived_dataset : dict
+        Output data.    'ds':xarray dataset 'file': Path to output file.
     vname : str
         Variable name (in ds).
-    outfile : str
-        Path to output file.
     options : dict
         Options controlling spectrum calculations.
     dx : float
@@ -429,6 +419,8 @@ def spectrum_ave_1D_radial(ds, dso, vname, outfile, options, dx, dy,
     -------
     kmap : dict
         Previously computed mapping from radial k to 2D grid.
+
+
     """
 
 
@@ -436,7 +428,7 @@ def spectrum_ave_1D_radial(ds, dso, vname, outfile, options, dx, dy,
     np.seterr(divide='ignore')
 
 
-    print("Working on spectra for: ", vname)
+    print("Working on 2D spectra for: ", vname)
     # Load variable
  #   var = ds[vname].load()
     var = ds[vname]
@@ -474,7 +466,6 @@ def spectrum_ave_1D_radial(ds, dso, vname, outfile, options, dx, dy,
     L_x = dx*nx
     L_y = dy*ny
 
-    print(var)
     #_____________________________________________________________________________
     # Handle averaged 2D spectra option (to 1D horizontal)
     # NOTE: Wavenumber zero is neither considered nor reported - mean removed from data.
@@ -497,7 +488,6 @@ def spectrum_ave_1D_radial(ds, dso, vname, outfile, options, dx, dy,
     #    Alternatively, we could make a function to only return the spectra and deal with Dataset assembly elsewhere,
     #      in which case this would require very little input.
     #_____________________________________________________________________________
-    print("Calculating 2D spectra")
 
     # Set up helpful parameters
 
@@ -643,8 +633,7 @@ def spectrum_ave_1D_radial(ds, dso, vname, outfile, options, dx, dy,
 
     # Assemble the 2D Dataset
     ds2 = xr.Dataset(data_vars = {"spec_2d_"+vname:(["time","hfreq",zname],Ekp),
-                                  "hwaven":(['hfreq'],kpo),
-                                  "hwavel":(['hfreq'],wavel)  },
+                                  },
                      coords    = {"time": (["time"],times),
                                   zname: ([zname],z),
                                   "hfreq": (["hfreq"],freq) } )
@@ -656,25 +645,18 @@ def spectrum_ave_1D_radial(ds, dso, vname, outfile, options, dx, dy,
                          "long_name": "model time since start"}
     ds2[zname].attrs = {"units": "m",
                         "long_name": "height above surface"}
+
+    alt_coords = {"hwaven":(['hfreq'], kpo),
+                  "hwavel":(['hfreq'], wavel)}
+    ds2 = ds2.assign_coords(alt_coords)
     ds2['hwaven'].attrs = {"units": "rad m-1",
                            "long_name": "horizontal 1D spectral wavenumber from 2D-FFT"}
     ds2['hwavel'].attrs = {"units": "m",
                            "long_name": "horizontal 1D spectral wavelength from 2D-FFT"}
 
-# end if spec_2D
-#_____________________________________________________________________________
-
-
     # Append new vname spectra to the output Dataset
-    print(f"Saving {ds2} to {outfile}")
+    _ = save_field(derived_dataset,ds2['spec_2d_'+vname])
 
-    d = ds2.to_netcdf(path = outfile, unlimited_dims="time", mode='a',
-                      compute=False)
-    if executing_on_cluster:
-        results = d.compute()
-    else:
-        with ProgressBar():
-            results = d.compute()
     ds2.close()
 
     return kmap

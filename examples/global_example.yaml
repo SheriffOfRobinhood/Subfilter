@@ -27,7 +27,7 @@ options:
     #   Also applies to deformation fields and paired filter fields
     save_all: 'Yes'
     # [ {True}, False ] Overwrite any existing output files
-    override: True      # [ True, False ] Overwrite any existing output files
+    override: True
     # MONC x-direction resolution [m], this value only used when options_database is absent from 
     #   the ref_file
 #    dx: 50.0
@@ -84,7 +84,7 @@ spectra_options:
     # With spec_method: 'durran', restrict the spec_2d result to values below the Nyquist frequency
     spec_restrict: True
     # list of string patterns to match applicable analysis variable names in var_list
-    filtered_spectra_fields: ['u_on_w_r','v_on_w_r','w_on_w_r','th_on_w_r','q_vapour_on_w_r','th_v_on_w_r','th_L_on_w_r','q_total_on_w_r','buoyancy_on_w_r']
+    filtered_spectra_fields: ['f(u_on_w)_r','f(v_on_w)_r','f(w_on_w)_r','f(th_on_w)_r','f(q_vapour_on_w)_r','f(th_v_on_w)_r','f(th_L_on_w)_r','f(q_total_on_w)_r','f(buoyancy_on_w)_r']
     derived_spectra_fields: ['u_on_w','v_on_w','w_on_w','th_on_w','q_vapour_on_w','th_v_on_w','th_L_on_w','q_total_on_w','buoyancy_on_w']
 
 
