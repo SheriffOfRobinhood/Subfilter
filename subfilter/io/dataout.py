@@ -7,6 +7,7 @@ Created on Mon Aug  2 12:02:20 2021.
 import time
 import os
 import xarray as xr
+import dask
 from dask.diagnostics import ProgressBar
 
 import subfilter  # for global prameters
@@ -82,7 +83,14 @@ def setup_child_file(source_file, destdir, outtag, options, override=False) :
 
     """
     if os.path.isfile(source_file):
-        ds = xr.open_dataset(source_file)
+        # Avoid accidental large chunks and read dask_chunks
+        if not subfilter.global_config['no_dask']:
+            dask.config.set({"array.slicing.split_large_chunks": True})
+            dask_chunks = subfilter.global_config['dask_chunks']
+
+            ds = xr.open_dataset(source_file, chunks=dask_chunks)
+        else:
+            ds = xr.open_dataset(source_file)
         atts = ds.attrs
     else:
         raise FileNotFoundError(f"Cannot find file {source_file}.")
@@ -90,17 +98,31 @@ def setup_child_file(source_file, destdir, outtag, options, override=False) :
     derived_dataset_name = os.path.basename(source_file)
     derived_dataset_name = ('.').join(derived_dataset_name.split('.')[:-1])
 
-    if subfilter.global_config['l_slurm_job_tag'] and subfilter.executing_on_cluster:
+    if subfilter.global_config['l_slurm_job_tag'] \
+        and subfilter.executing_on_cluster:
+
         jn = os.environ['SLURM_JOB_NAME']
-        derived_dataset_name = destdir+derived_dataset_name + "_"+jn+ "_" + outtag + ".nc"
+        derived_dataset_name = destdir+derived_dataset_name + \
+                               "_"+jn+ "_" + outtag + ".nc"
     else:
-        derived_dataset_name = destdir+derived_dataset_name + "_" + outtag + ".nc"
+        derived_dataset_name = destdir+derived_dataset_name + \
+                               "_" + outtag + ".nc"
 
     exists = os.path.isfile(derived_dataset_name)
 
     if exists and not override :
 
-        derived_dataset = xr.open_dataset(derived_dataset_name)
+        if not subfilter.global_config['no_dask']:
+            dask.config.set({"array.slicing.split_large_chunks": True})
+            dask_chunks = subfilter.global_config['dask_chunks']
+            derived_dataset = xr.open_dataset(derived_dataset_name,
+                                              mode='a',
+                                              chunks='auto')
+        else:
+            derived_dataset = xr.open_dataset(derived_dataset_name,
+                                              mode='a',
+                                              )
+            print(f'Dataset {derived_dataset_name} exists.')
 
     else :
         if exists:
@@ -116,9 +138,9 @@ def setup_child_file(source_file, destdir, outtag, options, override=False) :
             if isinstance(atts_out[inc], (dict, bool, type(None))):
                 atts_out[inc] = str(atts_out[inc])
         derived_dataset.attrs = atts_out
-
         derived_dataset.to_netcdf(derived_dataset_name, mode='w')
-        print(derived_dataset)
+
+    print(derived_dataset)
     do = {'file':derived_dataset_name, 'ds': derived_dataset}
     ds.close()
     return do, exists

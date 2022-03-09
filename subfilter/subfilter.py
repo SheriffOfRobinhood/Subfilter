@@ -99,13 +99,15 @@ def filter_variable_list(source_dataset, ref_dataset, derived_dataset,
 
 
 
-        if 'f('+v+')_r' not in filtered_dataset['ds'].variables \
-            or 'f('+v+')_s' not in filtered_dataset['ds'].variables:
+        if f'f({v})_r' not in filtered_dataset['ds'].variables \
+            or f'f({v})_s' not in filtered_dataset['ds'].variables:
 
             ncvar_r, ncvar_s = filter_field(op_var,
                                             filtered_dataset,
                                             options, filter_def,
                                             grid=grid)
+        else:
+            print(f'f({v})_r and f({v})_s already in output dataset.')
 
     return var_list
 
@@ -146,11 +148,13 @@ def filter_variable_pair_list(source_dataset, ref_dataset, derived_dataset,
 
         (s_var1var2, var1var2, var1var2_r, var1var2_s) = svars
 
+        save_field(filtered_dataset, s_var1var2)
         if options['save_all'].lower() == 'yes':
-            for f in (var1var2, var1var2_r, var1var2_s):
+            for f in ( var1var2_r, var1var2_s):
                 save_field(filtered_dataset, f)
 
-        save_field(filtered_dataset, s_var1var2)
+            save_field(derived_dataset, var1var2)
+
     return var_list
 
 
@@ -173,6 +177,8 @@ def convolve(field, options, filter_def, dims):
     if len(np.shape(field)) > len(np.shape(filter_def)):
         edims = tuple(np.setdiff1d(np.arange(len(np.shape(field))), dims))
         filter_def = np.expand_dims(filter_def, axis=edims)
+
+
 
     if options['FFT_type'].upper() == 'FFTCONVOLVE':
 
@@ -267,7 +273,7 @@ def filtered_field_calc(var, options, filter_def):
 
     Returns
     -------
-        dicts cantaining variable info : [var_r, var_s]
+        dicts containing variable info : [var_r, var_s]
 
     """
     vname = var.name
@@ -500,7 +506,7 @@ def filter_field(var, filtered_dataset, options, filter_def,
 
     if vname_r in filtered_dataset['ds'] and vname_r in filtered_dataset['ds']:
 
-        print("Reading ", vname_r, vname_s)
+        print(f"Reading {vname_r}, {vname_s}")
         var_r = filtered_dataset['ds'][vname_r]
         var_s = filtered_dataset['ds'][vname_s]
 
@@ -596,11 +602,17 @@ def quadratic_subfilter(source_dataset,  ref_dataset, derived_dataset,
         (var2_r, var2_s) = filter_field(v2, filtered_dataset, options,
                                         filter_def, grid=grid)
 
-
-    var1var2 = v1 * v2
-    var1var2.name = v1.name + '.' + v2.name
+    var1var2_name = v1.name + '.' + v2.name
+    if var1var2_name in derived_dataset['ds'].variables:
+        var1var2 =  derived_dataset['ds'][var1var2_name]
+    else:
+        var1var2 = v1 * v2
+        var1var2.name = var1var2_name
 
     print(f"Filtering {v1_name:s}*{v2_name:s}")
+
+    var1var2 = re_chunk(var1var2)
+
     (var1var2_r, var1var2_s) = filtered_field_calc(var1var2, options,
                                                  filter_def )
 
