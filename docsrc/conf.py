@@ -22,11 +22,11 @@ import sys
 # -- Project information -----------------------------------------------------
 
 project = 'Subfilter'
-copyright = '2019, 2020, 2021 Peter Clark'
+copyright = '2019, 2020, 2021, 2022 Peter Clark, Todd Jones'
 author = 'Peter Clark'
 
 # The full version, including alpha/beta/rc tags
-release = '0.5.0'
+release = '0.5.3'
 
 # -- General configuration ---------------------------------------------------
 master_doc = 'index'
