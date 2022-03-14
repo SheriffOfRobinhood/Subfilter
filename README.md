@@ -2,6 +2,8 @@
 python code to compute sub-filter quantities from MONC output.
 See https://readingclouds.github.io/Subfilter/ for documentation.
 
+Current version: 0.5.3.
+
 Users should pip install to a suitable environment using
 
     pip install  git+https://github.com/ReadingClouds/Subfilter.git

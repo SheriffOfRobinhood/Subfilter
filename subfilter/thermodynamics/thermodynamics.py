@@ -1513,7 +1513,7 @@ derived_vars = {
          'func': buoyancy_moist,
          'units': r'm s$^{-2}$'},
     'moist_dbdz':
-        {'vars':('th', 'thref', 'p', 'q_vapour', 'q_cloud_liquid_mass',
+        {'vars':('th', 'thref', 'pref', 'q_vapour', 'q_cloud_liquid_mass',
                  'z', 'zn') ,
           'func': moist_dbdz,
           'units': r's$^{-2}$'},
