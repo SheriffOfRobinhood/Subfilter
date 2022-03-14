@@ -108,6 +108,7 @@ def gaussian_cloud(th_L, qt, th_ref, p_ref, s_qt_qt, s_thL_qt, s_thL_thL):
     qc = delta_q * parms["a_L"]
 
     sig_s = sigma_s(s_qt_qt, s_thL_qt, s_thL_thL, parms)
+
     qn = qc / sig_s
 
     cloud_fraction = np.clip(0.5 * (1 - erf(-qn / np.sqrt(2))), 0, None)
