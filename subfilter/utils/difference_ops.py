@@ -126,10 +126,10 @@ def grid_conform_x(field, target_xdim):
     x = field.coords[xdim].data
     dx = x[1] - x[0]
     if target_xdim == 'x_p':
-        xmn = lambda arr:(0.5 * (arr + np.roll(arr, -1, axis=xaxis)))
+        xmn = lambda arr:(0.5 * (arr + np.roll(arr, +1, axis=xaxis)))
         x_new = x - dx / 2.0
     elif target_xdim == 'x_u':
-        xmn = lambda arr:(0.5 * (arr + np.roll(arr, +1, axis=xaxis)))
+        xmn = lambda arr:(0.5 * (arr + np.roll(arr, -1, axis=xaxis)))
         x_new = x + dx / 2.0
     else:
         print(f"Cannot transform {xdim} to {target_xdim}")
@@ -169,10 +169,10 @@ def grid_conform_y(field, target_ydim):
     y = field.coords[ydim].data
     dy = y[1] - y[0]
     if target_ydim == 'y_p':
-        ymn = lambda arr:(0.5 * (arr + np.roll(arr, -1, axis=yaxis)))
+        ymn = lambda arr:(0.5 * (arr + np.roll(arr, +1, axis=yaxis)))
         y_new = y - dy / 2.0
     elif target_ydim == 'y_v':
-        ymn = lambda arr:(0.5 * (arr + np.roll(arr, +1, axis=yaxis)))
+        ymn = lambda arr:(0.5 * (arr + np.roll(arr, -1, axis=yaxis)))
         y_new = y + dy / 2.0
     else:
         print(f"Cannot transform {ydim} to {target_ydim}")

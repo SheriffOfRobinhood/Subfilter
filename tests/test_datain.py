@@ -67,46 +67,46 @@ os.makedirs(odir, exist_ok = True)
 
 #file = 'diagnostics_ts_18000.0.nc'
 #ref_file = 'diagnostics_ts_18000.0.nc'
-# var_list = [
-#     "saturation",
-#     "moist_dbdz",
-#     "dmoist_bdz",
-#     "dbdz",
-#     "dbdz_monc",
-#     "buoyancy_moist",
-#     "buoyancy",
-#     "buoyancy_monc",
-#     "u",
-#     "v",
-#     "w",
-#     "th",
-#     "p",
-#     "tracer",
-#     "th_L",
-#     "th_v",
-#     "thref",
-#     "T",
-#     "th_e",
-#     "th_w",
-#     "T_w",
-#     "m_vapour",
-#     "q_vapour",
-#     "cloud_fraction",
-#     "q_cloud_liquid_mass",
-#     "q_total",
-#     "m_total",
-#     "rh",
-#      ]
-
-
 var_list = [
     "saturation",
+    "moist_dbdz",
+    "dmoist_bdz",
+    "dbdz",
+    "dbdz_monc",
+    "buoyancy_moist",
+    "buoyancy",
+    "buoyancy_monc",
+    "u",
+    "v",
+    "w",
+    "th",
+    "p",
     "tracer",
     "th_L",
+    "th_v",
+    "thref",
+    "T",
+    "th_e",
+    "th_w",
+    "T_w",
+    "m_vapour",
     "q_vapour",
+    "cloud_fraction",
     "q_cloud_liquid_mass",
     "q_total",
-     ]
+    "m_total",
+    "rh",
+      ]
+
+
+# var_list = [
+#     "saturation",
+#     "tracer",
+#     "th_L",
+#     "q_vapour",
+#     "q_cloud_liquid_mass",
+#     "q_total",
+#      ]
 
 
 fname = 'test_datain'
