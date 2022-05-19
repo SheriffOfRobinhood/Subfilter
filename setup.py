@@ -10,14 +10,12 @@ setup(
     # Needed to actually package something
     packages=['subfilter', 
               'subfilter/cli',
-              'subfilter/io',
-              'subfilter/thermodynamics',
               'subfilter/utils',
               ],
     # Needed for dependencies
     install_requires=['numpy', 'scipy', 'dask', 'xarray'],
     # *strongly* suggested for sharing
-    version='0.5.3',
+    version='0.6.0',
     # The license can be anything you like
     license='MIT',
     description='python code to compute sub-filter quantities from MONC output.',

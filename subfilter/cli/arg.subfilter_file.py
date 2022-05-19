@@ -28,6 +28,9 @@ from pathlib import Path
 import subfilter as sf
 import filters as filt
 
+from monc_utils.data_utils.string_utils import get_string_index
+
+
 import pdb
   # pdb.set_trace()
 options = {
@@ -66,21 +69,21 @@ figshow = True
 
 def plot_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
 
-    var_r = filtered_data[f"{var_name}_on_{grid}_r"]
-    var_s = filtered_data[f"{var_name}_on_{grid}_s"]
+    var_r = filtered_data['ds'][f"f({var_name}_on_{grid})_r"]
+    var_s = filtered_data['ds'][f"f({var_name}_on_{grid})_s"]
 
+    [iix, iiy, iiz] =  get_string_index(var_r.dims, ['x', 'y', 'z'])
+    [xvar, yvar, zvar] = [list(var_s.dims)[i] for i in [iix, iiy, iiz]]
 
-    for it in range(var_r.shape[0]):
+    for it, time in enumerate(var_r.coords['time']):
         if twod_filter.attributes['filter_type']=='domain' :
-            zcoord = sf.last_dim(filtered_data[var_r.dimensions[1]])
-            pltdat = (var_r[it,:])
+            
+            
+            zcoord = var_r.dims[zvar]
 
             fig1, axa = plt.subplots(1,1,figsize=(5,5))
 
-    #    plt.subplot(3, 2, 1)
-            Cs1 = axa.plot(pltdat, zcoord)
-            axa.set_xlabel(r'%s$^r$'%(var_name))
-            axa.set_ylabel('z')
+            Cs1 = var_r.isel(time=it).plot(y=zvar, ax = axa)
 
             plt.tight_layout()
 
@@ -88,60 +91,26 @@ def plot_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
                     twod_filter.id+'_%02d'%it+plot_type)
             plt.close()
         else :
-            zcoord = sf.last_dim(filtered_data[var_r.dimensions[3]])
-            meanfield= np.mean(var_r[it,...],axis=(0,1),keepdims=True)
-            pltdat = (var_r[it,...]-meanfield)
+            meanfield= var_r.isel(time=it).mean(dim=(xvar, yvar))
+            pltdat = (var_r.isel(time=it)-meanfield)
 
             nlevels = 40
             plt.clf
 
             fig1, axa = plt.subplots(3,2,figsize=(10,12))
 
-        #    plt.subplot(3, 2, 1)
-            Cs1 = axa[0,0].contourf(np.transpose(pltdat[:, :, ilev]),\
-                     nlevels)
-            axa[0,0].set_title(r'%s$^r$ pert level %03d'%(var_name,ilev))
-            axa[0,0].set_xlabel('x')
+            Cs1 = pltdat.isel({zvar:ilev}).plot.imshow(x=xvar, y=yvar, ax=axa[0,0], levels=nlevels)
 
-        # Make a colorbar for the ContourSet returned by the contourf call.
-            cbar1 = fig1.colorbar(Cs1,ax=axa[0,0])
-            cbar1.ax.set_ylabel(var_name)
-        # Add the contour line levels to the colorbar
-        #  cbar.add_lines(CS2)
+            Cs2 = var_s.isel({'time':it, zvar:ilev}).plot.imshow(x=xvar, y=yvar, ax=axa[0,1], levels=nlevels)
 
-        #    plt.subplot(3, 2, 2)
-            Cs2 = axa[0,1].contourf(np.transpose(var_s[it, :, :, ilev]),\
-                     nlevels)
-            axa[0,1].set_xlabel('x')
-            axa[0,1].set_title(r'%s$^s$ level %03d'%(var_name,ilev))
-            cbar2 = fig1.colorbar(Cs2,ax=axa[0,1])
-            cbar2.ax.set_ylabel(var_name)
-        #
-        #    plt.subplot(3, 2, 3)
-            Cs3 = axa[1,0].contourf(np.transpose(pltdat[:,iy,:]),nlevels)
-        #
-        ##    plt.ylim([0,5000])
-            axa[1,0].set_title(r'%s$^r$ pert at iy %03d'%(var_name,iy))
-        ## Make a colorbar for the ContourSet returned by the contourf call.
-            cbar3 = fig1.colorbar(Cs3,ax=axa[1,0])
-            cbar3.ax.set_ylabel(var_name)
-        #
-        #    plt.subplot(3, 2, 4)
-            Cs4 = axa[1,1].contourf(np.transpose(var_s[it, :, iy,:]),nlevels)
-        #
-        ##    plt.ylim([0,5000])
-            axa[1,1].set_title(r'%s$^s$ at iy %03d'%(var_name,iy))
-        ## Make a colorbar for the ContourSet returned by the contourf call.
-            cbar4 = fig1.colorbar(Cs4,ax=axa[1,1])
-            cbar4.ax.set_ylabel(var_name)
-        #
-            x=(np.arange(0,var_r.shape[2])-0.5*var_r.shape[2])*0.1
-        #    plt.subplot(3, 2, 5)
-            ax1 = axa[2,0].plot(x,pltdat[:,iy,ilev])
-        #
-        #    plt.subplot(3, 2, 6)
-            ax2 = axa[2,1].plot(x,var_s[it,:,iy,ilev])
-        #
+            Cs3 = pltdat.isel({yvar:iy}).plot.imshow(x=xvar, y=zvar, ax=axa[1,0], levels=nlevels)
+
+            Cs4 = var_s.isel({'time':it, yvar:iy}).plot.imshow(x=xvar, y=zvar, ax=axa[1,1], levels=nlevels)
+
+            p1 = pltdat.isel({yvar:iy, zvar:ilev}).plot(ax=axa[2,0])
+
+            p2 = var_s.isel({'time':it, yvar:iy, zvar:ilev}).plot(ax=axa[2,1])
+
             plt.tight_layout()
 
             plt.savefig(plot_dir+var_name+'_lev_'+'%03d'%ilev+'_x_z'+'%03d'%iy+'_'+\
@@ -160,25 +129,27 @@ def plot_quad_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
     v1 = var_name[0]
     v2 = var_name[1]
 
-    v1_r = filtered_data[f"{v1}_on_{grid}_r"]
-    v2_r = filtered_data[f"{v2}_on_{grid}_r"]
+    v1_r = filtered_data['ds'][f"f({v1}_on_{grid})_r"]
+    v2_r = filtered_data['ds'][f"f({v2}_on_{grid})_r"]
 
-    print(v1,v2)
-    s_v1v2 = filtered_data[f"{v1}_{v2}_on_{grid}"]
-    print(s_v1v2)
+    s_v1v2 = filtered_data['ds'][f"s({v1},{v2})_on_{grid}"]
 
-    for it in range(s_v1v2.shape[0]):
+    [iix, iiy, iiz] = get_string_index(s_v1v2.dims, ['x', 'y', 'z'])
+    if iix is not None:
+        xvar = s_v1v2.dims[iix]
+        yvar = s_v1v2.dims[iiy]
+    zvar = s_v1v2.dims[iiz]
+
+    for it, time in enumerate(s_v1v2.coords['time']):
+
+        print(f'it:{it}')
+
 
         if twod_filter.attributes['filter_type']=='domain' :
-            pltdat = (s_v1v2[it,:])
-            zcoord = sf.last_dim(filtered_data[v1_r.dimensions[1]])
 
             fig1, axa = plt.subplots(1,1,figsize=(5,5))
 
-    #    plt.subplot(3, 2, 1)
-            Cs1 = axa.plot(pltdat, zcoord)
-            axa.set_xlabel('s({},{})'.format(v1,v2))
-            axa.set_ylabel('z')
+            Cs1 = s_v1v2.isel(time=it).plot(y=zvar, ax = axa)
 
             plt.tight_layout()
 
@@ -186,94 +157,56 @@ def plot_quad_field(var_name, filtered_data, twod_filter, ilev, iy, grid='p'):
                     twod_filter.id+'_%02d'%it+plot_type)
             plt.close()
         else :
-            zcoord = sf.last_dim(filtered_data[v1_r.dimensions[3]])
-            var_r = (v1_r[it,...] - np.mean(v1_r[it,...], axis=(0,1))) * \
-                    (v2_r[it,...] - np.mean(v2_r[it,...], axis=(0,1)))
 
-            meanfield= np.mean(var_r[...],axis=(0,1),keepdims=True)
-            pltdat = (var_r[...]-meanfield)
+            var_r = (v1_r.isel(time=it) - v1_r.isel(time=it).mean(dim=(xvar, yvar))) * \
+                    (v2_r.isel(time=it) - v2_r.isel(time=it).mean(dim=(xvar, yvar)))
 
-#            lev1 = np.arange(-10,10.1,0.1)
-#            lev2 = np.arange(-10,10.1,0.1)
+
+            pltdat = var_r
+
+            pltdat.name = 'f('+v1+')_r.'+'f('+v2+')_r'
 
             nlevels = 40
             plt.clf
 
             fig1, axa = plt.subplots(3,2,figsize=(10,12))
 
-        #    plt.subplot(3, 2, 1)
-            Cs1 = axa[0,0].contourf(np.transpose(pltdat[:, :, ilev]),\
-                     nlevels)
-            axa[0,0].set_title(r'{}$^r${}$^r$ pert level {:03d}'.format(v1, v2,ilev))
-            axa[0,0].set_xlabel('x')
+            Cs1 = pltdat.isel({zvar:ilev}).plot.imshow(x=xvar, y=yvar, ax=axa[0,0], levels=nlevels)
 
-        # Make a colorbar for the ContourSet returned by the contourf call.
-            cbar1 = fig1.colorbar(Cs1,ax=axa[0,0])
-            cbar1.ax.set_ylabel(var_name)
-        # Add the contour line levels to the colorbar
-        #  cbar.add_lines(CS2)
+            Cs2 = s_v1v2.isel({'time':it, zvar:ilev}).plot.imshow(x=xvar, y=yvar, ax=axa[0,1], levels=nlevels)
 
-        #    plt.subplot(3, 2, 2)
-            Cs2 = axa[0,1].contourf(np.transpose(s_v1v2[it, :, :, ilev]),\
-                     nlevels)
-            axa[0,1].set_xlabel('x')
-            axa[0,1].set_title('s({},{}) level {:03d}'.format(v1,v2,ilev))
-            cbar2 = fig1.colorbar(Cs2,ax=axa[0,1])
-            cbar2.ax.set_ylabel(var_name)
-        #
-        #    plt.subplot(3, 2, 3)
-            Cs3 = axa[1,0].contourf(np.transpose(pltdat[:,iy,:]),nlevels)
-        #
-        ##    plt.ylim([0,5000])
-            axa[1,0].set_title(r'{}$^r${}$^r$ at iy={:03d}'.format(v1, v2,iy))
-        ## Make a colorbar for the ContourSet returned by the contourf call.
-            cbar3 = fig1.colorbar(Cs3,ax=axa[1,0])
-            cbar3.ax.set_ylabel(var_name)
-        #
-        #    plt.subplot(3, 2, 4)
-            Cs4 = axa[1,1].contourf(np.transpose(s_v1v2[it, :, iy,:]),nlevels)
-        #
-        ##    plt.ylim([0,5000])
-            axa[1,1].set_title('s({},{}) at iy={:03d}'.format(v1,v2,iy))
-        ## Make a colorbar for the ContourSet returned by the contourf call.
-            cbar4 = fig1.colorbar(Cs4,ax=axa[1,1])
-            cbar4.ax.set_ylabel(var_name)
-        #
-            x=(np.arange(0,var_r.shape[1])-0.5*var_r.shape[1])*0.1
-        #    plt.subplot(3, 2, 5)
-            ax1 = axa[2,0].plot(x,pltdat[:,iy,ilev])
-        #
-        #    plt.subplot(3, 2, 6)
-            ax2 = axa[2,1].plot(x,s_v1v2[it,:,iy,ilev])
-        #
+            Cs3 = pltdat.isel({yvar:iy}).plot.imshow(x=xvar, y=zvar, ax=axa[1,0], levels=nlevels)
+
+            Cs4 = s_v1v2.isel({'time':it, yvar:iy}).plot.imshow(x=xvar, y=zvar, ax=axa[1,1], levels=nlevels)
+
+            p1 = pltdat.isel({yvar:iy, zvar:ilev}).plot(ax=axa[2,0])
+
+            p2 = s_v1v2.isel({'time':it, yvar:iy, zvar:ilev}).plot(ax=axa[2,1])
+
             plt.tight_layout()
 
             plt.savefig(plot_dir+var_name[0]+'_'+var_name[1]+'_lev_'+'%03d'%ilev+'_x_z'+'%03d'%iy+'_'+\
                         twod_filter.id+'_%02d'%it+plot_type)
             plt.close()
 
-    #
-    #    plt.show()
-    #plt.close()
 
     return
 
-def plot_shear(var_r, var_s, zcoord,  twod_filter, ilev, iy, no_trace = True):
-    var_name = "mod_S"
+def plot_shear(var_r, var_s, zcoord,  twod_filter, plot_dir, ilev, iy, no_trace = True):
+    var_name = var_r.name
     if no_trace : var_name = var_name+'n'
 
-    for it in range(var_r.shape[0]):
-#        meanfield= np.mean(var_r[it,...],axis=(0,1),keepdims=True)
-#        pltdat = (var_r[it,...]-meanfield)
+    [iix, iiy, iiz] = get_string_index(var_s.dims, ['x', 'y', 'z'])
+    [xvar, yvar, zvar] = [list(var_s.dims)[i] for i in [iix, iiy, iiz]]
+
+    for it, time in enumerate(var_r.coords['time']):
+        print(f'it:{it}')
+
         if twod_filter.attributes['filter_type']=='domain' :
-            pltdat = (var_r[it,:])
 
             fig1, axa = plt.subplots(1,1,figsize=(5,5))
 
-    #    plt.subplot(3, 2, 1)
-            Cs1 = axa.plot(pltdat[1:], zcoord[1:])
-            axa.set_xlabel(var_name)
-            axa.set_ylabel('z')
+            Cs1 = var_r.isel({'time':it, zvar:slice(1,None)}).plot(y=zvar, ax = axa)
 
             plt.tight_layout()
 
@@ -281,69 +214,33 @@ def plot_shear(var_r, var_s, zcoord,  twod_filter, ilev, iy, no_trace = True):
                     twod_filter.id+'_%02d'%it+plot_type)
             plt.close()
         else :
-            pltdat = var_r[it,...]
+            pltdat = var_r.isel(time=it)
 
             nlevels = 40
             plt.clf
 
             fig1, axa = plt.subplots(3,2,figsize=(10,12))
 
-        #    plt.subplot(3, 2, 1)
-            Cs1 = axa[0,0].contourf(np.transpose(pltdat[:, :, ilev]),\
-                     nlevels)
-            axa[0,0].set_title(r'%s$^r$ level %03d'%(var_name,ilev))
-            axa[0,0].set_xlabel('x')
+            Cs1 = pltdat.isel({zvar:ilev}).plot.imshow(x=xvar, y=yvar, ax=axa[0,0], levels=nlevels)
 
-        # Make a colorbar for the ContourSet returned by the contourf call.
-            cbar1 = fig1.colorbar(Cs1,ax=axa[0,0])
-            cbar1.ax.set_ylabel(var_name)
-        # Add the contour line levels to the colorbar
-        #  cbar.add_lines(CS2)
+            Cs2 = var_s.isel({'time':it, zvar:ilev}).plot.imshow(x=xvar, y=yvar, ax=axa[0,1], levels=nlevels)
 
-        #    plt.subplot(3, 2, 2)
-            Cs2 = axa[0,1].contourf(np.transpose(var_s[it, :, :, ilev]),\
-                     nlevels)
-            axa[0,1].set_xlabel('x')
-            axa[0,1].set_title(r'%s$^s$ level %03d'%(var_name,ilev))
-            cbar2 = fig1.colorbar(Cs2,ax=axa[0,1])
-            cbar2.ax.set_ylabel(var_name)
-        #
-        #    plt.subplot(3, 2, 3)
-            Cs3 = axa[1,0].contourf(np.transpose(pltdat[:,iy,:]),nlevels)
-        #
-        ##    plt.ylim([0,5000])
-            axa[1,0].set_title(r'%s$^r$ at iy %03d'%(var_name,iy))
-        ## Make a colorbar for the ContourSet returned by the contourf call.
-            cbar3 = fig1.colorbar(Cs3,ax=axa[1,0])
-            cbar3.ax.set_ylabel(var_name)
-        #
-        #    plt.subplot(3, 2, 4)
-            Cs4 = axa[1,1].contourf(np.transpose(var_s[it, :, iy,:]),nlevels)
-        #
-        ##    plt.ylim([0,5000])
-            axa[1,1].set_title(r'%s$^s$ at iy %03d'%(var_name,iy))
-        ## Make a colorbar for the ContourSet returned by the contourf call.
-            cbar4 = fig1.colorbar(Cs4,ax=axa[1,1])
-            cbar4.ax.set_ylabel(var_name)
-        #
-            x=(np.arange(0,var_r.shape[2])-0.5*var_r.shape[2])*0.1
-        #    plt.subplot(3, 2, 5)
-            ax1 = axa[2,0].plot(x,pltdat[:,iy,ilev])
-        #
-        #    plt.subplot(3, 2, 6)
-            ax2 = axa[2,1].plot(x,var_s[it,:,iy,ilev])
-        #
+            Cs3 = pltdat.isel({yvar:iy}).plot.imshow(x=xvar, y=zvar, ax=axa[1,0], levels=nlevels)
+
+#             axa[1,0].set_title(r'%s$^r$ pert at iy %03d'%(var_name,iy))
+            Cs4 = var_s.isel({'time':it, yvar:iy}).plot.imshow(x=xvar, y=zvar, ax=axa[1,1], levels=nlevels)
+
+            p1 = pltdat.isel({yvar:iy, zvar:ilev}).plot(ax=axa[2,0])
+
+            p2 = var_s.isel({'time':it, yvar:iy, zvar:ilev}).plot(ax=axa[2,1])
             plt.tight_layout()
 
             plt.savefig(plot_dir+var_name+'_lev_'+'%03d'%ilev+'_x_z'+'%03d'%iy+'_'+\
                         twod_filter.id+'_%02d'%it+plot_type)
             plt.close()
 
-    #
-    #    plt.show()
-#    plt.close()
-
     return
+
 
 def main():
     '''
@@ -428,8 +325,8 @@ def main():
     print(filter_list)
 
 # Pulls height coordinates that have been possibly stored with a time dimension.
-    z = do.last_dim(dataset["z"])
-    zn = do.last_dim(dataset["zn"])
+    z = dataset["z"]
+    zn = dataset["zn"]
 
 # Loop over list of 2D filters
     for twod_filter in filter_list:

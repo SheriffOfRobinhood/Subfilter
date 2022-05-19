@@ -1,14 +1,10 @@
 ==========================
 The utils sub-package.
 ==========================
-This package contains a number of utility modules.
+This package contains a single utility module.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
    
-   tools
-   deformation
-   string_utils
-   dask_utils
    default_variables

@@ -14,30 +14,31 @@ import dask
 
 import subfilter.subfilter as sf
 import subfilter.filters as filt
-import subfilter.utils.deformation as defm
-import subfilter.utils.cloud_monc as cldm
-import subfilter.thermodynamics.thermodynamics as th
+import monc_utils.data_utils.deformation as defm
+import monc_utils.data_utils.cloud_monc as cldm
+import monc_utils.thermodynamics.thermodynamics as th
 
 
-from subfilter.utils.string_utils import get_string_index
-from subfilter.io.dataout import save_field
-from subfilter.io.datain import (configure_model_resolution,
+from monc_utils.data_utils.string_utils import get_string_index
+from monc_utils.io.dataout import save_field
+from monc_utils.io.datain import (configure_model_resolution,
                                  get_data_on_grid,
                                  )
 from subfilter.utils.default_variables import (get_default_variable_list,
                                       get_default_variable_pair_list)
 
 
+import monc_utils
 import subfilter
 test_case = 0
 run_quad_fields = True
-#run_quad_fields = False
+# run_quad_fields = False
 run_deformation_fields = True
-#run_deformation_fields = False
+# run_deformation_fields = False
 run_cloud_fields = True
-#run_cloud_fields = False
+# run_cloud_fields = False
 run_ri = True
-#run_ri = False
+# run_ri = False
 override = True
 
 plot_type = '.png'
@@ -59,9 +60,9 @@ def main():
         ref_file = None
     options, update_config = sf.subfilter_options(config_file)
 
-#    var_list = ["q_cloud_liquid_mass", "cloud_fraction"]
-
-
+    # var_list = ["q_cloud_liquid_mass", "cloud_fraction"]
+    # var_list = ["q_total", "th_L"]
+    var_list = None
 
 #dir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
 #odir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
@@ -70,7 +71,7 @@ def main():
 #file = 'diagnostics_ts_18000.0.nc'
 #ref_file = 'diagnostics_ts_18000.0.nc'
 
-    fname = 'test_rewrite'
+    fname = 'test_rewrite_vn6'
 
     odir = odir + fname +'_'+ options['FFT_type']+'/'
     os.makedirs(odir, exist_ok = True)
@@ -79,11 +80,12 @@ def main():
     os.makedirs(plot_dir, exist_ok = True)
 
     # Avoid accidental large chunks and read dask_chunks
-    if not subfilter.global_config['no_dask']:
+    if not monc_utils.global_config['no_dask']:
         dask.config.set({"array.slicing.split_large_chunks": True})
-        dask_chunks = subfilter.global_config['dask_chunks']
+        dask_chunks = monc_utils.global_config['dask_chunks']
 
     subfilter.global_config['test_level'] = 2
+
     # Read data
     dataset = xr.open_dataset(indir+file, chunks=dask_chunks)
 
@@ -191,7 +193,7 @@ def main():
             field_list = sf.filter_variable_list(dataset, ref_dataset,
                                                 derived_data, filtered_data,
                                                 options,
-                                                twod_filter, var_list=None,
+                                                twod_filter, var_list=var_list,
                                                 grid = opgrid)
 
             if run_quad_fields:
@@ -245,8 +247,15 @@ def main():
                 print(v_r)
 
         if run_cloud_fields:
-            th_ref = get_data_on_grid(dataset, ref_dataset, derived_data, 'thref', options,grid = opgrid)
-            p_ref  = get_data_on_grid(dataset, ref_dataset, derived_data, 'pref',  options, grid = opgrid)
+            options['save_all'] = 'No'
+            th_ref = get_data_on_grid(dataset, ref_dataset, 'thref', 
+                                      derived_dataset=derived_data, 
+                                      options=options,
+                                      grid=opgrid)
+            p_ref  = get_data_on_grid(dataset, ref_dataset, 'pref', 
+                                      derived_dataset=derived_data, 
+                                      options=options,
+                                      grid=opgrid)
             parms = th.cloud_params_monc(th_ref, p_ref)
             s_qt_qt = filtered_data['ds']["s(q_total,q_total)_on_w"]
             s_thL_qt = filtered_data['ds']["s(th_L,q_total)_on_w"]
@@ -277,9 +286,6 @@ def main():
 
         filtered_data['ds'].close()
 
-
-        z = dataset["z"]
-        zn = dataset["zn"]
 
         filtered_data['ds'] = xr.open_dataset(filtered_data['file'])
 
@@ -312,7 +318,7 @@ def main():
         if run_deformation_fields:
 
             print("Plotting mod_Sn")
-            plot_shear(mod_Sn_r, mod_Sn_s, z, twod_filter, plot_dir, ilev, iy,
+            plot_shear(mod_Sn_r, mod_Sn_s, twod_filter, plot_dir, ilev, iy,
                         no_trace = True)
         #     print("Plotting mod_S")
         #     plot_shear(mod_S_r, mod_S_s, z, twod_filter, plot_dir, ilev, iy,
@@ -379,21 +385,16 @@ def plot_field(var_name, filtered_data, twod_filter, plot_dir,
 
             Cs1 = pltdat.isel({zvar:ilev}).plot.imshow(x=xvar, y=yvar, ax=axa[0,0], levels=nlevels)
 
-#            axa[0,0].set_title(r'%s$^r$ pert level %03d'%(var_name,ilev))
-
             Cs2 = var_s.isel({'time':it, zvar:ilev}).plot.imshow(x=xvar, y=yvar, ax=axa[0,1], levels=nlevels)
-#             axa[0,1].set_title(r'%s$^s$ level %03d'%(var_name,ilev))
 
             Cs3 = pltdat.isel({yvar:iy}).plot.imshow(x=xvar, y=zvar, ax=axa[1,0], levels=nlevels)
 
-#             axa[1,0].set_title(r'%s$^r$ pert at iy %03d'%(var_name,iy))
             Cs4 = var_s.isel({'time':it, yvar:iy}).plot.imshow(x=xvar, y=zvar, ax=axa[1,1], levels=nlevels)
-#             axa[1,1].set_title(r'%s$^s$ at iy %03d'%(var_name,iy))
 
             p1 = pltdat.isel({yvar:iy, zvar:ilev}).plot(ax=axa[2,0])
 
             p2 = var_s.isel({'time':it, yvar:iy, zvar:ilev}).plot(ax=axa[2,1])
-#             x=(np.arange(0,var_r.shape[2])-0.5*var_r.shape[2])*0.1
+
             plt.tight_layout()
 
             plt.savefig(plot_dir+var_name+'_lev_'+'%03d'%ilev+'_x_z'+'%03d'%iy+'_'+\
@@ -477,7 +478,7 @@ def plot_quad_field(var_name, filtered_data, twod_filter, plot_dir,
 
     return
 
-def plot_shear(var_r, var_s, zcoord,  twod_filter, plot_dir, ilev, iy, no_trace = True):
+def plot_shear(var_r, var_s, twod_filter, plot_dir, ilev, iy, no_trace = True):
     var_name = var_r.name
     if no_trace : var_name = var_name+'n'
 
