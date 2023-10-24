@@ -2,7 +2,12 @@
 python code to compute sub-filter quantities from MONC output.
 See https://readingclouds.github.io/Subfilter/ for documentation.
 
-Current version: 0.5.4.
+Current version: 0.6.0.
+
+Note this is a major re-organisation, with the packages io, thermodynamics and 
+utils moved to https://github.com/ReadingClouds/monc_utils.git. Please
+ensure this is also installed. See the README and documentation for that 
+repository.
 
 Users should pip install to a suitable environment using
 

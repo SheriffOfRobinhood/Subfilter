@@ -8,21 +8,22 @@ Created on Tue Oct 23 11:07:05 2018
 
 @author: Peter Clark
 """
+import yaml
+import monc_utils
 
 import numpy as np
 import xarray as xr
 
 from scipy.signal import fftconvolve
 
-import subfilter.utils.deformation as defm
-import subfilter.utils.cloud_monc as cldm
+import monc_utils.data_utils.deformation as defm
+import monc_utils.data_utils.cloud_monc as cldm
 from .utils.default_variables import (get_default_variable_list,
                                       get_default_variable_pair_list)
-from .utils.string_utils import get_string_index
-from .io.datain import get_data_on_grid
-from .io.dataout import save_field, setup_child_file
-from .utils.dask_utils import re_chunk
-import yaml
+from monc_utils.data_utils.string_utils import get_string_index
+from monc_utils.io.datain import get_data_on_grid
+from monc_utils.io.dataout import save_field, setup_child_file
+from monc_utils.data_utils.dask_utils import re_chunk
 
 
 def subfilter_options(config_file:str=None):
@@ -91,9 +92,11 @@ def filter_variable_list(source_dataset, ref_dataset, derived_dataset,
 
     for vin in var_list:
 
-        op_var  = get_data_on_grid(source_dataset, ref_dataset,
-                                   derived_dataset, vin, options,
-                                   grid)
+        op_var  = get_data_on_grid(source_dataset, ref_dataset, vin, 
+                                   derived_dataset=derived_dataset,
+                                   options=options,
+                                   grid=grid, 
+                                   )
 
         v = op_var.name
 
@@ -174,10 +177,11 @@ def convolve(field, options, filter_def, dims):
         ndarray : field convolved with filter_def
 
     """
+    print(f'Convolving {field} with filter {filter_def.shape} over dim{dims}.')
+    
     if len(np.shape(field)) > len(np.shape(filter_def)):
         edims = tuple(np.setdiff1d(np.arange(len(np.shape(field))), dims))
         filter_def = np.expand_dims(filter_def, axis=edims)
-
 
 
     if options['FFT_type'].upper() == 'FFTCONVOLVE':
@@ -276,6 +280,10 @@ def filtered_field_calc(var, options, filter_def):
         dicts containing variable info : [var_r, var_s]
 
     """
+    
+    if not monc_utils.global_config['no_dask']:
+        var = re_chunk(var, xch = 'all', ych = 'all')
+
     vname = var.name
     field = var.data
     vdims = var.dims
@@ -551,7 +559,8 @@ def filtered_deformation(source_dataset, ref_dataset, derived_dataset,
     d_var = defm.deformation(source_dataset, ref_dataset, derived_dataset,
                         options, grid=grid)
 
-    d_var = re_chunk(d_var)
+    if not monc_utils.global_config['no_dask']:
+        d_var = re_chunk(d_var)
 
     (d_var_r, d_var_s) = filter_field(d_var, filtered_dataset,
                                       options, filter_def, grid=grid)
@@ -584,9 +593,11 @@ def quadratic_subfilter(source_dataset,  ref_dataset, derived_dataset,
         vdims dimensions of var1
 
     """
-    v1 = get_data_on_grid(source_dataset,  ref_dataset,
-                          derived_dataset, v1_name, options,
-                          grid=grid)
+    v1 = get_data_on_grid(source_dataset,  ref_dataset, v1_name,
+                          derived_dataset=derived_dataset,
+                          options=options,
+                          grid=grid, 
+                          )
 
     (var1_r, var1_s) = filter_field(v1, filtered_dataset, options,
                                     filter_def, grid=grid)
@@ -595,9 +606,11 @@ def quadratic_subfilter(source_dataset,  ref_dataset, derived_dataset,
         v2 = v1
         (var2_r, var2_s) = (var1_r, var1_s)
     else:
-        v2 = get_data_on_grid(source_dataset, ref_dataset,
-                              derived_dataset, v2_name, options,
-                              grid=grid)
+        v2 = get_data_on_grid(source_dataset, ref_dataset,v2_name, 
+                             derived_dataset=derived_dataset,
+                             options=options,
+                             grid=grid, 
+                             )
 
         (var2_r, var2_s) = filter_field(v2, filtered_dataset, options,
                                         filter_def, grid=grid)
@@ -611,7 +624,7 @@ def quadratic_subfilter(source_dataset,  ref_dataset, derived_dataset,
 
     print(f"Filtering {v1_name:s}*{v2_name:s}")
 
-    var1var2 = re_chunk(var1var2)
+#    var1var2 = re_chunk(var1var2)
 
     (var1var2_r, var1var2_s) = filtered_field_calc(var1var2, options,
                                                  filter_def )

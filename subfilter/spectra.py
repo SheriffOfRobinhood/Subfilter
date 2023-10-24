@@ -33,21 +33,21 @@
     @author: Todd Jones
     @modified: Peter Clark
 """
+import yaml
+import monc_utils
+import subfilter
 
 import sys
 import numpy as np
 import xarray as xr
+import dask.array as da
+
 from scipy import ndimage      # Required for the radial summations
 from dask.diagnostics import ProgressBar
-import dask.array as da
-from .utils.string_utils import get_string_index
-from .io.datain import configure_model_resolution
-from .io.dataout import save_field
-from subfilter import executing_on_cluster
-
-import yaml
-
-import subfilter
+from monc_utils.data_utils.string_utils import get_string_index
+from monc_utils.io.datain import configure_model_resolution
+from monc_utils.io.dataout import save_field
+from monc_utils import executing_on_cluster
 
 time_dim_always_contains='time'
 

@@ -15,10 +15,6 @@ Welcome to Subfilter's documentation!
    filters
    spectra
    utils
-   io
-   thermodynamics
-   deformation
-   cloud_monc
     
 
 Indices and tables

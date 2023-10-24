@@ -26,7 +26,7 @@ copyright = '2019, 2020, 2021, 2022 Peter Clark, Todd Jones'
 author = 'Peter Clark'
 
 # The full version, including alpha/beta/rc tags
-release = '0.5.3'
+release = '0.6.0'
 
 # -- General configuration ---------------------------------------------------
 master_doc = 'index'
