@@ -1,7 +1,7 @@
 options:
     spec_1D: False
-    dx: 50.0
-    dy: 50.0
+    dx: 5.0
+    dy: 5.0
 
 
 

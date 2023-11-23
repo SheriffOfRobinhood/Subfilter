@@ -3,8 +3,11 @@
 Created on Tue Oct 23 11:27:25 2018
 
 @author: Peter Clark
+
+Tested 25/10/2023 at Version 0.6.0
 """
 import os
+import sys
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
@@ -12,6 +15,7 @@ import dask
 #from dask.distributed import Client
 #from dask.diagnostics import Profiler, ResourceProfiler, CacheProfiler
 
+import subfilter
 import subfilter.subfilter as sf
 import subfilter.filters as filt
 import monc_utils.data_utils.deformation as defm
@@ -29,7 +33,20 @@ from subfilter.utils.default_variables import (get_default_variable_list,
 
 
 import monc_utils
-import subfilter
+from loguru import logger
+
+logger.remove()
+logger.add(sys.stderr, 
+           format = "<c>{time:HH:mm:ss.SS}</c>"\
+                  + " | <level>{level:<8}</level>"\
+                  + " | <green>{function:<22}</green> : {message}", 
+           colorize=True, 
+           level="INFO")
+    
+logger.enable("subfilter")
+logger.enable("monc_utils")
+
+logger.info("Logging 'INFO' or higher messages only")
 test_case = 0
 run_quad_fields = True
 # run_quad_fields = False
@@ -46,16 +63,18 @@ plot_type = '.png'
 
 def main():
     """Top level code, a bit of a mess."""
+    # fileroot = 'C:/Users/paclk/OneDrive - University of Reading/'
+    fileroot = 'C:/Users/xm904103/OneDrive - University of Reading/'
     if test_case == 0:
         config_file = 'config_test_case_0.yaml'
-        indir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
-        odir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
+        indir = fileroot + 'ug_project_data/Data/'
+        odir = fileroot + 'ug_project_data/Data/'
         file = 'diagnostics_3d_ts_21600.nc'
         ref_file = 'diagnostics_ts_21600.nc'
     elif test_case == 1:
         config_file = 'config_test_case_1.yaml'
-        indir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/CBL/'
-        odir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/CBL/'
+        indir = fileroot + 'traj_data/CBL/'
+        odir = fileroot + 'traj_data/CBL/'
         file = 'diagnostics_3d_ts_13200.nc'
         ref_file = None
     options, update_config = sf.subfilter_options(config_file)
@@ -64,8 +83,8 @@ def main():
     # var_list = ["q_total", "th_L"]
     var_list = None
 
-#dir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
-#odir = 'C:/Users/paclk/OneDrive - University of Reading/Git/python/Subfilter/test_data/BOMEX/'
+#dir = fileroot + 'Git/python/Subfilter/test_data/BOMEX/'
+#odir = fileroot + 'Git/python/Subfilter/test_data/BOMEX/'
 
 
 #file = 'diagnostics_ts_18000.0.nc'
