@@ -25,6 +25,7 @@ from monc_utils.io.datain import get_data_on_grid
 from monc_utils.io.dataout import save_field, setup_child_file
 from monc_utils.data_utils.dask_utils import re_chunk
 
+from loguru import logger
 
 def subfilter_options(config_file:str=None):
     """
@@ -88,7 +89,7 @@ def filter_variable_list(source_dataset, ref_dataset, derived_dataset,
     """
     if (var_list==None):
         var_list = get_default_variable_list()
-        print("Filtering with default list:\n",var_list)
+        logger.info("Filtering with default list:\n",var_list)
 
     for vin in var_list:
 
@@ -107,10 +108,10 @@ def filter_variable_list(source_dataset, ref_dataset, derived_dataset,
 
             ncvar_r, ncvar_s = filter_field(op_var,
                                             filtered_dataset,
-                                            options, filter_def,
-                                            grid=grid)
+                                            options, 
+                                            filter_def)
         else:
-            print(f'f({v})_r and f({v})_s already in output dataset.')
+            logger.info(f'f({v})_r and f({v})_s already in output dataset.')
 
     return var_list
 
@@ -140,11 +141,11 @@ def filter_variable_pair_list(source_dataset, ref_dataset, derived_dataset,
     """
     if (var_list==None):
         var_list = get_default_variable_pair_list()
-        print("Default list:\n",var_list)
+        logger.info("Default list:\n",var_list)
 
     for v in var_list:
 
-        print(f"Calculating s({v[0]:s},{v[1]:s})")
+        logger.info(f"Calculating s({v[0]:s},{v[1]:s})")
         svars = quadratic_subfilter(source_dataset, ref_dataset,
                                   derived_dataset, filtered_dataset, options,
                                   filter_def, v[0], v[1], grid=grid)
@@ -177,7 +178,7 @@ def convolve(field, options, filter_def, dims):
         ndarray : field convolved with filter_def
 
     """
-    print(f'Convolving {field} with filter {filter_def.shape} over dim{dims}.')
+    logger.info(f'Convolving {field.shape} with filter {filter_def.shape} over dim{dims}.')
     
     if len(np.shape(field)) > len(np.shape(filter_def)):
         edims = tuple(np.setdiff1d(np.arange(len(np.shape(field))), dims))
@@ -288,7 +289,8 @@ def filtered_field_calc(var, options, filter_def):
     field = var.data
     vdims = var.dims
 
-#    print(field)
+    logger.debug(f'filtering \n{field}')
+    
     sh = np.shape(field)
 
     if filter_def.attributes['ndim'] == 1:
@@ -321,7 +323,7 @@ def filtered_field_calc(var, options, filter_def):
 
     else :
 
-        print(f"Filtering using {options['FFT_type']}")
+        logger.info(f"Filtering using {options['FFT_type']}")
 
         if options['FFT_type'].upper() == 'FFTCONVOLVE':
 
@@ -339,7 +341,7 @@ def filtered_field_calc(var, options, filter_def):
                         padfilt = filter_def.data.copy()
                     # This shift of the filter is necessary to get the phase
                     # information right.
-                    padfilt = np.fft.ifftshift(padfilt)#????? Test
+                    padfilt = np.fft.ifftshift(padfilt)
                     filter_def.fft = np.fft.fft(padfilt)
 
             else:
@@ -371,7 +373,7 @@ def filtered_field_calc(var, options, filter_def):
                         padfilt = filter_def.data.copy()
                     # This shift of the filter is necessary to get the phase
                     # information right.
-                    padfilt = np.fft.ifftshift(padfilt)#????? Test
+                    padfilt = np.fft.ifftshift(padfilt) 
                     filter_def.rfft = np.fft.rfft(padfilt)
 
             else:
@@ -480,7 +482,10 @@ def setup_filtered_data_file(source_file, destdir, fname,
 
     @author: Peter Clark
     """
-    outtag = fname + "_" + filter_def.id
+    if fname == '':
+        outtag = filter_def.id
+    else:
+        outtag = fname + "_" + filter_def.id
     attrs = {**{'filter_def_id' : filter_def.id},
              **filter_def.attributes, **options}
     filtered_dataset, exists = setup_child_file(source_file, destdir, outtag,
@@ -489,10 +494,9 @@ def setup_filtered_data_file(source_file, destdir, fname,
 
     return filtered_dataset, exists
 
-def filter_field(var, filtered_dataset, options, filter_def,
-                 grid='p') :
+def filter_field(var, filtered_dataset, options, filter_def) :
     """
-    Create filtered versions of input variable on required grid, stored in filtered_dataset.
+    Create filtered versions of input variable, stored in filtered_dataset.
 
     Args:
         var            : dict cantaining variable info
@@ -500,7 +504,6 @@ def filter_field(var, filtered_dataset, options, filter_def,
         options         : General options e.g. FFT method used.
         filter_def      : 1 or 2D filter.
         default provided by get_default_variable_list()
-        grid='p'        : Grid - 'u','v','w' or 'p'
 
     Returns
     -------
@@ -512,15 +515,15 @@ def filter_field(var, filtered_dataset, options, filter_def,
     vname_r = 'f('+vname+')_r'
     vname_s = 'f('+vname+')_s'
 
-    if vname_r in filtered_dataset['ds'] and vname_r in filtered_dataset['ds']:
+    if vname_r in filtered_dataset['ds'] and vname_s in filtered_dataset['ds']:
 
-        print(f"Reading {vname_r}, {vname_s}")
+        logger.info(f"Reading {vname_r}, {vname_s}")
         var_r = filtered_dataset['ds'][vname_r]
         var_s = filtered_dataset['ds'][vname_s]
 
     else:
 
-        print(f"Filtering {vname:s}")
+        logger.info(f"Filtering {vname:s}")
 
         # Calculate resolved and unresolved parts of var
 
@@ -563,7 +566,7 @@ def filtered_deformation(source_dataset, ref_dataset, derived_dataset,
         d_var = re_chunk(d_var)
 
     (d_var_r, d_var_s) = filter_field(d_var, filtered_dataset,
-                                      options, filter_def, grid=grid)
+                                      options, filter_def)
 
     return (d_var_r, d_var_s)
 
@@ -600,7 +603,7 @@ def quadratic_subfilter(source_dataset,  ref_dataset, derived_dataset,
                           )
 
     (var1_r, var1_s) = filter_field(v1, filtered_dataset, options,
-                                    filter_def, grid=grid)
+                                    filter_def)
 
     if v2_name == v1_name:
         v2 = v1
@@ -613,7 +616,7 @@ def quadratic_subfilter(source_dataset,  ref_dataset, derived_dataset,
                              )
 
         (var2_r, var2_s) = filter_field(v2, filtered_dataset, options,
-                                        filter_def, grid=grid)
+                                        filter_def)
 
     var1var2_name = v1.name + '.' + v2.name
     if var1var2_name in derived_dataset['ds'].variables:
@@ -622,7 +625,7 @@ def quadratic_subfilter(source_dataset,  ref_dataset, derived_dataset,
         var1var2 = v1 * v2
         var1var2.name = var1var2_name
 
-    print(f"Filtering {v1_name:s}*{v2_name:s}")
+    logger.info(f"Filtering {v1_name:s}*{v2_name:s}")
 
 #    var1var2 = re_chunk(var1var2)
 

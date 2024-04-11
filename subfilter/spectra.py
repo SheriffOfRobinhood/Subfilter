@@ -35,7 +35,6 @@
 """
 import yaml
 import monc_utils
-import subfilter
 
 import sys
 import numpy as np
@@ -48,6 +47,10 @@ from monc_utils.data_utils.string_utils import get_string_index
 from monc_utils.io.datain import configure_model_resolution
 from monc_utils.io.dataout import save_field
 from monc_utils import executing_on_cluster
+
+from subfilter import global_config
+
+from loguru import logger
 
 time_dim_always_contains='time'
 
@@ -125,17 +128,17 @@ def spectra_variable_list(ds, derived_dataset, options, var_list=None):
     for vname in var_list:
 
         if vname == 'options_database':
-            print(f'Ignoring variable {vname}.')
+            logger.info(f'Ignoring variable {vname}.')
             continue
         if not (vname in ds):
-            print(f'[WARN] {vname} not present. skipping...')
+            logger.warning(f'{vname} not present. skipping...')
             continue
 
-        if options['spec_1D']:
+        if options.get('spec_1D', False):
             spectrum_ave_1D(ds, derived_dataset, vname, options, dx, dy)
 
-        if options['spec_2D']:
-            kmap = spectrum_ave_1D_radial(ds, derived_dataset, vname, 
+        if options.get('spec_2D', False):
+            kmap = spectrum_ave_1D_radial(ds, derived_dataset, vname,
                                    options, dx, dy, kmap=kmap)
 
     ds.close()
@@ -173,14 +176,14 @@ def spectrum_ave_1D(ds, derived_dataset, vname, options, dx, dy):
     # Ignore divide-by-zero warnings that occur when converting between wavenumbers/frequency/wavelength
     np.seterr(divide='ignore')
 
-    print(f"Working on 1D spectra for: {vname}.")
+    logger.info(f"Working on 1D spectra for: {vname}.")
     # Load variable
 #    var = ds[vname].load()
     var = ds[vname]
 
     if np.size(var.shape) != 4:
-        print("Expecting 4-dimensional data for ", vname)
-        print("FAIL - shape")
+        logger.critical("Expecting 4-dimensional data for ", vname)
+        logger.critical("FAIL - shape")
         sys.exit()
         # FOR OTHER KINDS OF FILES WITH MANY DIFFERENTLY STRUCTURED
         #   FIELDS, YOU MIGHT USE continue TO SKIP THOSE VARIABLES
@@ -237,7 +240,7 @@ def spectrum_ave_1D(ds, derived_dataset, vname, options, dx, dy):
 
     # Spectra in y-direction (mean removed)
 
-    if subfilter.global_config['no_dask']:
+    if global_config.get('no_dask', False):
         temp2 = np.fft.rfft((var.values - var.values.mean(axis = yx, keepdims = True, dtype = 'float64')), axis = yx)
     else:
         field = (var - var.mean(dim=(yname))).data.rechunk(chunks={yx:ny})
@@ -250,7 +253,7 @@ def spectrum_ave_1D(ds, derived_dataset, vname, options, dx, dy):
     ydir[:,-1,:] /= 2
 
     # Repeat for x-direction
-    if subfilter.global_config['no_dask']:
+    if global_config.get('no_dask', False):
         temp2 = np.fft.rfft((var.values - var.values.mean(axis = xx, keepdims = True, dtype = 'float64')), axis = xx)
     else:
         field = (var - var.mean(dim=(xname))).data.rechunk(chunks={xx:nx})
@@ -274,6 +277,7 @@ def spectrum_ave_1D(ds, derived_dataset, vname, options, dx, dy):
                                   zname: ([zname],z),
                                   "yfreq": (["yfreq"],fy),
                                   "xfreq": (["xfreq"],fx) }  )
+    
     ds1['spec_ydir_'+vname].attrs = {"units": "m * base_unit^2",
                               "long_name": "spectral density, y-direction"}
     ds1['spec_xdir_'+vname].attrs = {"units": "m * base_unit^2",
@@ -291,6 +295,7 @@ def spectrum_ave_1D(ds, derived_dataset, vname, options, dx, dy):
                   "ywavel":(['yfreq'],ywavel),
                   "xwaven":(['xfreq'],xwaven),
                   "xwavel":(['xfreq'],xwavel)}
+    
     ds1 = ds1.assign_coords(alt_coords)
 
     ds1['ywaven'].attrs = {"units": "rad m-1",
@@ -302,12 +307,13 @@ def spectrum_ave_1D(ds, derived_dataset, vname, options, dx, dy):
     ds1['xwavel'].attrs = {"units": "m",
                            "long_name": "spectral wavelength, x-direction"}
 
-    _ = save_field(derived_dataset,ds1['spec_ydir_'+vname])
-    _ = save_field(derived_dataset,ds1['spec_xdir_'+vname])
-        
+    _ = save_field(derived_dataset, ds1['spec_ydir_'+vname])
+    _ = save_field(derived_dataset, ds1['spec_xdir_'+vname])
+
 
     ds1.close()
 
+    return
 
 #===================================================================
 # Get PSD 1D (total radial power spectrum)
@@ -348,7 +354,7 @@ def GetPSD1D(psd2D, k):
 
 
 def prepare_map(fkx, fky, kp, dkh, Nmax):
-    print("  Preparing map")
+    logger.info("Preparing map")
     nx = len(fkx)
     ny = len(fky)
     # Prepare wavnumber grid (rmap) based on kx and ky
@@ -427,15 +433,14 @@ def spectrum_ave_1D_radial(ds, derived_dataset, vname, options, dx, dy,
     # Ignore divide-by-zero warnings that occur when converting between wavenumbers/frequency/wavelength
     np.seterr(divide='ignore')
 
-
-    print("Working on 2D spectra for: ", vname)
+    logger.info(f"Working on 2D spectra for: {vname}")
     # Load variable
  #   var = ds[vname].load()
     var = ds[vname]
 
     if np.size(var.shape) != 4:
-        print("Expecting 4-dimensional data for ", vname)
-        print("FAIL - shape")
+        logger.critical("Expecting 4-dimensional data for ", vname)
+        logger.critical("FAIL - shape")
         sys.exit()
         # FOR OTHER KINDS OF FILES WITH MANY DIFFERENTLY STRUCTURED
         #   FIELDS, YOU MIGHT USE continue TO SKIP THOSE VARIABLES
@@ -443,13 +448,17 @@ def spectrum_ave_1D_radial(ds, derived_dataset, vname, options, dx, dy,
 
     # Store some parameters
     # Coordinate positions
+    
+    logger.debug(f"Variable: \n{var}")
     (tx, xx, yx, zx) = get_string_index(var.dims,
                         [time_dim_always_contains, 'x', 'y', 'z'])
 
     # Time and height names
     tname = var.dims[tx]
-    var   = var.rename({tname: 'time'})
-    tname = "time"
+    if tname != "time":
+        var   = var.rename({tname: 'time'})
+        tname = "time"
+#        var.set_xindex(tname)
     times = var[tname].values
     xname = var.dims[xx]
     yname = var.dims[yx]
@@ -515,9 +524,13 @@ def spectrum_ave_1D_radial(ds, derived_dataset, vname, options, dx, dy,
     norm = (dx*dy*dkmin)/(8*(np.pi**2)*nx*ny) # normalization factor (see eqn 24)
 
     # Compute the 2D fft for the full [t,y,x,z] dataset, over y and x, at once.
-    if subfilter.global_config['no_dask']:
+    if global_config.get('no_dask', False):
         # (time,...horiz...,vertical)
-        temp2 = np.fft.fft2((var.values - var.values.mean(axis=(yx,xx), keepdims=True, dtype='float64')),axes=(yx,xx))
+        temp2 = np.fft.fft2((  var.values
+                             - var.values.mean(axis=(yx,xx),
+                                                          keepdims=True,
+                                                          dtype='float64')),
+                            axes=(yx,xx))
     else:
         # Keep as xarray to expoit dask. Means losing 'keepdims' option.
         field = (var - var.mean(dim=(xname,yname))).data
@@ -560,7 +573,7 @@ def spectrum_ave_1D_radial(ds, derived_dataset, vname, options, dx, dy,
             comp = (2*np.pi*kpbaro[:]/(dkmin*kcounto[:]))
             # @da.as_gufunc(signature="(i,j,k,l),(j,k),(m),(),(m),(m)->(i,m,l)",
 #               output_dtypes=float, vectorize=True)
-            if subfilter.global_config['no_dask']:
+            if global_config.get('no_dask', False):
                 kplen=kpo.size
                 Ekp=np.zeros((nt,kplen,nz))
                 for tnc in np.arange(nt):
@@ -574,7 +587,7 @@ def spectrum_ave_1D_radial(ds, derived_dataset, vname, options, dx, dy,
                                  axes=[(1,2), (0,1), (0), (), (0), (1)])
                 Ekp = rave(Ek, rlab, rindexo, norm, comp)
         else:
-            if subfilter.global_config['no_dask']:
+            if global_config.get('no_dask', False):
                 kplen=kpo.size
                 Ekp=np.zeros((nt,kplen,nz))
                 for tnc in np.arange(nt):
@@ -602,7 +615,7 @@ def spectrum_ave_1D_radial(ds, derived_dataset, vname, options, dx, dy,
         Ekp=np.zeros((nt,kplen,nz))
         kpo=fkx[0:kplen]
 
-        if subfilter.global_config['no_dask']:
+        if global_config.get('no_dask', False):
             kplen=Ek[tnc,...,znc].shape[0]//2
             Ekp=np.zeros((nt,kplen,nz))
             kpo=fkx[0:kplen]
@@ -622,8 +635,8 @@ def spectrum_ave_1D_radial(ds, derived_dataset, vname, options, dx, dy,
         #         # Sum points
         #         Ekp[tnc,:,znc] = norm * GetPSD1D(np.fft.fftshift(Ek[tnc,...,znc]))
     else:
-        print("Must supply 2D FFT spec_method: [DURRAN | NDIMAGE] and must have nx == ny for NDIMAGE")
-        print("FAIL - spec_method")
+        logger.critical("Must supply 2D FFT spec_method: [DURRAN | NDIMAGE] and must have nx == ny for NDIMAGE")
+        logger.critical("FAIL - spec_method")
         sys.exit()
 
     # Useful plotting values
@@ -637,6 +650,7 @@ def spectrum_ave_1D_radial(ds, derived_dataset, vname, options, dx, dy,
                      coords    = {"time": (["time"],times),
                                   zname: ([zname],z),
                                   "hfreq": (["hfreq"],freq) } )
+    
     ds2['spec_2d_'+vname].attrs = {"units": "m * base_unit^2",
                                    "long_name": "horizontal 1D spectral density from 2D-FFT"}
     ds2['hfreq'].attrs = {"units": "m-1",
@@ -648,16 +662,17 @@ def spectrum_ave_1D_radial(ds, derived_dataset, vname, options, dx, dy,
 
     alt_coords = {"hwaven":(['hfreq'], kpo),
                   "hwavel":(['hfreq'], wavel)}
+    
     ds2 = ds2.assign_coords(alt_coords)
+    
     ds2['hwaven'].attrs = {"units": "rad m-1",
                            "long_name": "horizontal 1D spectral wavenumber from 2D-FFT"}
     ds2['hwavel'].attrs = {"units": "m",
                            "long_name": "horizontal 1D spectral wavelength from 2D-FFT"}
 
     # Append new vname spectra to the output Dataset
-    _ = save_field(derived_dataset,ds2['spec_2d_'+vname])
+    _ = save_field(derived_dataset, ds2['spec_2d_'+vname])
 
     ds2.close()
 
     return kmap
-

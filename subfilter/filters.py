@@ -9,6 +9,8 @@ This module contains the code to generate a selection of 2-dimensional filters.
 import numpy as np
 from sys import float_info
 
+from loguru import logger
+
 # Global constants
 #===============================================================================
 pi = np.pi # mathematical constant
@@ -95,13 +97,13 @@ class Filter :
             wavenumber = -1
 
         else:
-            print('This filter type is not available.')
-            print('Available filters are:')
-            print('domain, gaussian, running_mean, one_to_one, wave_cutoff & '
+            logger.warning('This filter type is not available.')
+            logger.warning('Available filters are:')
+            logger.warning('domain, gaussian, running_mean, one_to_one, wave_cutoff & '
                   'circular_wave_cutoff')
             data = -9999
 
-        if (np.size(np.shape(data)) > 1 ) :
+        if (np.size(np.shape(data)) >= 1 ) :
             self.data = data
 
             if rfft is not None:
@@ -143,8 +145,8 @@ class Filter :
         Returns:
           filter_err (-9999): Error code for filter.
         """
-        print(f'A {filter_name:s} filter was selected, but a suitable value')
-        print(f'for the {problem:s} was not chosen.')
+        logger.warning(f'A {filter_name:s} filter was selected, but a suitable value')
+        logger.warning(f'for the {problem:s} was not chosen.')
         filter_err = -9999
         return filter_err
 
@@ -247,11 +249,11 @@ def wave_cutoff_filter(wavenumber, delta_x=1000.0, npoints=-1, cutoff=0.000001,
     """
     rfft = None
     if high_pass:
-        print("High pass not yet coded.")
+        logger.warning("High pass not yet coded.")
         return (None, rfft)
     if npoints == -1:
         if is_npi(wavenumber*delta_x):
-            print("Use fixed npoints as wavenumber*delta_x = n * pi")
+            logger.warning("Use fixed npoints as wavenumber*delta_x = n * pi")
             return (None, rfft)
 
         half_width = 0
@@ -377,16 +379,16 @@ def circular_wave_cutoff_filter(wavenumber, delta_x=1000.0, npoints=-1,
     ndarray: 2D array of filter values
     """
     if high_pass:
-        print("High pass not yet coded.")
+        logger.warning("High pass not yet coded.")
         return None
 
     if npoints == -1:
-            print("Use fixed npoints.")
+            logger.warning("Use fixed npoints.")
             return None
     else :
 
         if wavenumber < (2 * np.pi) / (npoints * delta_x):
-            print("Wave number too small.")
+            logger.warning("Wave number too small.")
             return None
 
         if ndim == 1:
@@ -471,7 +473,7 @@ def gaussian_filter(sigma, delta_x=1000.0, npoints=-1, cutoff=0.000001,
 
         L = npoints/2 * delta_x
         if ndim == 1:
-            x = np.linspace(-L, L, npoints)
+            x = np.linspace(-L, L-delta_x, npoints)
             r_sq = x * x
         else:
             c = np.linspace(-L, L-delta_x, npoints)
@@ -480,6 +482,6 @@ def gaussian_filter(sigma, delta_x=1000.0, npoints=-1, cutoff=0.000001,
         result = np.exp(-r_sq/(2 * (sigma**2)))
         result /= np.sum(result)
 
-    print(f"cutoff = {cutoff}, min={np.min(result)}")
+    # logger.warning(f"cutoff = {cutoff}, min={np.min(result)}")
 
     return result

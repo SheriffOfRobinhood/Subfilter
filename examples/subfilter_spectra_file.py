@@ -5,30 +5,35 @@ Created on Tue Oct 23 11:27:25 2018
 @author: Peter Clark
 """
 import os
+import sys
 import glob
-#import netCDF4
-#from netCDF4 import Dataset
 import numpy as np
-#import pandas as pd
 import xarray as xr
-import matplotlib
-import matplotlib.pyplot as plt
 
 import subfilter
 import subfilter.subfilter as sf
 import subfilter.filters as filt
 import subfilter.spectra as spectra
-from subfilter.utils.string_utils import get_string_index
-from subfilter.io.dataout import setup_child_file
-from subfilter.io.datain import configure_model_resolution
+from monc_utils.data_utils.string_utils import get_string_index
+from monc_utils.io.dataout import setup_child_file
+from monc_utils.io.datain import configure_model_resolution
 
-#import difference_ops as do
 import dask
 
-#from dask.diagnostics import Profiler, ResourceProfiler, CacheProfiler
-#from dask.diagnostics import ProgressBar
+from loguru import logger
 
-from dask.distributed import Client
+logger.remove()
+logger.add(sys.stderr, 
+           format = "<c>{time:HH:mm:ss.SS}</c>"\
+                  + " | <level>{level:<8}</level>"\
+                  + " | <green>{function:<22}</green> : {message}", 
+           colorize=True, 
+           level="INFO")
+    
+logger.enable("subfilter")
+logger.enable("monc_utils")
+
+logger.info("Logging 'INFO' or higher messages only")
 
 test_case = 1
 
@@ -36,16 +41,19 @@ def main():
     '''
     Top level code, a bit of a mess.
     '''
+
+    dirroot = 'C:/Users/paclk/OneDrive - University of Reading/'
+
     if test_case == 0:
         config_file = 'config_test_case_0.yaml'
-        indir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
-        odir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
+        indir = dirroot + 'ug_project_data/Data/'
+        odir = dirroot + 'ug_project_data/Data/'
         files = 'diagnostics_3d_ts_21600.nc'
         ref_file = 'diagnostics_ts_21600.nc'
     elif test_case == 1:
         config_file = 'config_test_case_1.yaml'
-        indir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/CBL/'
-        odir = 'C:/Users/paclk/OneDrive - University of Reading/traj_data/CBL/'
+        indir = dirroot + 'traj_data/CBL/'
+        odir = dirroot + 'traj_data/CBL/'
         files = 'diagnostics_3d_ts_*.nc'
         ref_file = None
 
@@ -58,11 +66,6 @@ def main():
 
     override=options['override']
 
-#    client = Client()
-#    client
-#    dask.config.set(scheduler='threads')
-#   Non-global variables that are set once
-
     var_list = [
         # "u",
         # "v",
@@ -70,12 +73,16 @@ def main():
         # "th",
         ]
 
+# Note: for wave_cutoff and circular_wav_cutoff, k_f = pi / (2 sigma)
+
     sigma_list = [5.0, 10.0, 20.0, 40.0, 80.0, 160.0, 320.0]
 #    sigma_list = [10.0, 20.0]
-#    filter_name = 'gaussian'
+    filter_name = 'gaussian'
 #    filter_name = 'running_mean'
 #    filter_name = 'wave_cutoff'
-    filter_name = 'circular_wave_cutoff'
+    # filter_name = 'circular_wave_cutoff'
+
+
 
 #    dataset = Dataset(indir+file, 'r') # Dataset is the class behavior to open the file
                                  # and create an instance of the ncCDF4 class
@@ -84,6 +91,7 @@ def main():
     infiles = glob.glob(indir+files)
 
     for infile in infiles:
+
         dataset = xr.open_dataset(infile, chunks={'z':'auto', 'zn':'auto'})
 
         # dataset = xr.open_dataset(indir+file, chunks={timevar: defn,
@@ -104,6 +112,7 @@ def main():
         xvar = list(dataset.dims)[iix]
         yvar = list(dataset.dims)[iiy]
         zvar = list(dataset.dims)[iiz]
+
         npoints = dataset.dims[xvar]
 
         opgrid = 'w'
@@ -123,32 +132,28 @@ def main():
 
         for i,sigma in enumerate(sigma_list):
             if filter_name == 'gaussian':
-                filter_id = 'filter_ga{:02d}'.format(i)
+                filter_id = f'filter_ga{i:02d}'
                 twod_filter = filt.Filter(filter_id,
                                           filter_name,
                                           npoints=npoints,
                                           sigma=sigma,
                                           delta_x=dx)
             elif filter_name == 'wave_cutoff':
-                filter_id = 'filter_wc{:02d}'.format(i)
+                filter_id = f'filter_wc{i:02d}'
                 twod_filter = filt.Filter(filter_id,
                                           filter_name,
                                           npoints=npoints,
                                           wavenumber=np.pi/(2*sigma),
                                           delta_x=dx)
             elif filter_name == 'circular_wave_cutoff':
-                filter_id = 'filter_cwc{:02d}'.format(i)
+                filter_id = f'filter_cwc{i:02d}'
                 twod_filter = filt.Filter(filter_id,
                                           filter_name,
                                           npoints=npoints,
                                           wavenumber=np.pi/(2*sigma),
                                           delta_x=dx)
             elif filter_name == 'running_mean':
-    #            filter_id = 'filter_rm{:02d}'.format(i)
-    #            filter_id = 'filter_rm{:02d}n'.format(i)
                 filter_id = 'filter_rm{:02d}v3'.format(i)
-    #            width = int(np.round( sigma/dx * np.pi * 2.0 / 3.0)+1)
-    #            width = int(np.round( sigma/dx * 2.0 * np.sqrt(3.0))+1)
                 width = int(np.round( sigma/dx *  np.sqrt(2.0 *np.pi))+1)
                 twod_filter = filt.Filter(filter_id,
                                           filter_name,
