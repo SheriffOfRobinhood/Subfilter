@@ -65,6 +65,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docsrc/_build/
 
 # PyBuilder
 target/
@@ -108,7 +109,8 @@ venv.bak/
 
 # Test data
 test_data
+tests/test_figs/
+tests/reference_figures
 *.nc
-*.png
 *.pickle
 
