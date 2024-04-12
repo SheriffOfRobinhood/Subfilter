@@ -8,6 +8,7 @@ filters:
 #    filter_name: wave_cutoff
 #    filter_name: circular_wave_cutoff
     sigma_list: [500.0, 250.0, 125.0, 75.0]
+#    sigma_list: [500.0,]
 
 
 

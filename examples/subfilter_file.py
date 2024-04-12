@@ -48,14 +48,14 @@ logger.enable("monc_utils")
 
 logger.info("Logging 'INFO' or higher messages only")
 test_case = 0
-run_quad_fields = True
-# run_quad_fields = False
+# run_quad_fields = True
+run_quad_fields = False
 run_deformation_fields = True
 # run_deformation_fields = False
-run_cloud_fields = True
-# run_cloud_fields = False
-run_ri = True
-# run_ri = False
+# run_cloud_fields = True
+run_cloud_fields = False
+# run_ri = True
+run_ri = False
 override = True
 
 plot_type = '.png'
@@ -64,11 +64,12 @@ plot_type = '.png'
 def main():
     """Top level code, a bit of a mess."""
     # fileroot = 'C:/Users/paclk/OneDrive - University of Reading/'
-    fileroot = 'C:/Users/xm904103/OneDrive - University of Reading/'
+    # fileroot = 'C:/Users/xm904103/OneDrive - University of Reading/'
+    fileroot = 'D:/Data/'
     if test_case == 0:
         config_file = 'config_test_case_0.yaml'
-        indir = fileroot + 'ug_project_data/Data/'
-        odir = fileroot + 'ug_project_data/Data/'
+        indir = fileroot + 'ug_project_data/'
+        odir = fileroot + 'ug_project_data/'
         file = 'diagnostics_3d_ts_21600.nc'
         ref_file = 'diagnostics_ts_21600.nc'
     elif test_case == 1:
@@ -81,7 +82,9 @@ def main():
 
     # var_list = ["q_cloud_liquid_mass", "cloud_fraction"]
     # var_list = ["q_total", "th_L"]
-    var_list = None
+    # var_list = ["th", "dbydx(th)"] 
+    var_list = ["th"] 
+    # var_list = None
 
 #dir = fileroot + 'Git/python/Subfilter/test_data/BOMEX/'
 #odir = fileroot + 'Git/python/Subfilter/test_data/BOMEX/'
@@ -102,6 +105,10 @@ def main():
     if not monc_utils.global_config['no_dask']:
         dask.config.set({"array.slicing.split_large_chunks": True})
         dask_chunks = monc_utils.global_config['dask_chunks']
+        
+    # monc_utils.set_global_config({'output_precision':"float32"})
+        
+    monc_utils.global_config['output_precision'] = "float32"
 
     subfilter.global_config['test_level'] = 2
 
@@ -129,7 +136,7 @@ def main():
 #    iy = 40
     iy = 95
 
-    opgrid = 'w'
+    opgrid = 'p'
 
     derived_data, exists = \
         sf.setup_derived_data_file( indir+file, odir, fname,
@@ -143,8 +150,8 @@ def main():
 # Now create list of filter definitions.
 
     filter_name = update_config['filters']['filter_name']
-    sigma_list = update_config['filters']['sigma_list']
-#    sigma_list = [220.0]
+#    sigma_list = update_config['filters']['sigma_list']
+    sigma_list = [500.0]
     filter_list = list([])
 
     for i,sigma in enumerate(sigma_list):
@@ -230,7 +237,7 @@ def main():
                                                 ref_dataset,
                                                 derived_data,
                                                 filtered_data, options,
-                                                twod_filter, grid='w')
+                                                twod_filter, grid=opgrid)
 
 
                 Sn_ij_r, mod_Sn_r = defm.shear(deformation_r)
@@ -297,11 +304,11 @@ def main():
             ri_r = save_field(filtered_data, ri_r)
 
 
-            print('--------------------------------------')
+        print('--------------------------------------')
 
-            print(filtered_data)
+        print(filtered_data)
 
-            print('--------------------------------------')
+        print('--------------------------------------')
 
         filtered_data['ds'].close()
 
@@ -390,34 +397,39 @@ def plot_field(var_name, filtered_data, twod_filter, plot_dir,
 
             plt.tight_layout()
 
-            plt.savefig(plot_dir+var_name+'_prof_'+\
-                    twod_filter.id+'_%02d'%it+plot_type)
+            fn = plot_dir+var_name+'_prof_'+\
+                    twod_filter.id+'_%02d'%it+plot_type
+            plt.savefig(fn)
             plt.close()
         else :
-            meanfield= var_r.isel(time=it).mean(dim=(xvar, yvar))
-            pltdat = (var_r.isel(time=it)-meanfield)
 
             nlevels = 40
             plt.clf
 
             fig1, axa = plt.subplots(3,2,figsize=(10,12))
 
-            Cs1 = pltdat.isel({zvar:ilev}).plot.imshow(x=xvar, y=yvar, ax=axa[0,0], levels=nlevels)
+            meanfield= var_r.isel(time=it).mean(dim=(xvar, yvar))
+            pltdatxy = (var_r.isel(time=it)-meanfield)
+            Cs1 = pltdatxy.isel({zvar:ilev}).plot.imshow(x=xvar, y=yvar, ax=axa[0,0], levels=nlevels)
 
             Cs2 = var_s.isel({'time':it, zvar:ilev}).plot.imshow(x=xvar, y=yvar, ax=axa[0,1], levels=nlevels)
 
-            Cs3 = pltdat.isel({yvar:iy}).plot.imshow(x=xvar, y=zvar, ax=axa[1,0], levels=nlevels)
+            meanfield= var_r.isel(time=it).mean(dim=(xvar))
+            pltdatxz = (var_r.isel(time=it)-meanfield)
+            Cs3 = pltdatxz.isel({yvar:iy}).plot.imshow(x=xvar, y=zvar, ax=axa[1,0], levels=nlevels)
 
             Cs4 = var_s.isel({'time':it, yvar:iy}).plot.imshow(x=xvar, y=zvar, ax=axa[1,1], levels=nlevels)
 
-            p1 = pltdat.isel({yvar:iy, zvar:ilev}).plot(ax=axa[2,0])
+            p1 = pltdatxy.isel({yvar:iy, zvar:ilev}).plot(ax=axa[2,0])
 
             p2 = var_s.isel({'time':it, yvar:iy, zvar:ilev}).plot(ax=axa[2,1])
 
             plt.tight_layout()
 
-            plt.savefig(plot_dir+var_name+'_lev_'+'%03d'%ilev+'_x_z'+'%03d'%iy+'_'+\
-                        twod_filter.id+'_%02d'%it+plot_type)
+            fn = plot_dir+var_name+'_lev_'+'%03d'%ilev+'_x_z'+'%03d'%iy+'_'+\
+                        twod_filter.id+'_%02d'%it+plot_type
+            print(fn)
+            plt.savefig(fn)
 
             plt.close()
 
