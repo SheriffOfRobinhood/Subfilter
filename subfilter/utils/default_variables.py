@@ -4,6 +4,8 @@ Created on Mon Aug  2 12:09:37 2021.
 @author: Peter Clark
 """
 import subfilter
+from loguru import logger
+
 
 def get_default_variable_list() :
     """
@@ -29,6 +31,7 @@ def get_default_variable_list() :
     @author: Peter Clark
 
     """
+    logger.info(f"test_level: {subfilter.global_config['test_level']}")
     if subfilter.global_config['test_level'] == 1:
 # For testing
         var_list = [
