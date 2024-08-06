@@ -12,23 +12,25 @@ import matplotlib.pyplot as plt
 
 npoints = 1024
 dx = 5.0
-sigma = 0.5*dx
+sigma = 2.7
+alpha = 2.38
 
 ndim = 1
 
-filter_name = 'gaussian'
-if filter_name == 'gaussian':
-    filter_id = f'filter_ga{0:02d}'
+filter_name = 'gen_gaussian'
+if filter_name == 'gen_gaussian':
+    filter_id = f'filter_gga{0:02d}'
     gfilter = filt.Filter(filter_id,
-                              filter_name,
-                              npoints=npoints,
-                              sigma=sigma,
-                              delta_x=dx,
-                              ndim = ndim)
+                          filter_name,
+                          npoints=npoints,
+                          sigma=sigma,
+                          alpha=alpha,
+                          delta_x=dx,
+                          ndim = ndim)
 
 fig, ax = plt.subplots(1,2)
 
-ax[0].plot(gfilter.data, '-*')
+ax[0].plot(np.arange(npoints)*dx, gfilter.data, '-')
 
 ff = np.fft.fft(gfilter.data)
 
@@ -39,7 +41,8 @@ ff = np.fft.fft(gfilter.data)
 #            np.abs(np.fft.fftshift(ff))[npoints//2:])
 # ax[1].loglog(np.fft.fftshift(np.fft.fftfreq(npoints))[npoints//2:],
 #            np.abs(np.fft.fftshift(ff))[npoints//2:]**2)
-ax[1].plot(np.fft.fftshift(np.fft.fftfreq(npoints))[npoints//2:],
-           np.abs(np.fft.fftshift(ff))[npoints//2:])
-ax[1].plot(np.fft.fftshift(np.fft.fftfreq(npoints))[npoints//2:],
-           np.abs(np.fft.fftshift(ff))[npoints//2:]**2)
+ax[1].plot(np.fft.fftshift(np.fft.fftfreq(npoints)),
+           np.abs(np.fft.fftshift(ff)))
+ax[1].semilogy(np.fft.fftshift(np.fft.fftfreq(npoints)),
+           np.abs(np.fft.fftshift(ff))**2)
+ax[1].set_ylim([1E-1, 1])
