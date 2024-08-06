@@ -25,8 +25,8 @@ class Filter :
     Args
     ----
         filter_name: str
-            Name of filter used. Chices are: gaussian, wave-cutoff,
-            circular_wave_cutoff, running-mean, one_two-one
+            Name of filter used. Chices are: gaussian, gen_gaussian,
+            wave-cutoff, circular_wave_cutoff, running-mean, one_two-one
         wavenumber: float
             If a wave-cutoff filter is used, contains the cutoff
             wavenumber.
@@ -48,6 +48,8 @@ class Filter :
         sigma: float
             If a Gaussian filter is used, this is the lengthscale of
             the filter.
+        alpha: float
+            Exponent in general Gaussian (default=2.0). 
         ndim: int
             Number of dimensions (default=2)
 
@@ -55,7 +57,7 @@ class Filter :
 
     def __init__(self, filter_id, filter_name,
                  delta_x=1000.0, cutoff=0.000001, npoints = None,
-                 high_pass=0, wavenumber=-1, width=-1, sigma=-1,
+                 high_pass=0, wavenumber=-1, width=-1, sigma=-1, alpha=2.0,
                  ndim=2, set_fft=False):
 
         rfft = None
@@ -69,6 +71,13 @@ class Filter :
             else:
                 data = gaussian_filter(sigma, delta_x, npoints, cutoff,
                                                ndim=ndim)
+        elif (filter_name == 'gen_gaussian'):
+            if (sigma == -1):
+                data = self.filter_error(filter_name, 'sigma')
+            else:
+                (data, rfft) = gen_gaussian_filter(sigma, alpha, 
+                                           delta_x, npoints, cutoff,
+                                           ndim=ndim)
         elif (filter_name == 'running_mean'):
             if (width == -1):
                 data = self.filter_error(filter_name, 'width')
@@ -118,7 +127,8 @@ class Filter :
                   'npoints' : npoints,
                   'cutoff' : cutoff,
                   'high_pass' : high_pass,
-                  'sigma' : sigma}
+                  'sigma' : sigma,
+                  'alpha': alpha}
 
     def __str__(self):
         rep = "Filter id: {0}\n".format(self.id)
@@ -485,3 +495,59 @@ def gaussian_filter(sigma, delta_x=1000.0, npoints=-1, cutoff=0.000001,
     # logger.warning(f"cutoff = {cutoff}, min={np.min(result)}")
 
     return result
+
+def gen_gaussian_filter(sigma, alpha, 
+                        delta_x=1000.0, npoints=-1, cutoff=0.000001,
+                        high_pass=0, ndim=2):
+    """
+    Calculate a 2D wave-cutoff filter caculated using the given wavenumber.
+
+    Uses filter(x,y) = :math:`\sin(wavenumber * x)/x * \sin(wavenumber * y)/y`
+    in 2D.
+    Normalised by sum(filter(x,y)).
+    Note that this returns the point sampled value of filter(x).
+
+    Args
+    ----
+    sigma: float
+        Filter scale (Filter = exp(-0.5 * (sigma*k)**alpha).
+    alpha: float
+        Filter exponent.
+    delta_x: (float, default=1000.0)
+        The distance between two points in the data that the filter will be applied to.
+    npoints: int (default=-1)
+        If not -1, used to explicitly set the npoints of the filter.
+    cutoff: float (default=0.0001)
+        If npoints=-1, the npoints of the filter is set dynamically, and
+        increased until the smallest value of the filter is less than the
+        cutoff value.
+    high_pass: bool (default=0)
+        If true a high pass filter is calculated
+    ndim: int
+        Number of dimensions (default=2)
+
+    Returns
+    -------
+    ndarray: 2D array of filter values
+    """
+    rfft = None
+    if high_pass:
+        logger.warning("High pass not yet coded.")
+        return (None, rfft)
+    if ndim == 1:
+        frq2 = np.fft.rfftfreq(npoints, delta_x /(2*np.pi))
+        filt = np.ones((npoints//2+1), dtype=complex)
+        filt = filt * np.exp(-0.5 *(sigma * np.abs(frq2))**alpha)
+        result = np.fft.fftshift(np.fft.irfft(filt)).real
+        rfft = filt
+    else:
+        frq = np.fft.fftfreq(npoints, delta_x /(2*np.pi))
+        frq2 = np.fft.rfftfreq(npoints, delta_x /(2*np.pi))
+        kx, ky = np.meshgrid(frq2, frq)
+        k = np.sqrt(kx * kx + ky * ky)
+        filt = np.ones((npoints, npoints//2+1), dtype=complex)
+        filt = filt * np.exp(-0.5 * (sigma * k)**alpha)
+        result = np.fft.fftshift(np.fft.irfft2(filt)).real
+        rfft = filt
+
+    return (result, rfft)

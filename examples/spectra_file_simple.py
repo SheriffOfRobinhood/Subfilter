@@ -32,50 +32,26 @@
 
 import os
 import glob
-import numpy as np
 import xarray as xr
 import dask
 
 
-import subfilter
-import subfilter.subfilter as sf
 import subfilter.spectra as sp
-from monc_utils.data_utils.string_utils import get_string_index
 from monc_utils.io.dataout import setup_child_file
-from monc_utils.io.datain import configure_model_resolution
-
-test_case = 0
 
 # ---------------------------------- USER SETTINGS ----------------------------------
 
-# Single file source location and name
-# dir = '/gws/nopw/j04/paracon_rdg/users/toddj/BOMEX/CA_S_SC_BOMEX_25_600/f3/test_op_RFFT/'
-# dir = '/work/scratch-pw/toddj/'  # testing
-# file = 'BOMEX_m0025_g0600_all_66600.0_test_plot.nc'
-# -- or --
-#   Modify script to receive file and/or path name
+# File source location and name
 
-# dir = 'C:/Users/paclk/OneDrive - University of Reading/ug_project_data/Data/'
-# file = 'diagnostics_3d_ts_21600.nc'
-
-
-# dirroot = 'C:/Users/paclk/OneDrive - University of Reading/'
-# dirroot = 'C:/Users/xm904103/OneDrive - University of Reading/'
 dirroot = 'E:/Data/'
-
-
-
-time_dim_always_contains='time'
-var_names_spec = []  # list of variable names to evaluate
 
 var_names_spec = ['w']  # list of variable names to evaluate
         #   - leave empty to work on all present variables
         #   - populate with string variable names to work on specified list
 # ---------------------------------- USER SETTINGS ----------------------------------
 
-outtag = 'w_spec'
-
-opgrid = 'w'
+# Add to output file name
+outtag = 'spec'
 
 #################################################################################################
 #################################################################################################
@@ -84,32 +60,23 @@ def main():
     '''
     Top level code
     '''
-    if test_case == 0:
-        config_file = 'config_test_case_0.yaml'
-        indir = dirroot + 'ug_project_data/'
-        outdir = dirroot + 'ug_project_data/'
-        files = 'diagnostics_3d_ts_*.nc'
-        ref_file = 'diagnostics_ts_21600.nc'
-    elif test_case == 1:
-        config_file = 'config_test_case_1.yaml'
-        indir = dirroot + 'CBL/'
-        outdir = dirroot + 'CBL/'
-        files = 'diagnostics_3d_ts_*.nc'
-        ref_file = None
-
-    options, update_config = sf.subfilter_options(config_file)
-    spectra_options, update_config = sp.spectra_options(
-                                          'spectra_config.yaml')
+    indir = dirroot + 'CBL/'
+    outdir = dirroot + 'CBL/'
+    files = 'diagnostics_3d_ts_*.nc'
+    
+    options = {'dx': 5.0, 'dy':5.0, 'th_ref': 300.0}
+    
+    spectra_options, update_config = sp.spectra_options()
+    spectra_options.update({'dx': 5.0, 'dy':5.0, 'spec_1D':False})
+    
+    print(spectra_options)
     
     options.update(spectra_options)
     
     print(options)
     
-
-    outdir = outdir + 'test_filter_spectra_' + options['FFT_type']+'/'
+    outdir = outdir + 'test_filter_spectra/'
     os.makedirs(outdir, exist_ok = True)
-
-    override=options['override']
 
     dask.config.set({"array.slicing.split_large_chunks": True})
 
@@ -117,25 +84,9 @@ def main():
 
     for infile in infiles:
         
-        dataset = xr.open_dataset(infile, chunks={'z':'auto', 'zn':'auto'})
+        dataset = xr.open_dataset(infile , chunks={'z':'auto', 'zn':'auto'})
 
         print(dataset)
-        if ref_file is not None:
-            ref_dataset = xr.open_dataset(indir+ref_file)
-        else:
-            ref_dataset = None
-
-        # Get model resolution values
-        dx, dy, options = configure_model_resolution(dataset, options)
-
-        [itime, iix, iiy, iiz] = get_string_index(dataset.dims,
-                                                  ['time', 'x', 'y', 'z'])
-        timevar = list(dataset.dims)[itime]
-        xvar = list(dataset.dims)[iix]
-        yvar = list(dataset.dims)[iiy]
-        zvar = list(dataset.dims)[iiz]
-
-        npoints = dataset.dims[xvar]
 
     # By default, we are going to look at all data variables from the file
     #   Save data variable names to list
@@ -148,12 +99,14 @@ def main():
 
         derived_dataset, exists = setup_child_file(infile, outdir, outtag,
                                                    options, 
-                                                   override=options['override'])
+                                                   override=True)
 
         print(f"Working on file: {infile}")
 
         of = sp.spectra_variable_list(dataset, derived_dataset, options,
                                         var_list=var_names)
+        
+        dataset.close()
         print(of)
         
         dso = xr.open_dataset(derived_dataset['file'])
