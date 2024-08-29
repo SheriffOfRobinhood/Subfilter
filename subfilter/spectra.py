@@ -531,7 +531,7 @@ def spectrum_ave_1D_radial_field(var, options, dx, dy, kmap=None):
     dky = 2*np.pi/L_y
     # discretize the 2D wavenumber in multiples of the maximum one-dimensional wavenumber
     dkh = np.max((dkx,dky))
-    Nmax = np.int(np.ceil(np.sqrt(2)*np.max((nx/2,ny/2))))  # maximum number of points
+    Nmax = int(np.ceil(np.sqrt(2)*np.max((nx/2,ny/2))))  # maximum number of points
     kp = (np.arange(Nmax-1)+1)*dkh                          # for eqn 18
     dkmin = np.min((dkx,dky))
     # Reliable Nyquist frequency (highest reliable wavenumber, shortest reliable wavelength)
